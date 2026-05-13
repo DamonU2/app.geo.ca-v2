@@ -1,73 +1,96 @@
 # App.geo.ca-v2
 
-This project uses the [sveltekit](https://kit.svelte.dev/) framework and [sst](https://sst.dev/) to build and deploy to AWS a fullstack applications allowing for the search and cataloging of geospatial data.
+This project uses the [SvelteKit](https://kit.svelte.dev/) framework and [SST](https://sst.dev/) to build and deploy to AWS a full-stack application for searching and cataloging geospatial data.
 
 ## Setup
 
 - Create a fork of the app.geo.ca-v2 repo for your personal development environment.
-- Clone the repo in your dev environment using the following command in a new linux terminal: `git clone <Your-forked-repo-url>`
+- Clone the repo in your dev environment using the following command in a new Linux terminal: `git clone <Your-forked-repo-url>`.
 - Check to make sure node, npm, and nvm are installed with these commands:
   - `node -v`
   - `npm -v`
   - `nvm -v`
 - If you get an error message for any of these commands, you will have to install the packages with these steps:
-  - First install curl as a sudo user: `sudo apt-get install curl`
-  - Next install nvm: `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash`
-  - Test to make sure nvm installed successfully: `command -v nvm` Note: If successful 'nvm' will print. If nothing happens or an error is received, close and open a new terminal.
-  - Next, install the latest stable version of node and npm run: `nvm install --lts` Note: A nodejs version that matches the `.nvmrc` may be required instead of the latest version. You can adjust the nvm install command by specifying the node version like this: `nvm install 18.20.8`. Just replace the number with the correct version.
-  - Confirm node and npm were installed: `node -v` and `npm -v`
+  - First install curl as a sudo user: `sudo apt-get install curl`.
+  - Next install nvm: `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash`.
+  - Test to make sure nvm installed successfully: `command -v nvm`. Note: If successful, `nvm` will print. If nothing happens or an error is received, close and open a new terminal.
+  - Next, install the latest stable version of node and npm: `nvm install --lts`. Note: A Node.js version that matches the `.nvmrc` may be required instead of the latest version. You can adjust the nvm install command by specifying the node version like this: `nvm install 18.20.8`. Replace the number with the correct version.
+  - Confirm node and npm were installed: `node -v` and `npm -v`.
   - Check to make sure the correct version of npm is set as indicated by the `.nvmrc` file. See [nvm](https://github.com/nvm-sh/nvm).
-- Navigate to your project's directory:`cd app.geo.ca-v2` Note: the name of your directory may differ based on the name of your forked repo.
-- Instal node packages with: `npm i`
-- Navigate to the `/packages/web-app/` directory using `cd packages/web-app`
-- Instal node packages here too with: `npm i`
+- Navigate to your project's directory: `cd app.geo.ca-v2`. Note: the name of your directory may differ based on the name of your forked repo.
+- Install node packages with: `npm i`.
+- Navigate to the `/packages/web-app/` directory using `cd packages/web-app`.
+- Install node packages here too with: `npm i`.
 
 ## Developing
 
 After following the setup, start a development server with these steps:
 
-- setup your aws credentials. [documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
-- Create a .env file for your stage. You can do this by copying the .env.dev but change ‘dev’ to the name of your stage.
-- Set secrets for OIDC_CLIENT_SECRET and GEOCORE_API_DOMAIN. Add this for each stage you want to deploy or work on locally. e.g. `npx sst secret set GEOCORE_API_DOMAIN https://geocore.api.geo.ca --stage <your-stage-name>`
-- enshure your login and logout url's are configured correctly in aws cognito.
+- Set up your AWS credentials. [documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
+- Create a stage env file by copying `.env.example` to `.env.<your-stage-name>` (for local dev use `.env.dev`).
+- `packages/web-app/.env` is an optional local override file for web-app runtime values read from `process.env` (for example `GEOCORE_API_DOMAIN`, `SEMANTIC_SEARCH_URL`, and `USER_TABLE_NAME`).
+- Keep auth/stage settings (`OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_CUSTOM_DOMAIN`) in your stage env file at the repository root (for example `.env.dev`).
+- `packages/web-app/.env` is ignored by git and should stay local to your machine.
+- Set the values for `OIDC_CLIENT_ID` and `OIDC_CLIENT_SECRET` from your OIDC app client.
+- Set `OIDC_CUSTOM_DOMAIN` to the base auth host only (no `/oauth2` suffix), for example `https://auth.login-connexion.alpha.canada.ca`.
+- Ensure login and logout URLs are configured in your OIDC provider app client (CanadaLogin/Cognito).
+  - Allowed callback URLs.
+    - http://localhost:8080/sign-in/receive
+  - Allowed sign-out URLs.
+    - http://localhost:8080/sign-in/logout
+- Local sign-out skips provider logout and clears app cookies directly to avoid back-channel logout failures against localhost.
 
-  - Allowed callback URLs
-    - http://localhost:5173/en-ca/sign-in/receive
-    - http://localhost:5173/fr-ca/sign-in/receive
-  - Allowed sign-out URLs
-    - http://localhost:5173/en-ca/sign-in/logout
-    - http://localhost:5173/fr-ca/sign-in/logout
-
-- For local development run `npm run dev` from the repository root. SST v4 starts the multiplexer and frontend together.
+- For local development, run `npm run dev` from the repository root. SST v4 starts the multiplexer and frontend together.
+- Port cleanup behavior: before frontend dev starts, `/packages/web-app/scripts/kill-port.js` runs via `predev` and force-kills listeners on port `8080`.
+- Warning: this can terminate any application currently using port `8080`, not just this project.
+- Validate restored sign-in flow:
+  - As a guest, favourite one or more records.
+  - Click Sign in and complete authentication.
+  - Confirm guest favourites are merged into the signed-in profile.
+  - Confirm Sign out clears session and returns to map browser.
+- Optional DB diagnostics (non-production only): open `/api/health/db` and confirm `tableAccessible: true`.
 - For deployment, run `npx sst deploy --stage <yourStageName>`. You will need to deploy your environment in order to build any AWS resources like buckets and tables.
-- now run the steps under [## Importing Data](#importing-data).
+- Now run the steps under [## Importing Data](#importing-data).
+
+## User Data Model
+
+For signed-in users, the DynamoDB users table stores only:
+
+- `uuid`: stable user identifier from the auth token (`sub`, with `username` fallback).
+- `favourites`: array of record ids saved by the user.
+
+Not stored by current app code:
+
+- OIDC tokens or session secrets.
+- User profile attributes such as email or display name.
+- Timestamps, TTL fields, or audit metadata.
+
+Guest favourites are stored temporarily in the `guest_favourites` cookie and merged into the signed-in user's `favourites` list after authentication.
 
 ## Building and deploying
 
-- setup your aws credentials for the desired environment. [documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
-- Create a .env file for your stage. You can do this by copying the .env.dev but change ‘dev’ to the name of your stage.
-- Set secrets for OIDC_CLIENT_SECRET and GEOCORE_API_DOMAIN. Add this for each stage you want to deploy or work on locally. e.g. `npx sst secret set GEOCORE_API_DOMAIN https://geocore.api.geo.ca --stage <your-stage-name>`
-- from `/` run `npm i`.
-- from `/packages/web-app/` run `npm i`. A nodejs version that matches the `.nvmrc` may be required.
-- enshure your login and logout url's are configured correctly in aws cognito.
+- Set up your AWS credentials for the desired environment. [documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
+- Create a stage env file by copying `.env.example` to `.env.<your-stage-name>`.
+- Keep auth/stage settings (`OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_CUSTOM_DOMAIN`) in the root stage env file for the deployment target.
+- `packages/web-app/.env` remains optional local-only overrides for web-app runtime values and is git-ignored.
+- From `/`, run `npm i`.
+- From `/packages/web-app/`, run `npm i`. A Node.js version that matches the `.nvmrc` may be required.
+- Ensure login and logout URLs are configured in your OIDC provider app client.
+  - Example allowed callback URLs.
+    - https://d28mialgy1tfmv.cloudfront.net/sign-in/receive
+  - Example allowed sign-out URLs.
+    - https://d28mialgy1tfmv.cloudfront.net/sign-in/logout
 
-  - Example allowed callback URLs
-    - https://d28mialgy1tfmv.cloudfront.net/en-ca/sign-in/receive
-    - https://d28mialgy1tfmv.cloudfront.net/fr-ca/sign-in/receive
-  - Example allowed sign-out URLs
-    - https://d28mialgy1tfmv.cloudfront.net/en-ca/sign-in/logout
-    - https://d28mialgy1tfmv.cloudfront.net/fr-ca/sign-in/logout
-
-- deploy from the root of the repository: `npx sst deploy --stage <yourStageName>`
+- Deploy from the root of the repository: `npx sst deploy --stage <yourStageName>`.
 
 ## Importing Data
 
 Do the following while your project's server is running:
 
-- From AWS, go to your S3 bucket list and find the bucket with a name like this: `<your-stage-name>-<your-project-name>-site-hnapbucket<some-other-random-characters>`
+- From AWS, go to your S3 bucket list and find the bucket with a name like this: `<your-stage-name>-<your-project-name>-site-hnapbucket<some-other-random-characters>`.
 - Click on the bucket name from the list to see the bucket's details.
 - From the Objects tab, click on the 'Create Folder' button and create two new folders with these names:
   - `geocore`
   - `hnap`
 - From the hnap folder, copy the content from the project's `data-samples` folder.
-- this will trigger the hnap-bridge lambda and generate the geojson records required for viewing and store them under `<your-bucket-name>/geojson`. Note that any record not imported this way will return a 404 when viewed.
+- This triggers the hnap-bridge lambda, generates the geojson records required for viewing, and stores them under `<your-bucket-name>/geojson`. Note that any record not imported this way will return a 404 when viewed.

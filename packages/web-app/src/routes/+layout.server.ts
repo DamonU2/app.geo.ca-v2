@@ -9,11 +9,23 @@ import enHeaderTranslations from '$lib/components/header/i18n/en/translations.js
 import frHeaderTranslations from '$lib/components/header/i18n/fr/translations.json';
 import enShareTranslations from '$lib/components/share/i18n/en/translations.json';
 import frShareTranslations from '$lib/components/share/i18n/fr/translations.json';
+import { getUserData } from '$lib/db/user';
+import { isOidcConfigured } from '$lib/utils/sign-in.server';
 
-export const load: LayoutServerLoad = async ({ params }) => {
+/**
+ * Loads global layout data for language-specific navigation, footer content,
+ * and signed-in user context used across pages.
+ */
+export const load: LayoutServerLoad = async ({ params, cookies }) => {
+  const userData = await getUserData(cookies);
+  const signedIn = Boolean(userData.Item.uuid);
+
   // TODO: improve language handling
   return {
     lang: params.lang as 'en-ca' | 'fr-ca',
+    signedIn,
+    FEATURE_SIGN_IN: isOidcConfigured(),
+    userData: userData.Item,
     footerLinks: params.lang === 'fr-ca' ? frFooterLinks : enFooterLinks,
     legalData: params.lang === 'fr-ca' ? frLegal : enLegal,
     navitems: params.lang === 'fr-ca' ? frNavitems : enNavitems,

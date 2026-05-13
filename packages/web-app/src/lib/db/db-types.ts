@@ -127,7 +127,8 @@ export interface GeospatialRecord {
 
 // JWT Token payload
 export interface TokenPayload {
-  username: string;
+  sub?: string;
+  username?: string;
   [key: string]: unknown; // Allow other JWT claims
 }
 
@@ -148,9 +149,11 @@ export interface UserInfo {
   Item: UserData;
 }
 
-export type FavouritesRow = {
+export type FavouritesRow = Record<string, string | boolean> & {
   id: string;
   name: string;
+  url?: string;
+  disableCheckbox?: boolean;
 };
 
 // GeospatialRecord with additional fields added by the API endpoint

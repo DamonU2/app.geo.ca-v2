@@ -124,16 +124,16 @@
 
 <div class={['h-full', active && orientation === 'horizontal' && 'active']}>
   {#if linkData?.options && orientation === 'horizontal'}
-    <button class="nav-link" use:clickOutside={() => handleClickOutside(orientation)} onclick={() => handleDropdownClick(orientation)}>
-      {linkData.title}
-      {#if chevronDown}
-        <Chevrondown classes="mt-1 ml-1 h-4 w-4 text-custom-16" />
-      {:else}
-        <Chevronup classes="mt-1 ml-1 h-4 w-4 text-custom-16" />
-      {/if}
-    </button>
+    <div class="relative inline-flex h-full">
+      <button class="nav-link" use:clickOutside={() => handleClickOutside(orientation)} onclick={() => handleDropdownClick(orientation)}>
+        {linkData.title}
+        {#if chevronDown}
+          <Chevrondown classes="mt-1 ml-1 h-4 w-4 text-custom-16" />
+        {:else}
+          <Chevronup classes="mt-1 ml-1 h-4 w-4 text-custom-16" />
+        {/if}
+      </button>
 
-    <div class="relative">
       <Navdropdown options={linkData['options']} bind:active {orientation} />
     </div>
     <div class={[active && 'mask']}></div>
@@ -151,12 +151,12 @@
       </div>
     </button>
   {:else if linkData?.title && linkData?.title === 'English'}
-    <a class="nav-link" href={toggleLanguage('en-ca')} data-sveltekit-reload rel="external">
+    <a class={['nav-link', orientation === 'horizontal' && 'mr-8']} href={toggleLanguage('en-ca')} data-sveltekit-reload rel="external">
       <Globe classes="h-[1.25rem] w-[1.25rem] mr-1" />
       {linkData.title}
     </a>
   {:else if linkData?.title && linkData?.title === 'Français'}
-    <a class="nav-link" href={toggleLanguage('fr-ca')} data-sveltekit-reload rel="external">
+    <a class={['nav-link', orientation === 'horizontal' && 'mr-8']} href={toggleLanguage('fr-ca')} data-sveltekit-reload rel="external">
       <Globe classes="h-[1.25rem] w-[1.25rem] mr-1" />
       {linkData.title}
     </a>
@@ -169,7 +169,7 @@
   {:else if linkData?.href}
     <div class="flex relative h-full">
       <a
-        class="nav-link"
+        class={['nav-link', linkData?.counter && localStorageKey && orientation === 'horizontal' && 'pr-[0.625rem]']}
         href={linkData['href']}
         rel="external"
         onclick={() => {
@@ -183,8 +183,10 @@
       {#if linkData?.counter && localStorageKey}
         <div
           class:hidden={!localStorageListLength || localStorageListLength === 0}
-          class="align-middle absolute top-3.5 right-0 lg:-right-5 bg-red-700 rounded-full min-w-[1.625rem] h-[1.625rem]
-          p-1 text-center text-custom-1 font-open-sans text-xs font-normal border-2 border-custom-1"
+          class={[
+            'align-middle absolute top-3.5 bg-red-700 rounded-full min-w-[1.625rem] h-[1.625rem] p-1 text-center text-custom-1 font-open-sans text-xs font-normal border-2 border-custom-1',
+            orientation === 'horizontal' ? 'right-0 lg:-right-5' : 'right-1',
+          ]}
         >
           {localStorageListLength}
         </div>
@@ -199,18 +201,23 @@
     @apply flex;
     @apply h-full;
     @apply items-center;
+    @apply border-0;
+    @apply rounded-none;
+    @apply bg-transparent;
+    @apply outline-none;
+    @apply cursor-pointer;
   }
   .active {
     @apply shadow-[0_0.125rem_0.188rem_white,0_0.188rem_white];
-    @apply border-b;
   }
 
   .mask {
-    @apply absolute;
+    @apply fixed;
     @apply top-20;
-    @apply right-0;
+    @apply left-0;
     @apply w-full;
     @apply h-screen;
     @apply bg-custom-12;
+    @apply z-10;
   }
 </style>

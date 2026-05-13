@@ -3,7 +3,9 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/kill-port.js",
     "dev": "vite dev --port 8080",
+    "restart": "node scripts/kill-port.js && npm run dev",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",

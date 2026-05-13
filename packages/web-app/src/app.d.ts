@@ -98,6 +98,8 @@ declare global {
       navitems: HeaderNavItems;
       headerTranslations: TranslationMap;
       shareTranslations: TranslationMap;
+      signedIn?: boolean;
+      FEATURE_SIGN_IN?: boolean;
 
       // User data
       userData?: {

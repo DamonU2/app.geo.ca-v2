@@ -2,6 +2,7 @@
   import { page } from '$app/state';
   import { onMount } from 'svelte';
   import { updateLocalStorage } from '$lib/utils/event-dispatchers/local-storage-changed';
+  import { FAVOURITES_STORAGE_KEY } from '$lib/utils/favourites-storage';
   import Heart from '$lib/components/icons/heart.svelte';
   import HeartFilled from '$lib/components/icons/heart-filled.svelte';
 
@@ -14,6 +15,7 @@
   const description = properties.description;
   const addToFavourites = translations?.addToFavourites ? translations.addToFavourites : 'Add to Favourites';
   const removeFromFavourites = translations?.removeFromFavourites ? translations.removeFromFavourites : 'Remove from Favourites';
+  const signedIn = Boolean(data?.signedIn);
 
   /****************** Favourites Resources ******************/
   let favouriteRecordList = $state<string[]>(data?.userData?.favourites ? [...data.userData.favourites] : []);
@@ -25,6 +27,22 @@
    * @returns A promise that resolves when the operation is complete.
    */
   async function handleFavouriteClick(recordId: string): Promise<void> {
+    const exists = favouriteRecordList.includes(recordId);
+
+    // Update server-side favourites for signed-in users
+    if (signedIn) {
+      const response = await fetch(`/${data.lang}/api/favourites`, {
+        method: exists ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: recordId }),
+      });
+
+      // If the server update fails, do not update the local state
+      if (!response.ok) {
+        return;
+      }
+    }
+
     if (!favouriteRecordList.includes(recordId)) {
       // Add to list of ids
       favouriteRecordList.push(recordId);
@@ -37,14 +55,22 @@
     }
 
     // Update localStorage and dispatch localstorage_updated event
-    updateLocalStorage('FavouritesResources', favouriteRecordList);
+    updateLocalStorage(FAVOURITES_STORAGE_KEY, favouriteRecordList);
   }
 
-  // Local storage is only accessible from the client side, so we need to get
-  // the FavouritesResources array inside onMount.
+  // Local storage is only accessible from the client side, so we initialize
+  // favourites inside onMount.
   onMount((): void => {
-    let stored = localStorage.getItem('FavouritesResources');
+    // For signed-in users, the source of truth is the server, so we initialize
+    if (signedIn) {
+      updateLocalStorage(FAVOURITES_STORAGE_KEY, favouriteRecordList);
+      return;
+    }
 
+    // For guest users, we initialize from localStorage in case they have favourited items before signing in
+    let stored = localStorage.getItem(FAVOURITES_STORAGE_KEY);
+
+    // If there are any favourites stored in localStorage, we use those as the source of truth
     if (stored) {
       favouriteRecordList = stored.split(',');
     }
