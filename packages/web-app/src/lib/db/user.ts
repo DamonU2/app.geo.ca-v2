@@ -1,12 +1,27 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { getToken } from '$lib/utils/parse-jwt';
+import { getAwsRegion } from '$lib/utils/aws-region';
 import type { UserInfo, UserData, TokenResponse } from './db-types';
 import type { Cookies } from '@sveltejs/kit';
 import { USER_TABLE_NAME } from '$env/static/private';
 
-const client = new DynamoDBClient({});
+const awsRegion = getAwsRegion();
+const client = new DynamoDBClient({ region: awsRegion });
 const docClient = DynamoDBDocumentClient.from(client);
+
+/**
+ * Extracts the stable user identifier from decoded token claims.
+ *
+ * @param token - Parsed token response.
+ * @returns User key (`sub` preferred, `username` fallback) or null.
+ */
+function getUserKey(token: TokenResponse): string | null {
+  if (!token.ok || !token.value) {
+    return null;
+  }
+  return (token.value.sub as string | undefined) ?? (token.value.username as string | undefined) ?? null;
+}
 
 /**
  * Fetches user data from the database using the provided cookies.
@@ -16,22 +31,35 @@ const docClient = DynamoDBDocumentClient.from(client);
  */
 const getUserData = async (cookies: Cookies): Promise<UserInfo> => {
   const token: TokenResponse = await getToken(cookies);
-  if (!token.ok) return { Item: { uuid: null, favourites: [] } };
+  const userKey = getUserKey(token);
+  if (!userKey) return { Item: { uuid: null, favourites: [] } };
+
+  const fallbackUserData: UserInfo = { Item: { uuid: userKey, favourites: [] } };
+
+  if (!USER_TABLE_NAME) {
+    return fallbackUserData;
+  }
+
   const command = new GetCommand({
     TableName: USER_TABLE_NAME,
     Key: {
-      uuid: token.value!.username,
+      uuid: userKey,
     },
   });
 
-  let response: UserInfo = { Item: { uuid: null, favourites: [] } };
+  let response: UserInfo;
   try {
     response = (await docClient.send(command)) as unknown as UserInfo;
   } catch (error) {
     console.error('Error fetching user data.');
     console.error(error);
+    return fallbackUserData;
   }
-  if (response?.Item === undefined || response.Item === null) response = { Item: { uuid: token.value!.username, favourites: [] } };
+
+  if (response?.Item === undefined || response.Item === null) {
+    return fallbackUserData;
+  }
+
   return response;
 };
 
@@ -44,15 +72,28 @@ const getUserData = async (cookies: Cookies): Promise<UserInfo> => {
  */
 const putUserData = async (data: Partial<UserData>, cookies: Cookies): Promise<Record<'ok', boolean>> => {
   const token: TokenResponse = await getToken(cookies);
-  if (!token.ok) return { ok: false };
-  data.uuid = token.value!.username;
-  await docClient.send(
-    new PutCommand({
-      TableName: USER_TABLE_NAME,
-      Item: data,
-    })
-  );
-  return { ok: true };
+  const userKey = getUserKey(token);
+  if (!userKey) return { ok: false };
+
+  if (!USER_TABLE_NAME) {
+    return { ok: false };
+  }
+
+  data.uuid = userKey;
+
+  try {
+    await docClient.send(
+      new PutCommand({
+        TableName: USER_TABLE_NAME,
+        Item: data,
+      })
+    );
+    return { ok: true };
+  } catch (error) {
+    console.error('Error storing user data.');
+    console.error(error);
+    return { ok: false };
+  }
 };
 
 export { getUserData, putUserData };

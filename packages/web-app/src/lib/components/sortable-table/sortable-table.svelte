@@ -9,7 +9,9 @@
 
   // Every item in the array should have the same set of keys,
   // since the keys will become the column titles of the table
-  type TableContent = Array<Record<string, string> & { url?: string; disableCheckbox?: boolean }>;
+  type TableRow = Record<string, string | boolean> & { id?: string; url?: string; disableCheckbox?: boolean };
+  type TableContent = TableRow[];
+  type NormalizedTableRow = TableRow & { id: string };
   type sortDirectionState = 0 | 1 | 2;
 
   interface Props {
@@ -70,7 +72,14 @@
 
   let currentPageItems = $derived(sortedTableContent.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage));
 
-  let visibleRows = $derived(paginated ? currentPageItems : sortedTableContent);
+  // Some display-only tables do not provide ids. Normalize rows so internal logic
+  // can always rely on a string id.
+  let visibleRows: NormalizedTableRow[] = $derived(
+    (paginated ? currentPageItems : sortedTableContent).map((row, index) => ({
+      ...row,
+      id: row.id ?? `generated-row-${index}`,
+    }))
+  );
 
   // Check the checkboxes for all items in the visible rows when allSelected changes
   $effect(() => {
@@ -115,9 +124,9 @@
   export function updateTableContent(newTableContent: TableContent): void {
     // When updating the table, make sure the correct sort order is maintained
     if (sortDirection === 1) {
-      sortedTableContent = newTableContent.toSorted((a, b) => a[sortColumn].localeCompare(b[sortColumn]));
+      sortedTableContent = newTableContent.toSorted((a, b) => String(a[sortColumn]).localeCompare(String(b[sortColumn])));
     } else if (sortDirection === 2) {
-      sortedTableContent = newTableContent.toSorted((a, b) => a[sortColumn].localeCompare(b[sortColumn])).reverse();
+      sortedTableContent = newTableContent.toSorted((a, b) => String(a[sortColumn]).localeCompare(String(b[sortColumn]))).reverse();
     } else {
       sortedTableContent = newTableContent;
     }
@@ -164,9 +173,9 @@
     }
 
     if (sortDirection === 1) {
-      sortedTableContent = tableContent.toSorted((a, b) => a[sortColumn].localeCompare(b[sortColumn]));
+      sortedTableContent = tableContent.toSorted((a, b) => String(a[sortColumn]).localeCompare(String(b[sortColumn])));
     } else if (sortDirection === 2) {
-      sortedTableContent = tableContent.toSorted((a, b) => a[sortColumn].localeCompare(b[sortColumn])).reverse();
+      sortedTableContent = tableContent.toSorted((a, b) => String(a[sortColumn]).localeCompare(String(b[sortColumn]))).reverse();
     } else {
       sortedTableContent = tableContent;
     }
@@ -291,8 +300,8 @@
               <div class="flex pointer-events-auto w-fit mx-auto hover:cursor-pointer">
                 <input
                   type="checkbox"
-                  id={`check-${row?.id}`}
-                  name={`check-${row?.id}`}
+                  id={`check-${row.id}`}
+                  name={`check-${row.id}`}
                   checked={selectedIds.includes(row.id) && !row.disableCheckbox}
                   disabled={row.disableCheckbox}
                   class="peer appearance-none min-w-[1.6875rem] h-[1.6875rem] border-2
@@ -334,7 +343,7 @@
             <td class="pointer-events-none align-center p-2.5 h-full">
               <div class="flex pointer-events-auto w-fit mx-auto hover:cursor-pointer">
                 <button
-                  id={`garbage-${row?.id}`}
+                  id={`garbage-${row.id}`}
                   class="p-2 text-custom-16 rounded border-2 border-transparent hover:border-custom-16
                     hover:text-custom-1 hover:bg-custom-16 hover:shadow-[0_0.1875rem_0.375rem_#00000029] cursor-pointer"
                   onclick={(event) => handleDeleteRowClick(event, row.id)}

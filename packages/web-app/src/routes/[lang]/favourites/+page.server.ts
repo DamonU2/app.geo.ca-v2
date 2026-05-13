@@ -1,10 +1,14 @@
 import type { Actions, PageServerLoad } from './$types';
 import { GEOCORE_API_DOMAIN } from '$env/static/private';
 import { getUserData } from '$lib/db/user';
-import { removeFromFavourites } from '$lib/actions';
+import { clearFavourites, removeFromFavourites } from '$lib/actions';
 import { sanitize } from '$lib/utils/data-sanitization/geocore-result';
 import type { GeospatialRecord, UserInfo } from '$lib/db/db-types';
 
+/**
+ * Loads the favourites page data by reading user favourites, fetching matching
+ * GeoCore records, and preparing localized SEO metadata.
+ */
 export const load: PageServerLoad = async ({ fetch, params, url, cookies }) => {
   let response: GeospatialRecord[] = [];
   let userData: UserInfo | undefined;
@@ -19,6 +23,7 @@ export const load: PageServerLoad = async ({ fetch, params, url, cookies }) => {
       : 'Browse your saved resources and create a custom map.';
 
   try {
+    // Keep the page rendering even if user lookup fails.
     userData = await getUserData(cookies);
   } catch (e) {
     console.error('error fetching user data in records: \n', e);
@@ -109,6 +114,10 @@ async function getRecords(
   return ret.filter((item): item is GeospatialRecord => item !== undefined);
 }
 
+/**
+ * Server actions for mutating favourites from the favourites page UI.
+ */
 export const actions = {
   removeFromFavourites: removeFromFavourites,
+  clearFavourites: clearFavourites,
 } satisfies Actions;

@@ -4,6 +4,7 @@
   import { page } from '$app/state';
   import { resolve } from '$app/paths';
   import { updateLocalStorage } from '$lib/utils/event-dispatchers/local-storage-changed';
+  import { FAVOURITES_STORAGE_KEY, getStoredFavourites, resolveInitialFavourites } from '$lib/utils/favourites-storage';
   import Card from '$lib/components/card/card.svelte';
   import NoMap from '$lib/components/icons/no-map.svelte';
   import MycartMap from '$lib/components/map/favourites-map.svelte';
@@ -16,9 +17,9 @@
 
   let mapComponent: MycartMap | undefined = $state();
 
-  /************* Translations ***************/
   const translations = page.data.t;
   const lang = page.data.lang;
+  const signedIn = Boolean(page.data.signedIn);
 
   const findAResource = translations?.findAResource ? translations.findAResource : 'Find a resource';
   const favouritesTitle = translations?.title ? translations.title : 'Favourites';
@@ -47,6 +48,11 @@
   let records: FavouritesRecord[] = $state([]);
   let tableDataArray: FavouritesRow[] = $state([]);
 
+  // Derive allSelected state: true only if all non-disabled rows are selected
+  let allSelected = $derived(
+    tableDataArray.length > 0 && tableDataArray.every((row) => selectedIds.includes(row.id) || row.disableCheckbox)
+  );
+
   // Table column labels
   const tableLabels: Record<string, string> = {
     name: resourceNameLabel,
@@ -60,7 +66,7 @@
    *
    * @param id - The ID of the resource to delete.
    */
-  function handleDeleteResource(id: string): void {
+  async function handleDeleteResource(id: string): Promise<void> {
     // Before deleting, ask the user's permission
     const resource = tableDataArray.find((tableData: FavouritesRow) => tableData.id === id);
     const resourceName = resource?.name;
@@ -70,6 +76,18 @@
         : `Are you sure you want to delete the following resource? \n\n${resourceName} (${id})`;
 
     if (confirm(permissionText) === true) {
+      // If the user confirms, proceed with deletion. For signed-in users, also update the server-side favourites.
+      if (signedIn) {
+        const response = await fetch(`/${lang}/api/favourites`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        });
+        if (!response.ok) {
+          return;
+        }
+      }
+
       let selectedSet = new SvelteSet<string>(sortableTable?.getSelectedIds());
       selectedSet.delete(id);
 
@@ -83,22 +101,30 @@
       sortableTable?.setSelectedIds(Array.from(selectedSet));
 
       // Update localStorage and dispatch localstorage_updated event
-      updateLocalStorage('FavouritesResources', favouriteRecordList);
-
-      // TODO: update user's favourites when the login system is implemented
+      updateLocalStorage(FAVOURITES_STORAGE_KEY, favouriteRecordList);
     }
   }
 
   /**
    * Handle removing all resources from the favourites list.
    */
-  function handleRemoveAllClick(): void {
+  async function handleRemoveAllClick(): Promise<void> {
     const permissionText =
       lang === 'fr-ca'
         ? `Êtes-vous certain de vouloir supprimer ${favouriteRecordList.length} ressources?`
         : `Are you sure you want to delete ${favouriteRecordList.length} resources?`;
 
     if (confirm(permissionText) === true) {
+      // If the user confirms, proceed with deletion. For signed-in users, also update the server-side favourites.
+      if (signedIn) {
+        const response = await fetch(`/${lang}/api/favourites`, {
+          method: 'PUT',
+        });
+        if (!response.ok) {
+          return;
+        }
+      }
+
       // Update resource lists
       favouriteRecordList = [];
       tableDataArray = [];
@@ -109,9 +135,7 @@
       sortableTable?.setSelectedIds([]);
 
       // Update localStorage and dispatch localstorage_updated event
-      updateLocalStorage('FavouritesResources', []);
-
-      // TODO: update user's favourites when the login system is implemented
+      updateLocalStorage(FAVOURITES_STORAGE_KEY, []);
     }
   }
 
@@ -136,10 +160,12 @@
   // Local storage is only accessible from the client side, so we need to get
   // the FavouritesResources array inside onMount
   onMount(async () => {
-    let stored: string | null = localStorage.getItem('FavouritesResources');
+    const storedFavourites = getStoredFavourites(localStorage);
+    const resolved = resolveInitialFavourites(signedIn, favouriteRecordList, storedFavourites);
+    favouriteRecordList = resolved.favourites;
 
-    if (stored) {
-      favouriteRecordList = stored.split(',');
+    if (resolved.shouldSyncLocalStorage) {
+      updateLocalStorage(FAVOURITES_STORAGE_KEY, favouriteRecordList);
     }
 
     // Issue POST request for record details
@@ -161,6 +187,9 @@
           url: `${page.url.origin}/${lang}/map-browser/record/${record.id}`,
         };
       });
+
+      // Select all non-disabled rows by default
+      selectedIds = tableDataArray.filter((row) => !row.disableCheckbox).map((row) => row.id);
     }
 
     // Turn off the loading mask once the records have finished loading
@@ -204,7 +233,7 @@
               {tableLabels}
               clickableRows={true}
               checkboxCol={true}
-              allSelected={true}
+              {allSelected}
               removeCol={true}
               paginated={false}
               deleteResource={handleDeleteResource}

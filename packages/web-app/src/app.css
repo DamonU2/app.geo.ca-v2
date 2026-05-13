@@ -30,6 +30,7 @@
   @apply bg-custom-8;
   @apply p-2.5;
   @apply rounded-lg;
+  @apply cursor-pointer;
   @apply drop-shadow-lg;
   @apply border-2;
   @apply border-transparent;
@@ -41,6 +42,8 @@
   @apply disabled:outline-gray-400;
   @apply disabled:text-gray-500;
   @apply outline-1;
+  @apply cursor-pointer;
+  @apply disabled:cursor-not-allowed;
   @apply hover:disabled:bg-gray-500;
   @apply hover:disabled:text-gray-100;
   @apply text-custom-8;

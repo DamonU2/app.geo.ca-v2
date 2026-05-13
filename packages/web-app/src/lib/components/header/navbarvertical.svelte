@@ -4,6 +4,7 @@
   import Navitem from './navitem.svelte';
   import { toggleScroll } from '$lib/components/component-utils/toggleScroll';
   import Chevronleft from '../icons/chevronleft.svelte';
+  import SignIn from '$lib/components/profile/sign-in.svelte';
 
   const userId = page.data.userData?.uuid;
   const navItems = page.data.navitems;
@@ -58,8 +59,11 @@
       {/if}
     {/each}
   </div>
-  <div class="text-custom-1 nav-item">
-    <Navitem linkData={navItems.lang} {orientation} dropDownClick={toggleMenuView} />
+  <div class="flex m-3">
+    <div class="text-custom-1 nav-item grow">
+      <Navitem linkData={navItems.lang} {orientation} dropDownClick={toggleMenuView} />
+    </div>
+    <SignIn light={true} />
   </div>
 </div>
 
@@ -71,7 +75,7 @@
   <div class={['nav-items-container bg-custom-23 pb-10', (!active || mainMenuVisible) && 'hidden']}>
     <button
       class={[
-        'w-full h-[5.0625rem] pl-5 text-left bg-custom-16 text-custom-1 rounded-t-[0.3125rem]',
+        'w-full h-[5.0625rem] pl-5 text-left bg-custom-16 text-custom-1 rounded-t-[0.3125rem] cursor-pointer',
         activeMenuContent?.options && activeMenuContent?.options[0]?.colTitle && 'rounded-section-title',
       ]}
       onclick={toggleMenuView}
@@ -121,7 +125,7 @@
       @apply w-[43.75rem];
       @apply left-auto;
       @apply left-1/2;
-      @apply -translate-x-[23.125rem];
+      @apply translate-x-[-23.125rem];
     }
   }
 

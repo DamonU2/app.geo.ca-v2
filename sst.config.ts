@@ -2,6 +2,9 @@
 
 const GEOCORE_API_DOMAIN = "https://geocore.api.geo.ca";
 const SEMANTIC_SEARCH_URL = "https://search-recherche.geocore.api.geo.ca";
+const OIDC_CLIENT_ID = process.env.OIDC_CLIENT_ID ?? "";
+const OIDC_CUSTOM_DOMAIN = process.env.OIDC_CUSTOM_DOMAIN ?? "";
+const OIDC_CLIENT_SECRET = process.env.OIDC_CLIENT_SECRET ?? "";
 
 export default $config({
   app(input) {
@@ -55,9 +58,21 @@ export default $config({
     const site = new sst.aws.SvelteKit("WebApp", {
       path: "packages/web-app",
       link: [users, hnapBucket],
+      transform: {
+        // Keep logs finite even in orgs where log-group delete is blocked by SCP.
+        server: (args) => {
+          args.logging = { retention: "1 week" };
+        },
+        imageOptimizer: (args) => {
+          args.logging = { retention: "1 week" };
+        },
+      },
       environment: {
         GEOCORE_API_DOMAIN,
         SEMANTIC_SEARCH_URL,
+        OIDC_CLIENT_ID,
+        OIDC_CUSTOM_DOMAIN,
+        OIDC_CLIENT_SECRET,
         USER_TABLE_NAME: users.name,
         BUCKET_NAME: hnapBucket.name,
       },
