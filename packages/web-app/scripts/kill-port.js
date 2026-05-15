@@ -10,9 +10,7 @@ const WAIT_MS = 3000;
 const CHECK_INTERVAL_MS = 120;
 const isWindows = platform() === 'win32';
 
-console.warn(
-  `[Port Cleanup] Warning: this will force-kill any process listening on port ${PORT}.`
-);
+console.warn(`[Port Cleanup] Warning: this will force-kill any process listening on port ${PORT}.`);
 
 function run(command) {
   try {
