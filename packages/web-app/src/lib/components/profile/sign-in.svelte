@@ -2,6 +2,7 @@
   import { resolve } from '$app/paths';
   import { slide } from 'svelte/transition';
   import { page } from '$app/state';
+  import { pickByLanguage } from '$lib/utils/language';
   import { FAVOURITES_STORAGE_KEY } from '$lib/utils/favourites-storage';
 
   type Props = {
@@ -14,8 +15,8 @@
   const signedIn = $derived(Boolean(page.data.signedIn));
   const featureSignIn = $derived(page.data.FEATURE_SIGN_IN !== false);
 
-  const signInText = $derived(lang === 'fr-ca' ? 'Connexion' : 'Sign in');
-  const signOutText = $derived(lang === 'fr-ca' ? 'Deconnexion' : 'Sign out');
+  const signInText = $derived(pickByLanguage(lang, 'Sign in', 'Connexion'));
+  const signOutText = $derived(pickByLanguage(lang, 'Sign out', 'Deconnexion'));
 
   /**
    * Temporarily stores guest favourites before redirecting to sign-in,

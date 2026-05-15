@@ -142,6 +142,14 @@ export interface TokenResponse {
 export interface UserData {
   uuid: string | null;
   favourites: string[]; // Array of record UUIDs
+  mapConfigs?: MapConfigFavourite[];
+}
+
+export interface MapConfigFavourite {
+  id: string;
+  name: string;
+  config: Record<string, unknown>;
+  createdAt: string;
 }
 
 // User info

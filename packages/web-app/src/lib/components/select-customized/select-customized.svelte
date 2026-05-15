@@ -21,6 +21,7 @@
 
 <script lang="ts">
   import { page } from '$app/state';
+  import { pickByLanguage } from '$lib/utils/language';
   import Chevrondown from '$lib/components/icons/chevrondown.svelte';
   import Chevronup from '$lib/components/icons/chevronup.svelte';
   import Close from '$lib/components/icons/close.svelte';
@@ -46,7 +47,7 @@
   }: Props = $props();
 
   const lang = page.data.lang;
-  let clearAriaLabel = lang === 'fr-ca' ? 'Effacer la sélection' : 'Clear selection';
+  let clearAriaLabel = pickByLanguage(lang, 'Clear selection', 'Effacer la sélection');
 
   let expanded = $state(false);
   let selectEl = $state<HTMLSelectElement>();

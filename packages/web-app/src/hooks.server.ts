@@ -1,5 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 import { redirect } from '@sveltejs/kit';
+import { getAppLanguage, isAppLanguage } from '$lib/utils/language';
 
 export const handle: Handle = async ({ event, resolve }) => {
   const url = new URL(event.request.url);
@@ -11,11 +12,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   if (url.pathname.startsWith('/result')) {
     // Get the id and language from the url
     const id = url.searchParams.get('id');
-    let lang = url.searchParams.get('lang') ?? 'en';
-
-    // Convert language code e.g. 'en' to 'en-ca'
-    if (lang === 'en') lang = 'en-ca';
-    else if (lang === 'fr') lang = 'fr-ca';
+    const lang = getAppLanguage(url.searchParams.get('lang'));
 
     if (id) {
       // Construct the new URL, throw redirect
@@ -27,11 +24,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   if (url.pathname.startsWith('/map')) {
     // Get the id and language from the url
     const id = url.searchParams.get('rvKey');
-    let lang = url.searchParams.get('lang') ?? 'en';
-
-    // Convert language code e.g. 'en' to 'en-ca'
-    if (lang === 'en') lang = 'en-ca';
-    else if (lang === 'fr') lang = 'fr-ca';
+    const lang = getAppLanguage(url.searchParams.get('lang'));
 
     if (id) {
       // Construct the new URL, throw redirect
@@ -49,16 +42,13 @@ export const handle: Handle = async ({ event, resolve }) => {
   }
 
   // Language varification - check to make sure the url lang is supported
-
-  // List of supported languages
-  const supportedLanguages = ['en-ca', 'fr-ca'];
-  const defaultLang = 'en-ca';
+  const defaultLang = getAppLanguage();
   const langParam = event.params.lang;
 
   // If someone enters an invalid language (e.g. fr-BE, or hdsjkfhjkds),
   // they should be rerouted to a valid one.
   // Note: not all events have a language set in the params, so we will ignore those.
-  if (langParam && !supportedLanguages.includes(langParam)) {
+  if (langParam && !isAppLanguage(langParam)) {
     const langRedirectUrl = event.request.url.replace(langParam, defaultLang);
     return Response.redirect(new URL(langRedirectUrl), 307);
   }

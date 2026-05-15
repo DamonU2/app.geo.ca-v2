@@ -317,7 +317,14 @@ export async function mergeGuestFavourites(cookies: Cookies): Promise<void> {
 
   // Write only when order/content changed to avoid unnecessary DynamoDB writes.
   if (merged.length !== server.length || server.some((id, index) => id !== merged[index])) {
-    const result = await putUserData({ uuid: userData.Item.uuid, favourites: merged }, cookies);
+    const result = await putUserData(
+      {
+        uuid: userData.Item.uuid,
+        favourites: merged,
+        mapConfigs: userData.Item.mapConfigs ?? [],
+      },
+      cookies
+    );
     didPersist = result.ok;
   }
 

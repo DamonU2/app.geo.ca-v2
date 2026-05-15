@@ -8,7 +8,11 @@ import { USER_TABLE_NAME } from '$env/static/private';
 
 const awsRegion = getAwsRegion();
 const client = new DynamoDBClient({ region: awsRegion });
-const docClient = DynamoDBDocumentClient.from(client);
+const docClient = DynamoDBDocumentClient.from(client, {
+  marshallOptions: {
+    removeUndefinedValues: true,
+  },
+});
 
 /**
  * Extracts the stable user identifier from decoded token claims.
@@ -32,9 +36,9 @@ function getUserKey(token: TokenResponse): string | null {
 const getUserData = async (cookies: Cookies): Promise<UserInfo> => {
   const token: TokenResponse = await getToken(cookies);
   const userKey = getUserKey(token);
-  if (!userKey) return { Item: { uuid: null, favourites: [] } };
+  if (!userKey) return { Item: { uuid: null, favourites: [], mapConfigs: [] } };
 
-  const fallbackUserData: UserInfo = { Item: { uuid: userKey, favourites: [] } };
+  const fallbackUserData: UserInfo = { Item: { uuid: userKey, favourites: [], mapConfigs: [] } };
 
   if (!USER_TABLE_NAME) {
     return fallbackUserData;
@@ -58,6 +62,10 @@ const getUserData = async (cookies: Cookies): Promise<UserInfo> => {
 
   if (response?.Item === undefined || response.Item === null) {
     return fallbackUserData;
+  }
+
+  if (!Array.isArray(response.Item.mapConfigs)) {
+    response.Item.mapConfigs = [];
   }
 
   return response;
