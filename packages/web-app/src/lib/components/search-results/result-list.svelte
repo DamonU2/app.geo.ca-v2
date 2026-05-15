@@ -217,7 +217,7 @@
 
   /****************** Map ******************/
   let mapType: MapTypes = 'resultList';
-  let lang = page.data.lang === 'fr-ca' ? 'fr' : 'en';
+  let lang = page.data.lang.split('-')[0] as 'en' | 'fr';
 </script>
 
 <!-- When the window is resized, we can close each accordion to reset the map variables. -->

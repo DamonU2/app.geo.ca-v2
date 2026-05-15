@@ -1,8 +1,9 @@
 <script lang="ts">
   import { page } from '$app/state';
+  import { isFrench, pickByLanguage } from '$lib/utils/language';
 
   const lang = page.data.lang;
-  const title = lang === 'fr-ca' ? 'Dites-nous ce que vous pensez!' : 'Tell us what you think!';
+  const title = pickByLanguage(lang, 'Tell us what you think!', 'Dites-nous ce que vous pensez!');
 </script>
 
 <div class="font-custom-style-body-1 px-5 mt-9 md:px-0">
@@ -10,7 +11,7 @@
     {title}
   </h2>
   <div>
-    {#if lang === 'fr-ca'}
+    {#if isFrench(lang)}
       <p>
         GEO.ca s’engage à favoriser un dialogue ouvert et à renforcer la communauté autour des enjeux et sujets liées à la localisation qui
         vous intéressent.

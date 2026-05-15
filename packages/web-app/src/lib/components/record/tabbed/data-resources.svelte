@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
+  import { pickByLanguage } from '$lib/utils/language';
   import { parseDataResources } from '$lib/components/record/tabbed/parseDataResources';
   import SortableTable from '$lib/components/sortable-table/sortable-table.svelte';
 
@@ -27,7 +28,7 @@
   /******************* Data *******************/
   const data = page.data;
   const lang = data.lang;
-  const langShort: 'en' | 'fr' = lang === 'fr-ca' ? 'fr' : 'en';
+  const langShort: 'en' | 'fr' = pickByLanguage(lang, 'en', 'fr');
   const items = data.item_v2!;
   const dataResourcesRaw = items.options;
 

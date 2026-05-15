@@ -1,10 +1,15 @@
-/// <reference path="./.sst/platform/config.d.ts" />
-
 const GEOCORE_API_DOMAIN = "https://geocore.api.geo.ca";
 const SEMANTIC_SEARCH_URL = "https://search-recherche.geocore.api.geo.ca";
-const OIDC_CLIENT_ID = process.env.OIDC_CLIENT_ID ?? "";
-const OIDC_CUSTOM_DOMAIN = process.env.OIDC_CUSTOM_DOMAIN ?? "";
-const OIDC_CLIENT_SECRET = process.env.OIDC_CLIENT_SECRET ?? "";
+
+// Environment variables with defaults
+const env = {
+  oidcClientId: process.env.OIDC_CLIENT_ID ?? "",
+  oidcCustomDomain: process.env.OIDC_CUSTOM_DOMAIN ?? "",
+  oidcClientSecret: process.env.OIDC_CLIENT_SECRET ?? "",
+};
+
+// Logging configuration for long-running functions
+const logRetention = { retention: "1 week" } as const;
 
 export default $config({
   app(input) {
@@ -22,34 +27,34 @@ export default $config({
   },
 
   async run() {
-    const userTableName = `${$app.stage}-app-geo-ca-v2-users`;
-    const bucketName = `${$app.stage}-app-geo-ca-v2-hnap`;
+    const isProduction = $app.stage === "production";
+    const resourcePrefix = `${$app.stage}-app-geo-ca-v2`;
+    const userTableName = `${resourcePrefix}-users`;
+    const bucketName = `${resourcePrefix}-hnap`;
 
     // Production keeps using the existing table to avoid accidental replacement.
-    const users =
-      $app.stage === "production"
-        ? sst.aws.Dynamo.get("Users", userTableName)
-        : new sst.aws.Dynamo("Users", {
-            fields: {
-              uuid: "string",
-            },
-            primaryIndex: {
-              hashKey: "uuid",
-            },
-          });
+    const users = isProduction
+      ? sst.aws.Dynamo.get("Users", userTableName)
+      : new sst.aws.Dynamo("Users", {
+          fields: {
+            uuid: "string",
+          },
+          primaryIndex: {
+            hashKey: "uuid",
+          },
+        });
 
     // Bucket holding HNAP and geocore geojson records.
     // Production keeps using the existing bucket to avoid accidental replacement.
-    const hnapBucket =
-      $app.stage === "production"
-        ? sst.aws.Bucket.get("HnapBucket", bucketName)
-        : new sst.aws.Bucket("HnapBucket", {
-            transform: {
-              bucket: (args) => {
-                args.forceDestroy = true;
-              },
+    const hnapBucket = isProduction
+      ? sst.aws.Bucket.get("HnapBucket", bucketName)
+      : new sst.aws.Bucket("HnapBucket", {
+          transform: {
+            bucket: (args: any) => {
+              args.forceDestroy = true;
             },
-          });
+          },
+        });
 
     // TODO: restore hnap-bridge Lambda trigger (packages/hnap-bridge removed).
     // When the handler is added back, attach an S3 notification on hnapBucket
@@ -59,28 +64,22 @@ export default $config({
       path: "packages/web-app",
       link: [users, hnapBucket],
       transform: {
-        // Keep logs finite even in orgs where log-group delete is blocked by SCP.
-        server: (args) => {
-          args.logging = { retention: "1 week" };
+        server: (args: any) => {
+          args.logging = logRetention;
         },
-        imageOptimizer: (args) => {
-          args.logging = { retention: "1 week" };
+        imageOptimizer: (args: any) => {
+          args.logging = logRetention;
         },
       },
       environment: {
         GEOCORE_API_DOMAIN,
         SEMANTIC_SEARCH_URL,
-        OIDC_CLIENT_ID,
-        OIDC_CUSTOM_DOMAIN,
-        OIDC_CLIENT_SECRET,
+        OIDC_CLIENT_ID: env.oidcClientId,
+        OIDC_CUSTOM_DOMAIN: env.oidcCustomDomain,
+        OIDC_CLIENT_SECRET: env.oidcClientSecret,
         USER_TABLE_NAME: users.name,
         BUCKET_NAME: hnapBucket.name,
       },
     });
-
-    return {
-      url: site.url,
-      userTableName,
-    };
   },
 });

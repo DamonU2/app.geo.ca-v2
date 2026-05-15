@@ -4,23 +4,23 @@ import { getUserData } from '$lib/db/user';
 import { clearFavourites, removeFromFavourites } from '$lib/actions';
 import { sanitize } from '$lib/utils/data-sanitization/geocore-result';
 import type { GeospatialRecord, UserInfo } from '$lib/db/db-types';
+import { getAppLanguage } from '$lib/utils/language';
+import { buildCatalogTitle, buildPageTitle, buildSeoMetadata } from '$lib/utils/metadata';
 
 /**
  * Loads the favourites page data by reading user favourites, fetching matching
  * GeoCore records, and preparing localized SEO metadata.
  */
 export const load: PageServerLoad = async ({ fetch, params, url, cookies }) => {
+  const lang = getAppLanguage(params.lang);
   let response: GeospatialRecord[] = [];
   let userData: UserInfo | undefined;
   let sanitizedResults: GeospatialRecord[] = [];
 
-  const canonicalUrl = `${url.origin}/${params.lang}/favourites`;
-  const alternateLang = params.lang === 'fr-ca' ? 'en-ca' : 'fr-ca';
-  const alternateUrl = url.href.replace(params.lang, alternateLang);
-  const metaDescription =
-    params.lang === 'fr-ca'
-      ? 'Consultez vos ressources sauvegardées et créez une carte personnalisée.'
-      : 'Browse your saved resources and create a custom map.';
+  const seo = buildSeoMetadata(url, lang, 'favourites', {
+    en: 'Browse your saved resources and create a custom map.',
+    fr: 'Consultez vos ressources sauvegardées et créez une carte personnalisée.',
+  });
 
   try {
     // Keep the page rendering even if user lookup fails.
@@ -30,33 +30,27 @@ export const load: PageServerLoad = async ({ fetch, params, url, cookies }) => {
   }
 
   try {
-    response = await getRecords(userData?.Item.favourites ?? [], params.lang, fetch);
+    response = await getRecords(userData?.Item.favourites ?? [], lang, fetch);
   } catch (e) {
     console.error('error fetching records: \n', e);
   }
 
   try {
-    sanitizedResults = sanitize(response, params.lang);
+    sanitizedResults = sanitize(response, lang);
   } catch (e) {
     console.error('error fetching records: \n', e);
   }
 
   return {
-    lang: params.lang,
-    tTitle1: {
-      text: params.lang === 'en-ca' ? 'Geospatial Data Catalog' : 'Catalogue de données géospatiales',
-      href: `${url.origin}/${params.lang}/map-browser`,
-    },
-    tTitle2: {
-      text: params.lang === 'en-ca' ? 'Favourites' : 'Favoris',
-      href: url.href,
-    },
+    lang,
+    tTitle1: buildCatalogTitle(url, lang),
+    tTitle2: buildPageTitle(url, lang, 'Favourites', 'Favoris'),
     results: sanitizedResults,
-    userData: userData?.Item || { uuid: null, favourites: [] },
-    canonicalUrl: canonicalUrl,
-    alternateUrl: alternateUrl,
-    alternateLang: alternateLang,
-    metaDescription: metaDescription,
+    userData: userData?.Item || { uuid: null, favourites: [], mapConfigs: [] },
+    canonicalUrl: seo.canonicalUrl,
+    alternateUrl: seo.alternateUrl,
+    alternateLang: seo.alternateLang,
+    metaDescription: seo.metaDescription,
   };
 };
 

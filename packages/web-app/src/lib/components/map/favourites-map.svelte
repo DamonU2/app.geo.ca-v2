@@ -13,12 +13,13 @@
 
   interface Props {
     layerIds: string[];
+    mapConfig?: Record<string, unknown> | null;
   }
 
-  let { layerIds }: Props = $props();
+  let { layerIds, mapConfig = null }: Props = $props();
 
   let mapId = 'map-favourites-resources';
-  let mapLang = page.data.lang === 'fr-ca' ? 'fr' : 'en';
+  let mapLang = page.data.lang.split('-')[0] as 'en' | 'fr';
 
   /***************** Map config *****************/
   const interaction = 'dynamic';
@@ -65,6 +66,22 @@
   let sConfig = $derived(JSON.stringify(config));
 
   /**
+   * Returns a map-state config generated from the current map viewer.
+   */
+  export function getMapConfigFromCurrentState(): Record<string, unknown> | null {
+    try {
+      if (!cgpv.api.hasMapViewer(mapId)) {
+        return null;
+      }
+
+      return cgpv.api.getMapViewer(mapId).createMapConfigFromMapState();
+    } catch (error) {
+      console.error('Error while creating map config from map state:', error);
+      return null;
+    }
+  }
+
+  /**
    * Destroys the map viewer instance.
    */
   export function destroyMapViewer(): void {
@@ -89,13 +106,18 @@
         await cgpv.api.deleteMapViewer(mapId, false);
       }
 
-      // Build the map from the config
-      await cgpv.api.createMapFromConfig(mapId, sConfig);
+      if (mapConfig) {
+        // Build the map directly from a saved map config.
+        await cgpv.api.createMapFromConfig(mapId, JSON.stringify(mapConfig));
+      } else {
+        // Build the map from the default config.
+        await cgpv.api.createMapFromConfig(mapId, sConfig);
 
-      // Add map layers for each id
-      layerIds.forEach((layer: string) => {
-        cgpv.api.getMapViewer(mapId).layer.addGeoviewLayerByGeoCoreUUID(layer);
-      });
+        // Add map layers for each selected resource id.
+        layerIds.forEach((layer: string) => {
+          cgpv.api.getMapViewer(mapId).layer.addGeoviewLayerByGeoCoreUUID(layer);
+        });
+      }
     } catch (error) {
       console.error(error);
     }

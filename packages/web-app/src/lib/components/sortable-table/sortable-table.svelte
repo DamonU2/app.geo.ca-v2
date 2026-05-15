@@ -1,6 +1,7 @@
 <script lang="ts">
   import { SvelteSet } from 'svelte/reactivity';
   import { page } from '$app/state';
+  import { pickByLanguage } from '$lib/utils/language';
   import SortDown from '$lib/components/icons/sort-down.svelte';
   import SortInactive from '$lib/components/icons/sort-inactive.svelte';
   import SortUp from '$lib/components/icons/sort-up.svelte';
@@ -49,8 +50,8 @@
 
   /************** Translations **************/
   const lang = page.data.lang;
-  const selectAllLabel = lang === 'fr-ca' ? 'Tout sélectionner' : 'Select all';
-  const deleteLabel = lang === 'fr-ca' ? 'Supprimer la ressource' : 'Delete resource';
+  const selectAllLabel = pickByLanguage(lang, 'Select all', 'Tout sélectionner');
+  const deleteLabel = pickByLanguage(lang, 'Delete resource', 'Supprimer la ressource');
 
   // Convert table label keys to an array to ensure that all data rows have the same order
   // and to simplify sorting
