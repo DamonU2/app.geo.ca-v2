@@ -34,7 +34,6 @@
   const components = ['north-arrow', 'overview-map'];
   const appBarTabs = ['geolocator', 'legend', 'details', 'export'];
   const footerBarTabs = ['layers', 'data-table', 'time-slider', 'geochart'];
-  const footerBarCollapsed = true;
 
   let config: GeoviewConfig = $state({
     map: {
@@ -60,7 +59,6 @@
       tabs: {
         core: footerBarTabs,
       },
-      collapsed: footerBarCollapsed,
     },
   });
 
