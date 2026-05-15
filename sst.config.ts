@@ -44,7 +44,9 @@ export default $config({
       isProduction ||
       (process.env.OIDC_USE_PRIVATE_KEY_JWT ?? "").toLowerCase() === "true";
     if ((isStaging || isProduction) && !env.sessionCookieSecret) {
-      throw new Error(`SESSION_COOKIE_SECRET is required for stage '${$app.stage}'.`);
+      throw new Error(
+        `SESSION_COOKIE_SECRET is required for stage '${$app.stage}'.`,
+      );
     }
     const oidcPrivateKeySecretResourceArn = toSecretsManagerResourceArn(
       env.oidcPrivateKeySecretId,
