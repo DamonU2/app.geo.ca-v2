@@ -123,7 +123,7 @@ export function getSignInUrl(requestUrl: URL, state: string, codeChallenge: stri
   const params = new URLSearchParams({
     client_id: clientId,
     response_type: 'code',
-    scope: 'openid profile email language',
+    scope: 'openid',
     redirect_uri: redirectUri,
     state,
     code_challenge: codeChallenge,
