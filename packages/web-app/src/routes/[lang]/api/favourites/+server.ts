@@ -146,6 +146,7 @@ export const PATCH: RequestHandler = async ({ cookies, request }): Promise<Respo
       createdAt,
     };
 
+    // Persist both collections on each write so partial updates never drop the sibling field.
     userData.Item.mapConfigs = [...mapConfigs, mapConfig];
     userData.Item.favourites = userData.Item.favourites ?? [];
 
@@ -164,6 +165,7 @@ export const PATCH: RequestHandler = async ({ cookies, request }): Promise<Respo
     }
 
     userData.Item.mapConfigs = mapConfigs.filter((mapItem) => mapItem.id !== id);
+    // Keep datasets list intact while mutating saved-map entries.
     userData.Item.favourites = userData.Item.favourites ?? [];
 
     const result = await putUserData(userData.Item, cookies);

@@ -1,9 +1,23 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { Cookies } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
+import { decodeBase64UrlJson, encodeBase64Url } from '$lib/utils/auth/base64url';
+import { splitJwt } from '$lib/utils/auth/jwt';
+import { verifyJwtSignatureWithJwks } from '$lib/utils/auth/jwt-signature.server';
+import { getAudienceValues, hasNumericIat, hasValidExp, issuerMatches } from '$lib/utils/auth/oidc-claims.server';
+import { ensureTrailingSlashless, getOidcConfig, getOpenIdConfiguration } from '$lib/utils/auth/oidc.server';
+import type { JwtHeader } from '$lib/utils/auth/jwt-types';
 import { getUserData, putUserData } from '$lib/db/user';
+export { clearAuthCookies } from '$lib/utils/auth/auth-cookies';
 
+/**
+ * Cookie name used to persist the one-time PKCE verifier between send and receive routes.
+ */
 export const PKCE_VERIFIER_COOKIE_NAME = 'pkce_verifier';
+
+/**
+ * Cookie name used to persist the one-time OIDC nonce between send and receive routes.
+ */
+export const OIDC_NONCE_COOKIE_NAME = 'oidc_nonce';
 
 type OAuthTokenResponse = {
   id_token?: string;
@@ -14,14 +28,21 @@ type OAuthTokenResponse = {
 };
 
 /**
- * Removes a trailing slash from URLs to avoid double-slash endpoint joins.
- *
- * @param url - Base URL value.
- * @returns URL without trailing slash.
+ * Back-channel logout token claims used by logout notification verification.
  */
-function ensureTrailingSlashless(url: string): string {
-  return url.endsWith('/') ? url.slice(0, -1) : url;
-}
+export type BackChannelLogoutTokenPayload = {
+  iss?: string;
+  sub?: string;
+  aud?: string | string[];
+  exp?: number;
+  iat?: number;
+  jti?: string;
+  sid?: string;
+  events?: Record<string, unknown>;
+  [key: string]: unknown;
+};
+
+const BACK_CHANNEL_LOGOUT_EVENT = 'http://schemas.openid.net/event/backchannel-logout';
 
 /**
  * Builds the locale-independent OIDC callback URL.
@@ -34,22 +55,21 @@ function getRedirectUri(requestUrl: URL): string {
 }
 
 /**
- * Encodes binary data to base64url without padding.
- *
- * @param buffer - Binary payload.
- * @returns Base64url-encoded string.
- */
-function toBase64Url(buffer: Buffer): string {
-  return buffer.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-}
-
-/**
  * Generates a PKCE code verifier.
  *
  * @returns Random base64url verifier string.
  */
 export function createPkceVerifier(): string {
-  return toBase64Url(randomBytes(32));
+  return encodeBase64Url(randomBytes(32));
+}
+
+/**
+ * Generates a one-time OIDC nonce used to bind authorize and callback.
+ *
+ * @returns Random base64url nonce string.
+ */
+export function createOidcNonce(): string {
+  return encodeBase64Url(randomBytes(32));
 }
 
 /**
@@ -59,20 +79,7 @@ export function createPkceVerifier(): string {
  * @returns Base64url-encoded SHA-256 challenge.
  */
 export function createPkceChallenge(verifier: string): string {
-  return toBase64Url(createHash('sha256').update(verifier).digest());
-}
-
-/**
- * Reads OIDC settings from the server environment.
- *
- * @returns Client id, client secret, and normalized custom domain.
- */
-function getOidcConfig(): { clientId: string; clientSecret: string; customDomain: string } {
-  const clientId = env.OIDC_CLIENT_ID ?? process.env.OIDC_CLIENT_ID ?? '';
-  const clientSecret = env.OIDC_CLIENT_SECRET ?? process.env.OIDC_CLIENT_SECRET ?? '';
-  const customDomain = ensureTrailingSlashless(env.OIDC_CUSTOM_DOMAIN ?? process.env.OIDC_CUSTOM_DOMAIN ?? '');
-
-  return { clientId, clientSecret, customDomain };
+  return encodeBase64Url(createHash('sha256').update(verifier).digest());
 }
 
 /**
@@ -111,21 +118,24 @@ function getCookieOptions(
  * @param requestUrl - Current request URL.
  * @param state - Return-to value for post-auth redirect.
  * @param codeChallenge - PKCE S256 challenge for this auth request.
+ * @param nonce - One-time nonce to bind the ID token to this login request.
  * @returns Authorize URL when configured; otherwise null.
  */
-export function getSignInUrl(requestUrl: URL, state: string, codeChallenge: string): string | null {
+export function getSignInUrl(requestUrl: URL, state: string, codeChallenge: string, nonce: string): string | null {
   const { clientId, customDomain } = getOidcConfig();
   if (!clientId || !customDomain) {
     return null;
   }
 
   const redirectUri = getRedirectUri(requestUrl);
+  // Include nonce so the callback can bind ID token claims to this authorize request.
   const params = new URLSearchParams({
     client_id: clientId,
     response_type: 'code',
     scope: 'openid',
     redirect_uri: redirectUri,
     state,
+    nonce,
     code_challenge: codeChallenge,
     code_challenge_method: 'S256',
   });
@@ -133,8 +143,84 @@ export function getSignInUrl(requestUrl: URL, state: string, codeChallenge: stri
   return `${customDomain}/oauth2/authorize?${params.toString()}`;
 }
 
+/**
+ * Verifies a back-channel logout token from the provider.
+ *
+ * @param logoutToken - JWT logout token from the provider.
+ * @returns The validated payload when verification succeeds; otherwise null.
+ */
+export async function verifyBackChannelLogoutToken(logoutToken: string): Promise<BackChannelLogoutTokenPayload | null> {
+  const parts = splitJwt(logoutToken);
+  if (!parts) {
+    return null;
+  }
+
+  const header = decodeBase64UrlJson<JwtHeader>(parts.header);
+  const payload = decodeBase64UrlJson<BackChannelLogoutTokenPayload>(parts.payload);
+  if (!header || !payload) {
+    return null;
+  }
+
+  const { clientId, customDomain } = getOidcConfig();
+  if (!clientId || !customDomain) {
+    return null;
+  }
+
+  if (header.alg !== 'RS256' || typeof header.kid !== 'string') {
+    return null;
+  }
+
+  const openIdConfiguration = await getOpenIdConfiguration(customDomain);
+  if (!openIdConfiguration?.issuer || !openIdConfiguration.jwks_uri) {
+    return null;
+  }
+
+  const normalizedIssuer = ensureTrailingSlashless(openIdConfiguration.issuer);
+  if (!issuerMatches(payload.iss, normalizedIssuer)) {
+    return null;
+  }
+
+  const audience = getAudienceValues(payload.aud);
+  if (!audience.includes(clientId)) {
+    return null;
+  }
+
+  if (!hasValidExp(payload.exp)) {
+    return null;
+  }
+
+  if (!hasNumericIat(payload.iat) || !payload.events || !(BACK_CHANNEL_LOGOUT_EVENT in payload.events)) {
+    return null;
+  }
+
+  const signatureResult = await verifyJwtSignatureWithJwks(header, parts, [openIdConfiguration.jwks_uri]);
+  if (!signatureResult.ok) {
+    return null;
+  }
+
+  return payload;
+}
+
+/**
+ * Stores the one-time PKCE verifier in an HTTP-only cookie for callback exchange.
+ *
+ * @param cookies - Cookie jar from the request context.
+ * @param requestUrl - Current request URL.
+ * @param verifier - PKCE verifier generated for this auth attempt.
+ */
 export function setPkceVerifierCookie(cookies: Cookies, requestUrl: URL, verifier: string): void {
   cookies.set(PKCE_VERIFIER_COOKIE_NAME, verifier, getCookieOptions(requestUrl, 60 * 10));
+}
+
+/**
+ * Stores the one-time OIDC nonce in an HTTP-only cookie for callback verification.
+ *
+ * @param cookies - Cookie jar from the request context.
+ * @param requestUrl - Current request URL.
+ * @param nonce - Nonce generated for this auth attempt.
+ */
+export function setOidcNonceCookie(cookies: Cookies, requestUrl: URL, nonce: string): void {
+  cookies.set(OIDC_NONCE_COOKIE_NAME, nonce, getCookieOptions(requestUrl, 60 * 10));
 }
 
 /**
@@ -147,6 +233,18 @@ export function consumePkceVerifierCookie(cookies: Cookies): string | null {
   const verifier = cookies.get(PKCE_VERIFIER_COOKIE_NAME) ?? null;
   cookies.delete(PKCE_VERIFIER_COOKIE_NAME, { path: '/' });
   return verifier;
+}
+
+/**
+ * Reads and clears the OIDC nonce cookie for one-time ID token verification.
+ *
+ * @param cookies - Cookie jar from the request context.
+ * @returns Nonce when present; otherwise null.
+ */
+export function consumeOidcNonceCookie(cookies: Cookies): string | null {
+  const nonce = cookies.get(OIDC_NONCE_COOKIE_NAME) ?? null;
+  cookies.delete(OIDC_NONCE_COOKIE_NAME, { path: '/' });
+  return nonce;
 }
 
 /**
@@ -206,29 +304,20 @@ export async function exchangeCodeForTokens(
  * @param cookies - Cookie jar from the request context.
  * @param requestUrl - Current request URL.
  * @param tokenResponse - Token payload returned by provider.
- * @returns True when all required tokens are present and stored.
+ * @returns True when required tokens are present and stored.
  */
 export function setAuthCookies(cookies: Cookies, requestUrl: URL, tokenResponse: OAuthTokenResponse): boolean {
-  if (!tokenResponse.id_token || !tokenResponse.access_token || !tokenResponse.refresh_token) {
+  if (!tokenResponse.id_token || !tokenResponse.access_token) {
     return false;
   }
 
   const tokenMaxAge = tokenResponse.expires_in ?? 3600;
   cookies.set('id_token', tokenResponse.id_token, getCookieOptions(requestUrl, tokenMaxAge));
   cookies.set('access_token', tokenResponse.access_token, getCookieOptions(requestUrl, tokenMaxAge));
-  cookies.set('refresh_token', tokenResponse.refresh_token, getCookieOptions(requestUrl, 60 * 60 * 24 * 30));
+  if (tokenResponse.refresh_token) {
+    cookies.set('refresh_token', tokenResponse.refresh_token, getCookieOptions(requestUrl, 60 * 60 * 24 * 30));
+  }
   return true;
-}
-
-/**
- * Clears all authentication cookies.
- *
- * @param cookies - Cookie jar from the request context.
- */
-export function clearAuthCookies(cookies: Cookies): void {
-  cookies.delete('access_token', { path: '/' });
-  cookies.delete('id_token', { path: '/' });
-  cookies.delete('refresh_token', { path: '/' });
 }
 
 /**
@@ -257,6 +346,12 @@ function normalizeStateUrl(requestUrl: URL, state: string | null, lang: string):
   }
 }
 
+/**
+ * Infers the language segment from round-trip state.
+ *
+ * @param state - State value from auth round-trip.
+ * @returns `fr-ca` when state points to French routes; otherwise `en-ca`.
+ */
 export function getLangFromState(state: string | null): 'en-ca' | 'fr-ca' {
   if (!state) {
     return 'en-ca';
@@ -343,6 +438,16 @@ export async function mergeGuestFavourites(cookies: Cookies): Promise<void> {
  */
 export function getPostAuthRedirect(requestUrl: URL, state: string | null, lang: string): string {
   return normalizeStateUrl(requestUrl, state, lang);
+}
+
+/**
+ * Returns the in-app destination used after local sign-out cookie cleanup.
+ *
+ * @param lang - Optional language segment. Defaults to `en-ca` when missing.
+ * @returns Language-scoped map browser path.
+ */
+export function getPostLogoutRedirectPath(lang?: string): string {
+  return `/${lang ?? 'en-ca'}/map-browser`;
 }
 
 /**

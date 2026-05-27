@@ -105,6 +105,7 @@ declare global {
         uuid: string | null;
         favourites?: string[];
         mapConfigs?: MapConfigFavourite[];
+        authRevokedAt?: number | null;
       };
 
       // SEO/Meta properties
