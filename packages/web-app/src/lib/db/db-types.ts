@@ -1,23 +1,31 @@
-// Bilingual text type
+/**
+ * Bilingual text value used across record fields.
+ */
 export interface BilingualText {
   en: string | null;
   fr: string | null;
 }
 
-// Temporal extent
+/**
+ * Temporal range for a record.
+ */
 export interface TemporalExtent {
   begin: string;
   end: string;
 }
 
-// Locale information
+/**
+ * Locale metadata for a record.
+ */
 export interface Locale {
   language: string;
   country: string;
   encoding: string;
 }
 
-// Graphic overview
+/**
+ * Graphic overview metadata.
+ */
 export interface GraphicOverview {
   overviewFileName: string | null;
   overviewFileDescription: string | null;
@@ -25,7 +33,9 @@ export interface GraphicOverview {
   overviewFileType?: string | null; // Correctly spelled variant
 }
 
-// Online resource
+/**
+ * Online resource metadata variant with lowercase keys.
+ */
 export interface OnlineResource {
   onlineresource: string | null;
   onlineresource_name: string | null;
@@ -33,7 +43,9 @@ export interface OnlineResource {
   onlineresource_description: string | null;
 }
 
-// Alternative online resource (with different casing)
+/**
+ * Online resource metadata variant with mixed-case keys.
+ */
 export interface OnlineResourceAlt {
   onlineResource: string | null;
   onlineResource_Name: string | null;
@@ -41,7 +53,9 @@ export interface OnlineResourceAlt {
   onlineResource_Description: string | null;
 }
 
-// Contact information (used for contact, distributor, cited)
+/**
+ * Contact metadata used in contact, distributor, and cited sections.
+ */
 export interface ContactInfo {
   individual: string | null;
   position: BilingualText;
@@ -60,7 +74,9 @@ export interface ContactInfo {
   role: string;
 }
 
-// Distribution option
+/**
+ * Distribution option metadata.
+ */
 export interface DistributionOption {
   url: string | null;
   protocol: string | null;
@@ -68,7 +84,9 @@ export interface DistributionOption {
   description: BilingualText;
 }
 
-// Similarity record
+/**
+ * Similarity result entry returned by the source system.
+ */
 export interface SimilarityRecord {
   sim: string;
   features_properties_id: string;
@@ -76,7 +94,9 @@ export interface SimilarityRecord {
   features_properties_title_fr: string;
 }
 
-// Main record type
+/**
+ * Primary geospatial record shape consumed by the application.
+ */
 export interface GeospatialRecord {
   id: string;
   coordinates: string; // JSON-encoded coordinate array
@@ -125,26 +145,41 @@ export interface GeospatialRecord {
   features?: Record<string, unknown>; // Optional, added for collection-type records
 }
 
-// JWT Token payload
+/**
+ * Minimal verified JWT payload claims used by auth and user lookups.
+ */
 export interface TokenPayload {
   sub?: string;
   username?: string;
+  sid?: string;
+  iss?: string;
+  aud?: string | string[];
+  iat?: number;
+  exp?: number;
   [key: string]: unknown; // Allow other JWT claims
 }
 
-// JWT Token result
+/**
+ * Result of parsing and verifying an ID token from cookies.
+ */
 export interface TokenResponse {
   ok: boolean;
   value?: TokenPayload | null;
 }
 
-// User data structure
+/**
+ * Persisted user profile data stored in DynamoDB.
+ */
 export interface UserData {
   uuid: string | null;
   favourites: string[]; // Array of record UUIDs
   mapConfigs?: MapConfigFavourite[];
+  authRevokedAt?: number | null;
 }
 
+/**
+ * Named saved map configuration linked to a user.
+ */
 export interface MapConfigFavourite {
   id: string;
   name: string;
@@ -152,11 +187,16 @@ export interface MapConfigFavourite {
   createdAt: string;
 }
 
-// User info
+/**
+ * Wrapper used by DynamoDB document responses.
+ */
 export interface UserInfo {
   Item: UserData;
 }
 
+/**
+ * Row shape used by favourites table rendering.
+ */
 export type FavouritesRow = Record<string, string | boolean> & {
   id: string;
   name: string;
@@ -164,7 +204,9 @@ export type FavouritesRow = Record<string, string | boolean> & {
   disableCheckbox?: boolean;
 };
 
-// GeospatialRecord with additional fields added by the API endpoint
+/**
+ * Geospatial record extended with fields added by favourites endpoints.
+ */
 export type FavouritesRecord = GeospatialRecord & {
   formats: string[];
   hasMapLayer: boolean;

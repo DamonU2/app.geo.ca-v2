@@ -38,6 +38,8 @@ After following the setup, start a development server with these steps:
     - http://localhost:8080/sign-in/receive
   - Allowed sign-out URLs.
     - http://localhost:8080/sign-in/logout
+  - Back-channel logout URL.
+    - http://localhost:8080/sign-in/back-channel-logout
 - Local sign-out skips provider logout and clears app cookies directly to avoid back-channel logout failures against localhost.
 
 - For local development, run `npm run dev` from the repository root. SST v4 starts the multiplexer and frontend together.
@@ -54,18 +56,25 @@ After following the setup, start a development server with these steps:
 
 ## User Data Model
 
-For signed-in users, the DynamoDB users table stores only:
+For signed-in users, the DynamoDB users table stores:
 
 - `uuid`: stable user identifier from the auth token (`sub`, with `username` fallback).
-- `favourites`: array of record ids saved by the user.
+- `favourites`: array of dataset record ids saved by the user.
+- `mapConfigs`: array of saved map configurations for the Maps tab in Favourites.
+- `authRevokedAt`: server-side revocation marker (token `iat` threshold) used for back-channel logout.
 
 Not stored by current app code:
 
 - OIDC tokens or session secrets.
 - User profile attributes such as email or display name.
-- Timestamps, TTL fields, or audit metadata.
+- Generic timestamps, TTL fields, or audit metadata beyond `authRevokedAt`.
 
 Guest favourites are stored temporarily in the `guest_favourites` cookie and merged into the signed-in user's `favourites` list after authentication.
+
+Favourites UI split:
+
+- `/${lang}/favourites?tab=datasets` reads and manages dataset ids from `favourites`.
+- `/${lang}/favourites?tab=maps` reads and manages saved map configs from `mapConfigs`.
 
 ## Building and deploying
 
@@ -80,6 +89,8 @@ Guest favourites are stored temporarily in the `guest_favourites` cookie and mer
     - https://d28mialgy1tfmv.cloudfront.net/sign-in/receive
   - Example allowed sign-out URLs.
     - https://d28mialgy1tfmv.cloudfront.net/sign-in/logout
+  - Example back-channel logout URL.
+    - https://d28mialgy1tfmv.cloudfront.net/sign-in/back-channel-logout
 
 - Deploy from the root of the repository: `npx sst deploy --stage <yourStageName>`.
 

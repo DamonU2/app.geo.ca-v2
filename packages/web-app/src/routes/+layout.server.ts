@@ -10,7 +10,7 @@ import frHeaderTranslations from '$lib/components/header/i18n/fr/translations.js
 import enShareTranslations from '$lib/components/share/i18n/en/translations.json';
 import frShareTranslations from '$lib/components/share/i18n/fr/translations.json';
 import { getUserData } from '$lib/db/user';
-import { isOidcConfigured } from '$lib/utils/sign-in.server';
+import { isOidcConfigured } from '$lib/utils/auth/sign-in.server';
 import { getAppLanguage, isFrench, pickByLanguage } from '$lib/utils/language';
 
 type NavLink = {
@@ -38,6 +38,9 @@ type NavItems = Record<string, NavItem>;
 /**
  * Loads global layout data for language-specific navigation, footer content,
  * and signed-in user context used across pages.
+ *
+ * @param event - SvelteKit load event containing params and cookies.
+ * @returns Layout data used by shared navigation, footer, and profile UI.
  */
 export const load: LayoutServerLoad = async ({ params, cookies }) => {
   const lang = getAppLanguage(params.lang);
@@ -46,6 +49,7 @@ export const load: LayoutServerLoad = async ({ params, cookies }) => {
   const navitems = structuredClone(pickByLanguage(lang, enNavitems, frNavitems)) as NavItems;
 
   if (signedIn && navitems.favourites) {
+    // Datasets and saved maps are stored separately and shown as tab-specific counters.
     const datasetsCount = (userData.Item.favourites ?? []).length;
     const mapConfigsCount = (userData.Item.mapConfigs ?? []).length;
     const datasetsLabel = isFrench(lang) ? 'Jeux de donnees' : 'Datasets';
