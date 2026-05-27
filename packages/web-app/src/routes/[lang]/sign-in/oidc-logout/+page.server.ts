@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
-import { getOidcLogoutUrl } from '$lib/utils/auth/sign-in.server';
+import { getOidcLogoutUrl } from '$lib/utils/auth/sign-in-core.server';
 
 /**
  * Redirects to the provider logout endpoint when available,

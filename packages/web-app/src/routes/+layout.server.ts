@@ -10,7 +10,7 @@ import frHeaderTranslations from '$lib/components/header/i18n/fr/translations.js
 import enShareTranslations from '$lib/components/share/i18n/en/translations.json';
 import frShareTranslations from '$lib/components/share/i18n/fr/translations.json';
 import { getUserData } from '$lib/db/user';
-import { isOidcConfigured } from '$lib/utils/auth/sign-in.server';
+import { isOidcConfigured } from '$lib/utils/auth/sign-in-core.server';
 import { getAppLanguage, isFrench, pickByLanguage } from '$lib/utils/language';
 
 type NavLink = {

@@ -7,7 +7,7 @@ import {
   getSignInUrl,
   setOidcNonceCookie,
   setPkceVerifierCookie,
-} from '$lib/utils/auth/sign-in.server';
+} from '$lib/utils/auth/sign-in-core.server';
 
 /**
  * Starts the OIDC sign-in flow by redirecting to the provider authorized URL.

@@ -127,9 +127,7 @@ export async function verifyIdToken(idToken: string, expectedNonce?: string | nu
     });
   }
 
-  const failFromSignatureResult = (
-    result: Exclude<Awaited<ReturnType<typeof verifyJwtSignatureWithJwks>>, { ok: true }>
-  ): null => {
+  const failFromSignatureResult = (result: Exclude<Awaited<ReturnType<typeof verifyJwtSignatureWithJwks>>, { ok: true }>): null => {
     if (result.reason === 'jwks_fetch_failed') {
       return fail('jwks_fetch_failed', {
         status: result.status,

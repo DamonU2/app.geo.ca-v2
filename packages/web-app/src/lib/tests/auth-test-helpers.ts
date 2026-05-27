@@ -34,12 +34,7 @@ export function createTestSigningKey(kid: string): { privateKeyPem: string; jwk:
  * @param jwk - Signing key to return from the JWKS endpoint.
  * @param discoveryBaseUrl - Optional base URL used for discovery fetch.
  */
-export function stubOidcDiscoveryAndJwksFetch(
-  issuer: string,
-  jwksUri: string,
-  jwk: TestJwk,
-  discoveryBaseUrl?: string
-): void {
+export function stubOidcDiscoveryAndJwksFetch(issuer: string, jwksUri: string, jwk: TestJwk, discoveryBaseUrl?: string): void {
   const discoveryUrl = `${(discoveryBaseUrl ?? issuer).replace(/\/$/, '')}/.well-known/openid-configuration`;
 
   vi.stubGlobal(

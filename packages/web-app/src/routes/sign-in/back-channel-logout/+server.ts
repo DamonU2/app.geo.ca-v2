@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types';
 import { markUserAuthRevoked } from '$lib/db/user';
-import { verifyBackChannelLogoutToken } from '$lib/utils/auth/sign-in.server';
+import { verifyBackChannelLogoutToken } from '$lib/utils/auth/sign-in-back-channel.server';
 
 /**
  * Receives provider back-channel logout notifications and revokes the matching user session.
@@ -12,15 +12,9 @@ import { verifyBackChannelLogoutToken } from '$lib/utils/auth/sign-in.server';
  */
 export const POST: RequestHandler = async ({ request }) => {
   const contentType = request.headers.get('content-type') ?? '';
-  let logoutToken = '';
-
-  if (contentType.includes('application/json')) {
-    const body = (await request.json()) as { logout_token?: string };
-    logoutToken = String(body.logout_token ?? '').trim();
-  } else {
-    const formData = await request.formData();
-    logoutToken = String(formData.get('logout_token') ?? '').trim();
-  }
+  const logoutToken = contentType.includes('application/json')
+    ? String(((await request.json()) as { logout_token?: string }).logout_token ?? '').trim()
+    : String((await request.formData()).get('logout_token') ?? '').trim();
 
   if (!logoutToken) {
     return new Response('Missing logout_token', { status: 400 });
