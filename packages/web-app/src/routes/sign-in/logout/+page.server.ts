@@ -1,6 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
-import { clearAuthCookies, getPostLogoutRedirectPath } from '$lib/utils/auth/sign-in.server';
+import { clearAuthCookies } from '$lib/utils/auth/auth-cookies';
+import { getPostLogoutRedirectPath } from '$lib/utils/auth/sign-in-post-auth.server';
 
 /**
  * Clears local auth cookies after provider logout and returns to the default map browser.

@@ -54,6 +54,22 @@ After following the setup, start a development server with these steps:
 - For deployment, run `npx sst deploy --stage <yourStageName>`. You will need to deploy your environment in order to build any AWS resources like buckets and tables.
 - Now run the steps under [## Importing Data](#importing-data).
 
+## Auth Flow Endpoints
+
+Core auth routes used by the app:
+
+- `/${lang}/sign-in/send`: starts OIDC sign-in (PKCE + nonce), then redirects to the provider authorize URL.
+- `/sign-in/receive`: handles the provider callback, verifies ID token claims/signature, stores auth cookies, and merges guest favourites.
+- `/${lang}/sign-in/oidc-logout`: redirects to provider logout when applicable.
+- `/${lang}/sign-in/logout` and `/sign-in/logout`: clear local auth cookies and redirect to map browser.
+- `/sign-in/back-channel-logout`: receives provider back-channel logout notifications and stores revocation markers server-side.
+
+Session invalidation behavior:
+
+- Front-channel logout clears browser cookies immediately.
+- Back-channel logout updates `authRevokedAt` in DynamoDB for the user.
+- On subsequent reads, token `iat` is compared against `authRevokedAt`; revoked sessions are treated as signed out and cookies are cleared.
+
 ## User Data Model
 
 For signed-in users, the DynamoDB users table stores:

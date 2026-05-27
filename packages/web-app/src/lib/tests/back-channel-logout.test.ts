@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createTestSigningKey, signTestJwt, stubOidcDiscoveryAndJwksFetch } from '$lib/tests/auth-test-helpers';
-import { verifyBackChannelLogoutToken } from '$lib/utils/auth/sign-in.server';
+import { verifyBackChannelLogoutToken } from '$lib/utils/auth/sign-in-back-channel.server';
 
 const clientId = 'cb802d19-a800-4433-ba7e-369d8ab58604';
 const issuer = 'https://auth.test.login-connexion.alpha.canada.ca';
@@ -63,6 +63,51 @@ describe('verifyBackChannelLogoutToken', () => {
     const payload = {
       iss: issuer,
       aud: 'different-client-id',
+      iat: now,
+      exp: now + 300,
+      jti: 'logout-token-jti',
+      sub: 'user-123',
+      events: {
+        'http://schemas.openid.net/event/backchannel-logout': {},
+      },
+    };
+    const token = signTestJwt(privateKeyPem, header, payload);
+
+    await expect(verifyBackChannelLogoutToken(token)).resolves.toBeNull();
+  });
+
+  it('rejects tokens without the required back-channel logout event claim', async () => {
+    const kid = 'logout-key-1';
+    const { jwk, privateKeyPem } = createTestSigningKey(kid);
+
+    stubOidcDiscoveryAndJwksFetch(issuer, jwksUri, jwk);
+
+    const now = Math.floor(Date.now() / 1000);
+    const header = { alg: 'RS256', kid, typ: 'JWT' };
+    const payload = {
+      iss: issuer,
+      aud: clientId,
+      iat: now,
+      exp: now + 300,
+      jti: 'logout-token-jti',
+      sub: 'user-123',
+    };
+    const token = signTestJwt(privateKeyPem, header, payload);
+
+    await expect(verifyBackChannelLogoutToken(token)).resolves.toBeNull();
+  });
+
+  it('rejects tokens signed with unsupported JWT alg header', async () => {
+    const kid = 'logout-key-1';
+    const { jwk, privateKeyPem } = createTestSigningKey(kid);
+
+    stubOidcDiscoveryAndJwksFetch(issuer, jwksUri, jwk);
+
+    const now = Math.floor(Date.now() / 1000);
+    const header = { alg: 'HS256', kid, typ: 'JWT' };
+    const payload = {
+      iss: issuer,
+      aud: clientId,
       iat: now,
       exp: now + 300,
       jti: 'logout-token-jti',

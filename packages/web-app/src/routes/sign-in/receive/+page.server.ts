@@ -4,11 +4,9 @@ import {
   consumeOidcNonceCookie,
   consumePkceVerifierCookie,
   exchangeCodeForTokens,
-  getLangFromState,
-  getPostAuthRedirect,
-  mergeGuestFavourites,
   setAuthCookies,
-} from '$lib/utils/auth/sign-in.server';
+} from '$lib/utils/auth/sign-in-core.server';
+import { getLangFromState, getPostAuthRedirect, mergeGuestFavourites } from '$lib/utils/auth/sign-in-post-auth.server';
 import { verifyIdToken } from '$lib/utils/auth/id-token.server';
 
 /**
