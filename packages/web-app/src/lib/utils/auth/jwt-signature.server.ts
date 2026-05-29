@@ -1,4 +1,4 @@
-import { createPublicKey, createVerify } from 'node:crypto';
+import { createPublicKey, createVerify, randomUUID } from 'node:crypto';
 import { decodeBase64UrlBytes } from '$lib/utils/auth/base64url';
 import type { JwtHeader, JsonWebKey } from '$lib/utils/auth/jwt-types';
 import type { JwtParts } from '$lib/utils/auth/jwt';
@@ -26,24 +26,46 @@ export async function verifyJwtSignatureWithJwks(
   parts: JwtParts,
   jwksCandidates: string[]
 ): Promise<JwtSignatureVerificationResult> {
+  const telemetry = {
+    correlationId: randomUUID(),
+    endpointCategory: 'jwks',
+    candidateCount: jwksCandidates.length,
+    keyId: header.kid,
+  };
+
   try {
     let jwks: { keys?: JsonWebKey[] } | null = null;
     let lastStatus: number | null = null;
+    const attempts: Array<{ uri: string; status: number | null; error?: string }> = [];
 
     for (const jwksUri of jwksCandidates) {
-      const jwksResponse = await fetch(jwksUri);
-      if (!jwksResponse.ok) {
-        lastStatus = jwksResponse.status;
-        continue;
-      }
+      try {
+        const jwksResponse = await fetch(jwksUri);
+        attempts.push({ uri: jwksUri, status: jwksResponse.status });
+        if (!jwksResponse.ok) {
+          lastStatus = jwksResponse.status;
+          continue;
+        }
 
-      jwks = (await jwksResponse.json()) as { keys?: JsonWebKey[] };
-      if (Array.isArray(jwks.keys)) {
-        break;
+        jwks = (await jwksResponse.json()) as { keys?: JsonWebKey[] };
+        if (Array.isArray(jwks.keys)) {
+          break;
+        }
+      } catch (error) {
+        attempts.push({
+          uri: jwksUri,
+          status: null,
+          error: error instanceof Error ? error.message : 'unknown_error',
+        });
       }
     }
 
     if (!jwks) {
+      console.error('[auth/jwks] jwks_fetch_failed', {
+        ...telemetry,
+        status: lastStatus,
+        attempts,
+      });
       return {
         ok: false,
         reason: 'jwks_fetch_failed',
@@ -53,6 +75,10 @@ export async function verifyJwtSignatureWithJwks(
 
     const jwk = jwks.keys?.find((key) => key.kid === header.kid && key.kty === 'RSA' && key.use !== 'enc');
     if (!jwk) {
+      console.error('[auth/jwks] signing_key_not_found', {
+        ...telemetry,
+        keyCount: jwks.keys?.length ?? 0,
+      });
       return {
         ok: false,
         reason: 'jwk_not_found',
@@ -66,6 +92,7 @@ export async function verifyJwtSignatureWithJwks(
     verifier.end();
 
     if (!verifier.verify(publicKey, decodeBase64UrlBytes(parts.signature))) {
+      console.error('[auth/jwks] signature_invalid', telemetry);
       return {
         ok: false,
         reason: 'signature_invalid',
@@ -74,6 +101,10 @@ export async function verifyJwtSignatureWithJwks(
 
     return { ok: true };
   } catch (error) {
+    console.error('[auth/jwks] verification_exception', {
+      ...telemetry,
+      error: error instanceof Error ? error.message : 'unknown_error',
+    });
     return {
       ok: false,
       reason: 'verification_exception',

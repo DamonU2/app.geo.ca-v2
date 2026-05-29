@@ -1,11 +1,12 @@
 import type { Cookies } from '@sveltejs/kit';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   OIDC_NONCE_COOKIE_NAME,
   PKCE_VERIFIER_COOKIE_NAME,
   consumeOidcNonceCookie,
   consumePkceVerifierCookie,
   createPkceChallenge,
+  getSignInUrl,
 } from '$lib/utils/auth/sign-in-core.server';
 
 type CookieHarness = {
@@ -34,6 +35,15 @@ function createCookieHarness(initialValues: Record<string, string> = {}): Cookie
 }
 
 describe('sign-in-core helpers', () => {
+  beforeEach(() => {
+    vi.stubEnv('OIDC_CLIENT_ID', 'client-id-123');
+    vi.stubEnv('OIDC_CUSTOM_DOMAIN', 'https://auth.example.test');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('creates the RFC7636 S256 code challenge from a known verifier', () => {
     const verifier = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 
@@ -54,5 +64,20 @@ describe('sign-in-core helpers', () => {
 
     expect(consumeOidcNonceCookie(cookies)).toBeNull();
     expect(deletedNames).toContain(OIDC_NONCE_COOKIE_NAME);
+  });
+
+  it('builds authorize URL with configured requested scopes', () => {
+    vi.stubEnv('OIDC_REQUESTED_SCOPES', 'openid email language');
+
+    const signInUrl = getSignInUrl(
+      new URL('https://app.example.test/en-ca/sign-in/send'),
+      '/en-ca/map-browser',
+      'pkce-challenge',
+      'nonce-123'
+    );
+
+    expect(signInUrl).toBeTruthy();
+    const params = new URL(String(signInUrl)).searchParams;
+    expect(params.get('scope')).toBe('openid email language');
   });
 });

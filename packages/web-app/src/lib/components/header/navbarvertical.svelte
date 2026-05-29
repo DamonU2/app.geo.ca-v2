@@ -6,7 +6,7 @@
   import Chevronleft from '../icons/chevronleft.svelte';
   import SignIn from '$lib/components/profile/sign-in.svelte';
 
-  const navItems = page.data.navitems;
+  let navItems = $derived(page.data.navitems);
   const orientation = 'vertical';
 
   type VerticalMenuLink = {

@@ -13,6 +13,9 @@
   import FavouritesListSkeleton from '$lib/components/loading-mask/favourites-list-skeleton.svelte';
   import Checkmark from '$lib/components/icons/checkmark.svelte';
   import GarbageCan from '$lib/components/icons/garbage-can.svelte';
+  import UploadIcon from '$lib/components/icons/upload.svelte';
+  import DownloadIcon from '$lib/components/icons/download.svelte';
+  import MapIcon from '$lib/components/icons/map.svelte';
   import SearchBarSimplified from '$lib/components/search-results/search-bar-simplified.svelte';
   import type { FavouritesRecord, FavouritesRow, MapConfigFavourite } from '$lib/db/db-types';
   import type { AppLanguage } from '$lib/utils/language';
@@ -205,6 +208,7 @@
     clearStatus();
     selectedMapConfig = null;
     mapToggle = true;
+    scrollToTop();
   }
 
   /**
@@ -214,6 +218,7 @@
     clearStatus();
     selectedMapConfig = mapConfig;
     mapToggle = true;
+    scrollToTop();
   }
 
   /**
@@ -228,6 +233,7 @@
     clearStatus();
     selectedMapConfig = null;
     mapToggle = false;
+    scrollToTop();
   }
 
   /**
@@ -247,6 +253,13 @@
   }
 
   /**
+   * Returns focus to the top of the page after tab/view transitions.
+   */
+  function scrollToTop(): void {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /**
    * Updates the active tab and keeps the URL query parameter in sync.
    */
   async function setActiveTab(tab: 'datasets' | 'maps'): Promise<void> {
@@ -255,9 +268,11 @@
 
     await goto(resolve(`/${lang}/favourites?tab=${tab}`), {
       replaceState: true,
-      noScroll: true,
+      noScroll: false,
       keepFocus: true,
     });
+
+    scrollToTop();
   }
 
   /**
@@ -547,7 +562,11 @@
         </div>
       {/if}
       {#if signedIn}
-        <p class="font-custom-style-body-1 mx-0 pt-5 mb-2">{saveMapHelp}</p>
+        <p class="font-custom-style-body-1 mx-0 pt-5 mb-2">
+          <!-- These are our descriptions, no injection risk -->
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+          {@html saveMapHelp}
+        </p>
       {/if}
       <div class="flex flex-wrap gap-3 mt-5 mb-5">
         <button class="sm:inline-block button-5 w-full sm:w-fit shadow-[0_0.1875rem_0.375rem_#00000029]" onclick={handleReturnToListClick}>
@@ -563,6 +582,7 @@
     {:else if signedIn && activeTab === 'maps'}
       <!-------------- Saved maps ------------->
       <p class="font-custom-style-body-1 mx-0 mb-6">
+        <!-- These are our descriptions, no injection risk -->
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
         {@html mapsDescription}
       </p>
@@ -576,8 +596,9 @@
           {statusMessage}
         </div>
       {/if}
-      <div class="mb-4">
+      <div>
         <button class="button-3 w-full sm:w-fit shadow-[0_0.1875rem_0.375rem_#00000029]" onclick={handleUploadMapClick}>
+          <UploadIcon classes="h-5 inline mb-1" />
           {uploadMapLabel}
         </button>
       </div>
@@ -598,6 +619,7 @@
                       handleOpenSavedMapClick(mapItem);
                     }}
                   >
+                    <MapIcon classes="h-5 inline mb-1" />
                     {viewMapLabel}
                   </button>
                   <button
@@ -606,6 +628,7 @@
                       handleDownloadSavedMapClick(mapItem);
                     }}
                   >
+                    <DownloadIcon classes="h-5 inline mb-1" />
                     {downloadMapLabel}
                   </button>
                   <button
@@ -628,6 +651,7 @@
     {:else if records.length > 0}
       <!-------------- List -------------->
       <p class="font-custom-style-body-1 mx-0 mb-6">
+        <!-- These are our descriptions, no injection risk -->
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
         {@html datasetsDescription}
       </p>

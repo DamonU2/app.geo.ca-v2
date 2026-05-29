@@ -72,19 +72,19 @@ type SearchMode = 'classic' | 'semantic';
 export const load: PageServerLoad = async ({ request, fetch, params, url, cookies }) => {
   const lang = getAppLanguage(params.lang);
   const searchMode: SearchMode = url.searchParams.get('searchMethod') === 'classic' || !SEMANTIC_SEARCH_URL ? 'classic' : 'semantic';
-  const response = await generateSearchUrl(
-    fetch,
-    url.searchParams,
-    lang,
-    cookies.get('id_token') || '',
-    request.headers.get('x-forwarded-for') || '',
-    searchMode
-  );
-  const analytics = await getAnalytics(fetch);
   let parsedResponse: ParsedResponse = {};
   let userData: UserInfo = { Item: { uuid: '', favourites: [] } };
   let sanitizedResults: ReturnType<typeof sanitize> | ReturnType<typeof sanitizeSemantic> = [];
+
   try {
+    const response = await generateSearchUrl(
+      fetch,
+      url.searchParams,
+      lang,
+      cookies.get('id_token') || '',
+      request.headers.get('x-forwarded-for') || '',
+      searchMode
+    );
     parsedResponse = (await response.json()) as ParsedResponse;
     if (searchMode === 'classic') {
       sanitizedResults = sanitize(parsedResponse.Items ?? [], lang);
@@ -92,8 +92,10 @@ export const load: PageServerLoad = async ({ request, fetch, params, url, cookie
       sanitizedResults = sanitizeSemantic(parsedResponse?.response?.items ?? []);
     }
   } catch (e) {
-    console.error(e);
+    console.error('Failed to fetch search results:', e);
   }
+
+  const analytics = await getAnalytics(fetch);
 
   let totalHits;
   if (searchMode === 'classic') {
@@ -179,14 +181,14 @@ function generateSearchUrl(
  * @async
  */
 async function getAnalytics(fetch: (url: string | URL, options?: RequestInit) => Promise<Response>): Promise<AnalyticsItem> {
-  const analytics = await fetch(`${GEOCORE_API_DOMAIN}/analytics/11`);
   let parsedAnalytics: { Items: AnalyticsItem[] } = { Items: [] };
 
   try {
+    const analytics = await fetch(`${GEOCORE_API_DOMAIN}/analytics/11`);
     const payload = (await analytics.json()) as { Items?: AnalyticsItem[] };
     parsedAnalytics = { Items: payload.Items ?? [] };
   } catch (e) {
-    console.error(e);
+    console.error('Failed to fetch analytics:', e);
   }
 
   for (let i = 0; i < parsedAnalytics.Items.length; i++) {
@@ -210,10 +212,10 @@ async function getAnalytics(fetch: (url: string | URL, options?: RequestInit) =>
  */
 function mapSearchParams(searchParams: URLSearchParams, lang: string): SearchParams {
   const mappedParams: SearchParams = {
-    north: searchParams.get('north') ?? 90,
-    east: searchParams.get('east') ?? 180,
-    south: searchParams.get('south') ?? -90,
-    west: searchParams.get('west') ?? -180,
+    north: getNumericSearchParam(searchParams, 'north', 90),
+    east: getNumericSearchParam(searchParams, 'east', 180),
+    south: getNumericSearchParam(searchParams, 'south', -90),
+    west: getNumericSearchParam(searchParams, 'west', -180),
     // TODO: separate keyword and category of interest.
     // For now, there is no category of interest param to query,
     // so it is grouped with the keywords
@@ -241,10 +243,10 @@ function mapSearchParams(searchParams: URLSearchParams, lang: string): SearchPar
  * @returns The mapped search parameters.
  */
 function mapSemanticSearchResults(searchParams: URLSearchParams, lang: string): SemanticSearchParams {
-  const west = searchParams.get('west') ?? -180;
-  const north = searchParams.get('north') ?? 90;
-  const east = searchParams.get('east') ?? 180;
-  const south = searchParams.get('south') ?? -90;
+  const west = getNumericSearchParam(searchParams, 'west', -180);
+  const north = getNumericSearchParam(searchParams, 'north', 90);
+  const east = getNumericSearchParam(searchParams, 'east', 180);
+  const south = getNumericSearchParam(searchParams, 'south', -90);
   const bbox = searchParams.get('bbox') ? `${west},${south},${east},${north}` : '';
   const searchTerms = searchParams.get('search-terms');
   const mappedParams: SemanticSearchParams = {
@@ -272,6 +274,28 @@ function mapSemanticSearchResults(searchParams: URLSearchParams, lang: string): 
     from: getMin(searchParams),
   };
   return mappedParams;
+}
+
+/**
+ * Parses a numeric URL search parameter and falls back to a default value when invalid.
+ *
+ * @param searchParams - The URL search parameters.
+ * @param key - The query parameter key.
+ * @param fallback - The default value to use when the parameter is missing or invalid.
+ * @returns A valid number as string.
+ */
+function getNumericSearchParam(searchParams: URLSearchParams, key: string, fallback: number): string {
+  const raw = searchParams.get(key);
+  if (raw === null || raw.trim() === '') {
+    return String(fallback);
+  }
+
+  const parsed = Number(raw);
+  if (Number.isFinite(parsed)) {
+    return String(parsed);
+  }
+
+  return String(fallback);
 }
 
 /**

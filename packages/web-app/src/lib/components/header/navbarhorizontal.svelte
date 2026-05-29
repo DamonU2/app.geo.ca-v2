@@ -2,7 +2,7 @@
   import { page } from '$app/state';
   import Navitem from './navitem.svelte';
 
-  const navItems = page.data.navitems;
+  let navItems = $derived(page.data.navitems);
   const orientation = 'horizontal';
 </script>
 

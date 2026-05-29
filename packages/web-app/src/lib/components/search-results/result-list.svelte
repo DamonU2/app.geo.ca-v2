@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { SvelteURLSearchParams } from 'svelte/reactivity';
   import { page, navigating } from '$app/state';
-  import { goto } from '$app/navigation';
+  import { goto, invalidate } from '$app/navigation';
   import { updateLocalStorage } from '$lib/utils/event-dispatchers/local-storage-changed';
   import { FAVOURITES_STORAGE_KEY, getStoredFavourites, resolveInitialFavourites } from '$lib/utils/favourites-storage';
   import Accordion from '$lib/components/accordion/accordion.svelte';
@@ -201,6 +201,11 @@
 
     // Update localStorage and dispatch localstorage_updated event
     updateLocalStorage(FAVOURITES_STORAGE_KEY, favouriteRecordList);
+
+    // For signed-in users, re-run the layout load so the nav favourites count updates
+    if (signedIn) {
+      await invalidate('app:favourites');
+    }
   }
 
   // Local storage is only accessible from the client side, so we initialize
@@ -232,18 +237,20 @@
       <p class="font-custom-style-body-8 self-center">
         {pageMessage}
       </p>
-      <div class="flex flex-row gap-3 md:gap-5">
-        <div>
-          <SelectCustomized selectType="resultList" optionsData={sortBySelectData} bind:selected selectedChange={changeSort} />
+      {#if results.length}
+        <div class="flex flex-row gap-3 md:gap-5">
+          <div>
+            <SelectCustomized selectType="resultList" optionsData={sortBySelectData} bind:selected selectedChange={changeSort} />
+          </div>
+          {#if userId}
+            <!-- TODO: Add a method for this button -->
+            <button class="button-3">{saveSearchParamsText}</button>
+          {/if}
         </div>
-        {#if userId}
-          <!-- TODO: Add a method for this button -->
-          <button class="button-3">{saveSearchParamsText}</button>
-        {/if}
-      </div>
+      {/if}
     </div>
     <!-- List -->
-    {#each results as result, index (result.id)}
+    {#each results as result, index (`${result.id}-${index}`)}
       <div class="bg-custom-1 px-5 py-4">
         <Accordion bind:this={accordionComponents[index]}>
           {#snippet accordionTitle()}

@@ -1,7 +1,9 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import type { Cookies } from '@sveltejs/kit';
 import { encodeBase64Url } from '$lib/utils/auth/base64url';
+import { createClientAssertionJwt } from '$lib/utils/auth/client-assertion.server';
 import { getOidcConfig } from '$lib/utils/auth/oidc.server';
+import { getAuthorizeScopeValue } from '$lib/utils/auth/scope-policy.server';
 
 /**
  * Cookie name used to persist the one-time PKCE verifier between send and receive routes.
@@ -113,7 +115,7 @@ export function getSignInUrl(requestUrl: URL, state: string, codeChallenge: stri
   const params = new URLSearchParams({
     client_id: clientId,
     response_type: 'code',
-    scope: 'openid',
+    scope: getAuthorizeScopeValue(),
     redirect_uri: redirectUri,
     state,
     nonce,
@@ -173,18 +175,67 @@ export function consumeOidcNonceCookie(cookies: Cookies): string | null {
 /**
  * Exchanges an authorization code for provider tokens.
  *
+ * Supports two client authentication methods:
+ * - `private_key_jwt` (RFC 7523): used when `privateKeyPem` is provided. Signs a JWT assertion
+ *   with the private key and sends `client_assertion` + `client_assertion_type` in the request.
+ * - `client_secret_post`: fallback when `privateKeyPem` is null. Sends `client_secret` directly.
+ *
  * @param code - OAuth authorization code from callback.
- * @param requestUrl - Current request URL.
+ * @param requestUrl - Current request URL, used to derive the redirect URI.
  * @param codeVerifier - PKCE verifier used during the authorize request.
+ * @param privateKeyPem - RSA private key in PEM format for private_key_jwt auth; null falls back to client_secret_post.
  * @returns Token payload from provider or null when exchange fails.
  */
 export async function exchangeCodeForTokens(
   code: string,
   requestUrl: URL,
-  codeVerifier: string | null
+  codeVerifier: string | null,
+  privateKeyPem: string | null = null
 ): Promise<OAuthTokenResponse | null> {
   const { clientId, clientSecret, customDomain } = getOidcConfig();
-  if (!clientId || !clientSecret || !customDomain || !codeVerifier) {
+  const usePrivateKeyJwt = (process.env.OIDC_USE_PRIVATE_KEY_JWT ?? '').toLowerCase() === 'true';
+  const isLocalhost = requestUrl.hostname === 'localhost' || requestUrl.hostname === '127.0.0.1';
+  const telemetry = {
+    correlationId: randomUUID(),
+    endpointCategory: 'token_endpoint',
+    authMethod: privateKeyPem ? 'private_key_jwt' : 'client_secret_post',
+    providerHost: (() => {
+      try {
+        return new URL(customDomain).host;
+      } catch {
+        return null;
+      }
+    })(),
+  };
+
+  if (!clientId || !customDomain || !codeVerifier) {
+    console.error('[auth/token-exchange] missing_required_input', {
+      ...telemetry,
+      hasClientId: Boolean(clientId),
+      hasCustomDomain: Boolean(customDomain),
+      hasCodeVerifier: Boolean(codeVerifier),
+    });
+    return null;
+  }
+
+  // Enforce private_key_jwt when configured outside localhost.
+  if (usePrivateKeyJwt && !privateKeyPem && !isLocalhost) {
+    console.error('[auth/token-exchange] policy_blocked_fallback', {
+      ...telemetry,
+      requiresPrivateKeyJwt: true,
+      hasPrivateKeyPem: false,
+      isLocalhost,
+    });
+    return null;
+  }
+
+  // Validate that we have either a private key or a client secret
+  if (!privateKeyPem && !clientSecret) {
+    console.error('[auth/token-exchange] missing_client_credentials', {
+      ...telemetry,
+      hasPrivateKeyPem: Boolean(privateKeyPem),
+      hasClientSecret: Boolean(clientSecret),
+    });
     return null;
   }
 
@@ -192,14 +243,24 @@ export async function exchangeCodeForTokens(
   const tokenUrl = `${customDomain}/oauth2/token`;
   const redirectUri = getRedirectUri(requestUrl);
 
-  const body = new URLSearchParams({
+  const bodyParams: Record<string, string> = {
     grant_type: 'authorization_code',
     client_id: clientId,
-    client_secret: clientSecret,
     code,
     redirect_uri: redirectUri,
     code_verifier: codeVerifier,
-  });
+  };
+
+  // Use private_key_jwt when available, otherwise fall back to client_secret_post
+  if (privateKeyPem) {
+    const clientAssertion = createClientAssertionJwt(clientId, tokenUrl, privateKeyPem);
+    bodyParams.client_assertion_type = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
+    bodyParams.client_assertion = clientAssertion;
+  } else {
+    bodyParams.client_secret = clientSecret;
+  }
+
+  const body = new URLSearchParams(bodyParams);
 
   // Make the token request to the provider
   try {
@@ -212,11 +273,19 @@ export async function exchangeCodeForTokens(
     });
 
     if (!response.ok) {
+      console.error('[auth/token-exchange] token_request_failed', {
+        ...telemetry,
+        status: response.status,
+      });
       return null;
     }
 
     return (await response.json()) as OAuthTokenResponse;
-  } catch {
+  } catch (error) {
+    console.error('[auth/token-exchange] token_request_exception', {
+      ...telemetry,
+      error: error instanceof Error ? error.message : 'unknown_error',
+    });
     return null;
   }
 }

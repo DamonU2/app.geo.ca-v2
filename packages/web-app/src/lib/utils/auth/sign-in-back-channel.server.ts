@@ -68,7 +68,13 @@ export async function verifyBackChannelLogoutToken(logoutToken: string): Promise
     return null;
   }
 
-  if (!hasNumericIat(payload.iat) || !payload.events || !(BACK_CHANNEL_LOGOUT_EVENT in payload.events)) {
+  if (
+    !hasNumericIat(payload.iat) ||
+    typeof payload.jti !== 'string' ||
+    payload.jti.length === 0 ||
+    !payload.events ||
+    !(BACK_CHANNEL_LOGOUT_EVENT in payload.events)
+  ) {
     return null;
   }
 

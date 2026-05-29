@@ -8,6 +8,7 @@ import {
 } from '$lib/utils/auth/sign-in-core.server';
 import { getLangFromState, getPostAuthRedirect, mergeGuestFavourites } from '$lib/utils/auth/sign-in-post-auth.server';
 import { verifyIdToken } from '$lib/utils/auth/id-token.server';
+import { getPrivateKeyPem } from '$lib/utils/auth/oidc.server';
 
 /**
  * Handles the OIDC callback without a language prefix, stores auth cookies,
@@ -32,7 +33,8 @@ export const load: PageServerLoad = async ({ cookies, url }: Parameters<PageServ
 
   const codeVerifier = consumePkceVerifierCookie(cookies);
   const expectedNonce = consumeOidcNonceCookie(cookies);
-  const tokenResponse = await exchangeCodeForTokens(code, url, codeVerifier);
+  const privateKeyPem = await getPrivateKeyPem();
+  const tokenResponse = await exchangeCodeForTokens(code, url, codeVerifier, privateKeyPem);
   if (!tokenResponse || !expectedNonce) {
     if (isNonProd) {
       console.warn('[sign-in/receive] Token exchange/nonce validation failed', {
