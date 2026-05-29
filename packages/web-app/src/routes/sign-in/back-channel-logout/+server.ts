@@ -21,14 +21,19 @@ export const POST: RequestHandler = async ({ request }) => {
   }
 
   const token = await verifyBackChannelLogoutToken(logoutToken);
-  if (!token?.sub) {
+  if (!token?.sub || !token.jti) {
     return new Response('Invalid logout_token', { status: 400 });
   }
 
   // Use provider iat when present; fallback keeps revocation monotonic if a malformed token slips through.
   const revokedAt = token.iat ?? Math.floor(Date.now() / 1000);
-  const stored = await markUserAuthRevoked(token.sub, revokedAt);
-  if (!stored) {
+  const stored = await markUserAuthRevoked(token.sub, revokedAt, token.jti);
+  if (stored === 'replayed') {
+    // Treat replays as idempotent success so provider retries do not fail noisily.
+    return new Response(null, { status: 204 });
+  }
+
+  if (stored !== 'stored') {
     return new Response('Unable to revoke session', { status: 500 });
   }
 

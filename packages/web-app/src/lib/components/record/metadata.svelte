@@ -129,6 +129,7 @@
     </div>
     <div class="card-div">
       <h3 class="font-semibold">{useLimitationsText}</h3>
+      <!-- These are our descriptions, no injection risk -->
       <!-- eslint-disable-next-line svelte/no-at-html-tags -->
       <p>{@html useLimitations}</p>
     </div>

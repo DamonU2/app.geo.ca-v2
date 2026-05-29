@@ -4,6 +4,7 @@
   import { page } from '$app/state';
   import { pickByLanguage } from '$lib/utils/language';
   import { FAVOURITES_STORAGE_KEY } from '$lib/utils/favourites-storage';
+  import LeavingNotice from '$lib/components/leaving-notice/leaving-notice.svelte';
 
   type Props = {
     light?: boolean;
@@ -15,8 +16,10 @@
   const signedIn = $derived(Boolean(page.data.signedIn));
   const featureSignIn = $derived(page.data.FEATURE_SIGN_IN !== false);
 
-  const signInText = $derived(pickByLanguage(lang, 'Sign in', 'Connexion'));
-  const signOutText = $derived(pickByLanguage(lang, 'Sign out', 'Deconnexion'));
+  const signInText = $derived(pickByLanguage(lang, 'Sign in', 'Ouverture de Session'));
+  const signOutText = $derived(pickByLanguage(lang, 'Sign out', 'Fermer la session'));
+
+  let showLeavingNotice = $state(false);
 
   /**
    * Temporarily stores guest favourites before redirecting to sign-in,
@@ -36,9 +39,18 @@
    * Starts sign-in and preserves the current URL in state for return navigation.
    */
   function handleSignInClick(): void {
+    if (showLeavingNotice) {
+      return;
+    }
+
+    showLeavingNotice = true;
     cacheGuestFavouritesForMerge();
     const state = encodeURIComponent(page.url.href);
-    window.location.href = `/${lang}/sign-in/send?state=${state}`;
+
+    // Keep behavior aligned with other leaving notices before redirect.
+    setTimeout(() => {
+      window.location.href = `/${lang}/sign-in/send?state=${state}`;
+    }, 300);
   }
 </script>
 
@@ -53,3 +65,7 @@
     {/if}
   {/if}
 </div>
+
+{#if showLeavingNotice}
+  <LeavingNotice />
+{/if}

@@ -16,6 +16,7 @@ const docClient = DynamoDBDocumentClient.from(client, {
 });
 
 let didWarnExpiredAwsToken = false;
+const BACK_CHANNEL_LOGOUT_REPLAY_WINDOW_SECONDS = 10 * 60;
 
 /**
  * Checks whether an SDK error indicates expired AWS temporary credentials.
@@ -32,6 +33,23 @@ function isExpiredAwsTokenError(error: unknown): boolean {
   const name = typeof candidate.name === 'string' ? candidate.name : '';
   const type = typeof candidate.__type === 'string' ? candidate.__type : '';
   return name.includes('ExpiredTokenException') || type.includes('ExpiredTokenException');
+}
+
+/**
+ * Checks whether a DynamoDB conditional update failed.
+ *
+ * @param error - Unknown error thrown by AWS SDK call.
+ * @returns True when the error indicates a failed condition expression.
+ */
+function isConditionalCheckFailedError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const candidate = error as { name?: unknown; __type?: unknown };
+  const name = typeof candidate.name === 'string' ? candidate.name : '';
+  const type = typeof candidate.__type === 'string' ? candidate.__type : '';
+  return name.includes('ConditionalCheckFailedException') || type.includes('ConditionalCheckFailedException');
 }
 
 /**
@@ -172,12 +190,20 @@ const putUserData = async (data: Partial<UserData>, cookies: Cookies): Promise<R
  *
  * @param userKey - Stable user identifier from the token.
  * @param revokedAt - Revocation time in seconds since epoch.
- * @returns True when the revocation marker is stored successfully.
+ * @param logoutTokenJti - Logout token identifier used for replay detection.
+ * @returns `stored` when persisted, `replayed` for duplicate/rejected conditional updates, otherwise `error`.
  */
-const markUserAuthRevoked = async (userKey: string, revokedAt: number): Promise<boolean> => {
+const markUserAuthRevoked = async (
+  userKey: string,
+  revokedAt: number,
+  logoutTokenJti: string
+): Promise<'stored' | 'replayed' | 'error'> => {
   if (!USER_TABLE_NAME) {
-    return false;
+    return 'error';
   }
+
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const replayWindowCutoff = nowSeconds - BACK_CHANNEL_LOGOUT_REPLAY_WINDOW_SECONDS;
 
   try {
     await docClient.send(
@@ -186,22 +212,32 @@ const markUserAuthRevoked = async (userKey: string, revokedAt: number): Promise<
         Key: {
           uuid: userKey,
         },
-        UpdateExpression: 'SET authRevokedAt = :authRevokedAt',
+        UpdateExpression:
+          'SET authRevokedAt = :authRevokedAt, lastBackChannelLogoutJti = :logoutTokenJti, lastBackChannelLogoutJtiSeenAt = :seenAt',
+        ConditionExpression:
+          '(attribute_not_exists(lastBackChannelLogoutJti) OR lastBackChannelLogoutJti <> :logoutTokenJti OR attribute_not_exists(lastBackChannelLogoutJtiSeenAt) OR lastBackChannelLogoutJtiSeenAt < :replayWindowCutoff) AND (attribute_not_exists(authRevokedAt) OR :authRevokedAt >= authRevokedAt)',
         ExpressionAttributeValues: {
           ':authRevokedAt': revokedAt,
+          ':logoutTokenJti': logoutTokenJti,
+          ':seenAt': nowSeconds,
+          ':replayWindowCutoff': replayWindowCutoff,
         },
       })
     );
-    return true;
+    return 'stored';
   } catch (error) {
+    if (isConditionalCheckFailedError(error)) {
+      return 'replayed';
+    }
+
     if (isExpiredAwsTokenError(error)) {
       warnExpiredAwsTokenOnce();
-      return false;
+      return 'error';
     }
 
     console.error('Error storing auth revocation marker.');
     console.error(error);
-    return false;
+    return 'error';
   }
 };
 

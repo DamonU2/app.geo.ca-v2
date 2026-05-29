@@ -81,11 +81,11 @@ function parsePageMessage(lang: string, url: URL, totalResults: number): string 
   if (lang === 'fr-ca') {
     datasetsText = totalResults === 1 ? 'Ensemble de données' : 'Ensembles de données';
     pageOfText = `Page ${pageNumber} sur ${totalPages}`;
-    message = `${formattedNumberOfResults} ${datasetsText}, ${pageOfText}`;
+    message = totalResults ? `${formattedNumberOfResults} ${datasetsText}, ${pageOfText}` : `${formattedNumberOfResults} ${datasetsText}`;
   } else {
     datasetsText = totalResults === 1 ? 'Dataset' : 'Datasets';
     pageOfText = `Page ${pageNumber} of ${totalPages}`;
-    message = `${formattedNumberOfResults} ${datasetsText}, ${pageOfText}`;
+    message = totalResults ? `${formattedNumberOfResults} ${datasetsText}, ${pageOfText}` : `${formattedNumberOfResults} ${datasetsText}`;
   }
 
   return message;

@@ -1,9 +1,11 @@
 import type { TokenPayload } from '$lib/db/db-types';
+import { randomUUID } from 'node:crypto';
 import { decodeBase64UrlJson } from '$lib/utils/auth/base64url';
 import { splitJwt } from '$lib/utils/auth/jwt';
 import { verifyJwtSignatureWithJwks } from '$lib/utils/auth/jwt-signature.server';
 import { getAudienceValues, hasNumericIat, hasValidExp, issuerMatches } from '$lib/utils/auth/oidc-claims.server';
 import { ensureTrailingSlashless, getOidcPublicConfig, getOpenIdConfiguration } from '$lib/utils/auth/oidc.server';
+import { getRequestedScopes, validateScopedIdTokenClaims } from '$lib/utils/auth/scope-policy.server';
 import type { JwtHeader } from '$lib/utils/auth/jwt-types';
 
 /**
@@ -14,14 +16,30 @@ import type { JwtHeader } from '$lib/utils/auth/jwt-types';
  * @returns Verified token payload when valid; otherwise null.
  */
 export async function verifyIdToken(idToken: string, expectedNonce?: string | null): Promise<TokenPayload | null> {
-  const isNonProd = process.env.NODE_ENV !== 'production';
-  const fail = (reason: string, details?: Record<string, unknown>): null => {
-    if (isNonProd) {
-      console.warn('[id-token] Verification failed', {
-        reason,
-        ...(details ?? {}),
-      });
+  const telemetryBase = {
+    correlationId: randomUUID(),
+    component: 'id_token_verification',
+  };
+
+  const getEndpointCategory = (reason: string): 'discovery' | 'jwks' | 'id_token_verification' => {
+    if (reason === 'discovery_failed') {
+      return 'discovery';
     }
+
+    if (reason === 'jwks_fetch_failed' || reason === 'jwk_not_found' || reason === 'signature_invalid') {
+      return 'jwks';
+    }
+
+    return 'id_token_verification';
+  };
+
+  const fail = (reason: string, details?: Record<string, unknown>): null => {
+    console.error('[auth/id-token] verification_failed', {
+      ...telemetryBase,
+      endpointCategory: getEndpointCategory(reason),
+      reason,
+      ...(details ?? {}),
+    });
     return null;
   };
 
@@ -116,6 +134,18 @@ export async function verifyIdToken(idToken: string, expectedNonce?: string | nu
       hasIat: hasNumericIat(payload.iat),
       hasSub: Boolean(payload.sub),
       hasUsername: Boolean(payload.username),
+    });
+  }
+
+  const requestedScopes = getRequestedScopes();
+  const scopeClaimValidation = validateScopedIdTokenClaims(payload, requestedScopes);
+  if (!scopeClaimValidation.ok) {
+    return fail('scope_claim_policy_failed', {
+      requestedScopes,
+      scope: scopeClaimValidation.scope,
+      invalidClaim: scopeClaimValidation.invalidClaim,
+      expectedType: scopeClaimValidation.expectedType,
+      actualType: scopeClaimValidation.actualType,
     });
   }
 

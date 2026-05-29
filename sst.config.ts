@@ -1,11 +1,14 @@
 const GEOCORE_API_DOMAIN = "https://geocore.api.geo.ca";
 const SEMANTIC_SEARCH_URL = "https://search-recherche.geocore.api.geo.ca";
+const AWS_REGION = "ca-central-1";
 
 // Environment variables with defaults
 const env = {
   oidcClientId: process.env.OIDC_CLIENT_ID ?? "",
   oidcCustomDomain: process.env.OIDC_CUSTOM_DOMAIN ?? "",
   oidcClientSecret: process.env.OIDC_CLIENT_SECRET ?? "",
+  oidcPrivateKeySecretId: process.env.OIDC_PRIVATE_KEY_SECRET_ID ?? "",
+  oidcRequestedScopes: process.env.OIDC_REQUESTED_SCOPES ?? "",
 };
 
 // Logging configuration for long-running functions
@@ -18,7 +21,7 @@ export default $config({
       home: "aws",
       providers: {
         aws: {
-          region: "ca-central-1",
+          region: AWS_REGION,
         },
       },
       removal: input.stage === "production" ? "retain" : "remove",
@@ -27,7 +30,22 @@ export default $config({
   },
 
   async run() {
+    const { toSecretsManagerResourceArn } =
+      await import("./config/secrets-manager-policy");
     const isProduction = $app.stage === "production";
+    const isStaging = $app.stage === "staging";
+    const usePrivateKeyJwt = isStaging || isProduction;
+    const oidcPrivateKeySecretResourceArn = toSecretsManagerResourceArn(
+      env.oidcPrivateKeySecretId,
+      AWS_REGION,
+    );
+
+    if (usePrivateKeyJwt && !oidcPrivateKeySecretResourceArn) {
+      throw new Error(
+        `OIDC_PRIVATE_KEY_SECRET_ID is required and must be a valid secret name/id or ARN for stage '${$app.stage}' when private_key_jwt is enforced.`,
+      );
+    }
+
     const resourcePrefix = `${$app.stage}-app-geo-ca-v2`;
     const userTableName = `${resourcePrefix}-users`;
     const bucketName = `${resourcePrefix}-hnap`;
@@ -66,6 +84,16 @@ export default $config({
       transform: {
         server: (args: any) => {
           args.logging = logRetention;
+          if (!args.policies) {
+            args.policies = [];
+          }
+
+          if (oidcPrivateKeySecretResourceArn) {
+            args.policies.push({
+              actions: ["secretsmanager:GetSecretValue"],
+              resources: [oidcPrivateKeySecretResourceArn],
+            });
+          }
         },
         imageOptimizer: (args: any) => {
           args.logging = logRetention;
@@ -77,6 +105,9 @@ export default $config({
         OIDC_CLIENT_ID: env.oidcClientId,
         OIDC_CUSTOM_DOMAIN: env.oidcCustomDomain,
         OIDC_CLIENT_SECRET: env.oidcClientSecret,
+        OIDC_PRIVATE_KEY_SECRET_ID: env.oidcPrivateKeySecretId,
+        OIDC_REQUESTED_SCOPES: env.oidcRequestedScopes,
+        OIDC_USE_PRIVATE_KEY_JWT: String(usePrivateKeyJwt),
         USER_TABLE_NAME: users.name,
         BUCKET_NAME: hnapBucket.name,
       },

@@ -57,7 +57,7 @@
         setTimeout(() => {
           showLeavingSitePopup = false;
           window.location.href = href;
-        }, 2000);
+        }, 1000);
       }
     }
     window.addEventListener('click', handleClick);

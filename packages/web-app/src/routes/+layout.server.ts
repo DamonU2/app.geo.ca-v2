@@ -42,7 +42,9 @@ type NavItems = Record<string, NavItem>;
  * @param event - SvelteKit load event containing params and cookies.
  * @returns Layout data used by shared navigation, footer, and profile UI.
  */
-export const load: LayoutServerLoad = async ({ params, cookies }) => {
+export const load: LayoutServerLoad = async ({ params, cookies, depends }) => {
+  depends('app:favourites');
+
   const lang = getAppLanguage(params.lang);
   const userData = await getUserData(cookies);
   const signedIn = Boolean(userData.Item.uuid);

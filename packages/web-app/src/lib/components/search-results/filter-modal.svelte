@@ -45,7 +45,7 @@
   const filterByText = translations?.filterBy ?? 'Filter By';
   const filterDescriptionText = translations?.filterDescription ?? '';
   const clearAllText = translations?.clearAll ?? 'Clear All';
-  const searchText = translations?.search ?? 'Search';
+  const applyText = translations?.apply ?? 'Apply';
 
   let temporalActive = $state(false);
   let spatialActive = $state(false);
@@ -144,12 +144,12 @@
     }
 
     const query = buildFilterParams(filters);
+    closeModal();
+
     // We need to keep the user on the current localized map-browser route.
     // Using resolve('/?...') navigates to the site root and drops the search page context.
     // eslint-disable-next-line svelte/no-navigation-without-resolve
     await goto(`${page.url.pathname}?${query.toString()}`, { replaceState: true, keepFocus: true });
-
-    closeModal();
   }
 
   /**
@@ -259,6 +259,15 @@
    * @param filters - The filters object.
    * @returns The URL search parameters.
    */
+  function isValidBbox(bbox: BBox | null | undefined): bbox is BBox {
+    if (!bbox) return false;
+    const north = Number(bbox.north);
+    const east = Number(bbox.east);
+    const south = Number(bbox.south);
+    const west = Number(bbox.west);
+    return !isNaN(north) && !isNaN(east) && !isNaN(south) && !isNaN(west);
+  }
+
   function buildFilterParams(filters: Filters): URLSearchParams {
     const bbox: BBox | null | undefined = filters.bbox;
     const relation = filters.relation;
@@ -289,11 +298,11 @@
     }
 
     // BBOX
-    if (bbox) {
-      query.set('north', bbox.north);
-      query.set('east', bbox.east);
-      query.set('south', bbox.south);
-      query.set('west', bbox.west);
+    if (bbox && isValidBbox(bbox)) {
+      query.set('north', String(bbox.north));
+      query.set('east', String(bbox.east));
+      query.set('south', String(bbox.south));
+      query.set('west', String(bbox.west));
       query.set(bboxKey, `${bbox.south}|${bbox.west}|${bbox.north}|${bbox.east}`);
     } else {
       query.delete('north');
@@ -444,7 +453,7 @@
           shadow-[0rem_0.1875rem_0.375rem_#00000029] cursor-pointer"
       >
         <Search classes="inline" height="1.125rem" />
-        {searchText}
+        {applyText}
       </button>
     </div>
   </form>

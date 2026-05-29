@@ -97,6 +97,29 @@ describe('verifyBackChannelLogoutToken', () => {
     await expect(verifyBackChannelLogoutToken(token)).resolves.toBeNull();
   });
 
+  it('rejects tokens without a JTI claim', async () => {
+    const kid = 'logout-key-1';
+    const { jwk, privateKeyPem } = createTestSigningKey(kid);
+
+    stubOidcDiscoveryAndJwksFetch(issuer, jwksUri, jwk);
+
+    const now = Math.floor(Date.now() / 1000);
+    const header = { alg: 'RS256', kid, typ: 'JWT' };
+    const payload = {
+      iss: issuer,
+      aud: clientId,
+      iat: now,
+      exp: now + 300,
+      sub: 'user-123',
+      events: {
+        'http://schemas.openid.net/event/backchannel-logout': {},
+      },
+    };
+    const token = signTestJwt(privateKeyPem, header, payload);
+
+    await expect(verifyBackChannelLogoutToken(token)).resolves.toBeNull();
+  });
+
   it('rejects tokens signed with unsupported JWT alg header', async () => {
     const kid = 'logout-key-1';
     const { jwk, privateKeyPem } = createTestSigningKey(kid);
