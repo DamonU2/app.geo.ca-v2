@@ -6,7 +6,6 @@
   import { toggleScroll } from '$lib/components/component-utils/toggleScroll';
   import { clickOutside } from '$lib/components/component-utils/clickOutside';
   import Close from '$lib/components/icons/close.svelte';
-  import Search from '$lib/components/icons/search.svelte';
   import CategoryOfInterest from '$lib/components/search-results/filters/category-of-interest.svelte';
   import Organizations from '$lib/components/search-results/filters/organizations.svelte';
   import Types from '$lib/components/search-results/filters/types.svelte';
@@ -452,7 +451,6 @@
         class="w-full md:w-auto justify-self-end button-5 h-12 md:h-auto
           shadow-[0rem_0.1875rem_0.375rem_#00000029] cursor-pointer"
       >
-        <Search classes="inline" height="1.125rem" />
         {applyText}
       </button>
     </div>
