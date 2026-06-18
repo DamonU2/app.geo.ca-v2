@@ -104,8 +104,6 @@
    * Saves the current map state as a named saved-map configuration.
    *
    * Captures live map state, sanitizes payload size, then persists via the favourites API.
-   *
-   * @returns Resolves when save flow completes.
    */
   async function handleSaveMapClick(): Promise<void> {
     if (!signedIn) {
@@ -161,8 +159,6 @@
    * Resolves viewer inputs from query params and route data.
    *
    * Determines source context, selects map by id or dataset ids, and redirects when inputs are invalid.
-   *
-   * @returns Resolves after initial map inputs are parsed and validated.
    */
   onMount(async () => {
     const source = page.url.searchParams.get('source');

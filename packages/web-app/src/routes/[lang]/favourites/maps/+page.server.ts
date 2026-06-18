@@ -6,6 +6,9 @@ import { buildPageTitle } from '$lib/utils/metadata';
 
 /**
  * Loads favourites maps page data for signed-in users.
+ *
+ * @param event - SvelteKit page-server load event.
+ * @returns Localized maps page data and metadata.
  */
 export const load: PageServerLoad = async ({ fetch, params, url, cookies }) => {
   const lang = getAppLanguage(params.lang);

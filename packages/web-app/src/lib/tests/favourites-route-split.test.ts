@@ -82,9 +82,22 @@ describe('favourites split route loads', () => {
     });
   });
 
-  it('redirects guest users from /favourites/view to /favourites', async () => {
+  it('keeps /favourites/view accessible for guests when dataset ids are provided', async () => {
     loadFavouritesPageDataMock.mockResolvedValue(createPageData(null));
     const event = createEvent('https://example.test/en-ca/favourites/view?ids=a,b');
+
+    const data = (await loadView(event as unknown as Parameters<typeof loadView>[0])) as {
+      lang: string;
+      userData: { uuid: string | null };
+    };
+
+    expect(data.lang).toBe('en-ca');
+    expect(data.userData.uuid).toBeNull();
+  });
+
+  it('redirects guest users from /favourites/view to /favourites when ids are missing', async () => {
+    loadFavouritesPageDataMock.mockResolvedValue(createPageData(null));
+    const event = createEvent('https://example.test/en-ca/favourites/view');
 
     await expect(loadView(event as unknown as Parameters<typeof loadView>[0])).rejects.toMatchObject({
       status: 303,

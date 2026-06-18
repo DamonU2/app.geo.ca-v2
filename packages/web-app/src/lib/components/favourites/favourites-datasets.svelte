@@ -54,6 +54,7 @@
   let sortableTable: SortableTable | undefined = $state();
   let selectedIds: string[] = $state([]);
   let numSelected: number = $derived(selectedIds.length);
+  let canOpenMap: boolean = $derived(numSelected > 0);
   let loading: boolean = $state(true);
   let favouriteRecordList: string[] = $state(page.data?.userData?.favourites ? [...page.data.userData.favourites] : []);
   let records: FavouritesRecord[] = $state([]);
@@ -75,7 +76,6 @@
    * then synchronizes local table and local-storage state.
    *
    * @param id - Favourites record id to delete.
-   * @returns Resolves when deletion flow completes.
    */
   async function handleDeleteResource(id: string): Promise<void> {
     const resource = tableDataArray.find((tableData: FavouritesRow) => tableData.id === id);
@@ -115,8 +115,6 @@
    *
    * For signed-in users this clears server-side favourites before
    * resetting local records, selection, and local-storage state.
-   *
-   * @returns Resolves when clear-all flow completes.
    */
   async function handleRemoveAllClick(): Promise<void> {
     const permissionText = isFrench(lang)
@@ -150,6 +148,10 @@
    * Encodes selected record identifiers into the query string and preserves source context.
    */
   function handleOpenMapClick(): void {
+    if (!canOpenMap) {
+      return;
+    }
+
     const ids = selectedIds.join(',');
     goto(resolve(`/${lang}/favourites/view?ids=${encodeURIComponent(ids)}&source=datasets`));
   }
@@ -158,8 +160,6 @@
    * Initializes the datasets table from server/local favourites data.
    *
    * Resolves signed-in and guest sources, fetches matching records, and preselects mappable rows.
-   *
-   * @returns Resolves after initial table state is hydrated.
    */
   onMount(async () => {
     const storedFavourites = getStoredFavourites(localStorage);
@@ -275,6 +275,8 @@
             <button
               class="sm:inline-block button-5 w-full sm:w-fit mb-4 sm:mb-0 shadow-[0_0.1875rem_0.375rem_#00000029]"
               onclick={handleOpenMapClick}
+              disabled={!canOpenMap}
+              aria-disabled={!canOpenMap}
             >
               {viewOnMapLabel} ({numSelected})
             </button>
@@ -287,16 +289,16 @@
         </div>
       </Card>
 
+      <div class="mt-9">
+        <a class="button-5 w-full md:w-fit md:min-w-48 shadow-[0_0.1875rem_0.375rem_#00000029]" href={resolve(`/${lang}/favourites/maps`)}>
+          {mapsLinkLabel}
+        </a>
+      </div>
+
       <h2 class="mb-4 mt-9 mx-0 font-custom-style-h2 md:mr-auto">
         {searchFor}
       </h2>
       <SearchBarSimplified />
-
-      <div class="mt-9">
-        <a class="button-3 w-full md:w-fit md:min-w-48 shadow-[0_0.1875rem_0.375rem_#00000029]" href={resolve(`/${lang}/favourites/maps`)}>
-          {mapsLinkLabel}
-        </a>
-      </div>
     {:else}
       <div class="my-8">
         <NoMap classes="text-custom-19 m-auto h-48 md:h-80 lg:h-96" />

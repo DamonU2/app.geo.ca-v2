@@ -2,9 +2,12 @@ import type { RequestHandler } from './$types';
 import { json } from '@sveltejs/kit';
 import { getUserData, putUserData } from '$lib/db/user';
 import type { MapConfigFavourite } from '$lib/db/db-types';
+import { sanitizeMapConfigForStorage } from '$lib/utils/map-config-sanitizer';
 
 const MAX_SAVED_MAPS = 25;
 const MAX_ITEM_SIZE_BYTES = 300000; // 300KB (conservative safety margin below 400KB DynamoDB limit)
+const MAX_MAP_NAME_LENGTH = 120;
+const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
 
 /**
  * Normalizes a candidate favourite id from request payload.
@@ -18,20 +21,95 @@ function sanitizeId(value: unknown): string {
 
 /**
  * Normalizes a map name value from request payload.
+ *
+ * Trims whitespace and caps the value to the storage-safe max length.
+ *
+ * @param value - Unknown JSON field value.
+ * @returns Sanitized map name or an empty string when invalid.
  */
 function sanitizeName(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  return value.trim().slice(0, MAX_MAP_NAME_LENGTH);
 }
 
 /**
  * Returns true when a payload looks like a serializable config object.
+ *
+ * @param value - Candidate payload value.
+ * @returns True when value is a non-null plain object candidate.
  */
 function isValidMapConfig(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /**
+ * Detects unsafe object keys anywhere in a JSON-like object graph.
+ *
+ * @param value - Candidate object graph to inspect.
+ * @returns True when unsafe keys are detected at any depth.
+ */
+function hasUnsafeObjectKeys(value: unknown): boolean {
+  const stack: unknown[] = [value];
+
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!isValidMapConfig(current)) {
+      continue;
+    }
+
+    for (const [key, child] of Object.entries(current)) {
+      if (UNSAFE_OBJECT_KEYS.has(key)) {
+        return true;
+      }
+
+      if (typeof child === 'object' && child !== null) {
+        stack.push(child);
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Sanitizes and validates uploaded map config payload.
+ *
+ * Applies storage sanitizer, enforces required map structure, and rejects
+ * unsafe object keys.
+ *
+ * @param value - Raw uploaded map config payload.
+ * @returns Sanitized config object or null when invalid.
+ */
+function sanitizeUploadedMapConfig(value: unknown): Record<string, unknown> | null {
+  if (!isValidMapConfig(value)) {
+    return null;
+  }
+
+  const sanitized = sanitizeMapConfigForStorage(value);
+  if (!isValidMapConfig(sanitized)) {
+    return null;
+  }
+
+  if (!isValidMapConfig(sanitized.map)) {
+    return null;
+  }
+
+  if (hasUnsafeObjectKeys(sanitized)) {
+    return null;
+  }
+
+  return sanitized;
+}
+
+/**
  * Generates a unique map name based on existing saved map names.
+ *
+ * @param baseName - Requested base name.
+ * @param existingMaps - Existing saved maps used for collision checks.
+ * @returns Unique map name.
  */
 function createUniqueMapName(baseName: string, existingMaps: MapConfigFavourite[]): string {
   const normalizedBase = baseName || 'My Map';
@@ -53,6 +131,9 @@ function createUniqueMapName(baseName: string, existingMaps: MapConfigFavourite[
 
 /**
  * Adds a record id to the signed-in user's favourites.
+ *
+ * @param event - SvelteKit request event.
+ * @returns JSON response with updated favourites state.
  */
 export const POST: RequestHandler = async ({ cookies, request }): Promise<Response> => {
   const userData = await getUserData(cookies);
@@ -74,6 +155,9 @@ export const POST: RequestHandler = async ({ cookies, request }): Promise<Respon
 
 /**
  * Removes a record id from the signed-in user's favourites.
+ *
+ * @param event - SvelteKit request event.
+ * @returns JSON response with updated favourites state.
  */
 export const DELETE: RequestHandler = async ({ cookies, request }): Promise<Response> => {
   const userData = await getUserData(cookies);
@@ -95,6 +179,9 @@ export const DELETE: RequestHandler = async ({ cookies, request }): Promise<Resp
 
 /**
  * Clears all favourites for the signed-in user.
+ *
+ * @param event - SvelteKit request event.
+ * @returns JSON response with emptied favourites state.
  */
 export const PUT: RequestHandler = async ({ cookies }): Promise<Response> => {
   const userData = await getUserData(cookies);
@@ -110,6 +197,11 @@ export const PUT: RequestHandler = async ({ cookies }): Promise<Response> => {
 
 /**
  * Mutates saved map configs for the signed-in user.
+ *
+ * Supports create and delete actions for saved map configurations.
+ *
+ * @param event - SvelteKit request event.
+ * @returns JSON response with updated map config state.
  */
 export const PATCH: RequestHandler = async ({ cookies, request }): Promise<Response> => {
   const userData = await getUserData(cookies);
@@ -131,7 +223,8 @@ export const PATCH: RequestHandler = async ({ cookies, request }): Promise<Respo
       return json({ ok: false, mapConfigs, reason: 'limit' }, { status: 400 });
     }
 
-    if (!isValidMapConfig(payload.config)) {
+    const sanitizedConfig = sanitizeUploadedMapConfig(payload.config);
+    if (!sanitizedConfig) {
       return json({ ok: false, mapConfigs, reason: 'invalid-config' }, { status: 400 });
     }
 
@@ -143,7 +236,7 @@ export const PATCH: RequestHandler = async ({ cookies, request }): Promise<Respo
     const mapConfig: MapConfigFavourite = {
       id: crypto.randomUUID(),
       name: finalName,
-      config: payload.config,
+      config: sanitizedConfig,
       createdAt,
     };
 

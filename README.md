@@ -260,6 +260,29 @@ Data persistence:
 
 - Deploy from the root of the repository: `npx sst deploy --stage <yourStageName>`.
 
+### Staging Go/No-Go Check
+
+Before deploying or validating sign-in in staging, run the automated preflight check:
+
+- `npm run check-staging`
+
+Optional flags:
+
+- `npm run check-stage -- --stage <yourStageName>`
+- `npm run check-stage -- --stage staging --base-url https://<your-cloudfront-domain>`
+- `npm run check-stage -- --stage staging --base-url https://<your-cloudfront-domain> --region ca-central-1`
+
+What this validates:
+
+- Required env values exist in `.env.<stage>`.
+- `OIDC_CUSTOM_DOMAIN` is host-only (no path like `/oauth2`).
+- `OIDC_PRIVATE_KEY_SECRET_ID` format is valid.
+- AWS credentials are usable (`sts get-caller-identity`).
+- The OIDC private key secret is accessible in Secrets Manager.
+- Outputs callback/logout URLs to confirm provider allowlist configuration.
+
+If any blocker is found, the script exits with a non-zero status and prints `RESULT: NO-GO`.
+
 ## Importing Data
 
 Do the following while your project's server is running:

@@ -136,6 +136,7 @@
 <style lang="postcss">
   @reference "../../../../app.css";
   button {
+    @apply cursor-pointer;
     @apply px-6;
     @apply py-2;
     @apply border-2;
