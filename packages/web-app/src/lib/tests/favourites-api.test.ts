@@ -36,6 +36,7 @@ describe('PATCH /[lang]/api/favourites map config mutations', () => {
     ];
 
     mockedGetUserData.mockResolvedValue({
+      status: 'ok',
       Item: {
         uuid: 'user-1',
         favourites: [],
@@ -78,6 +79,7 @@ describe('PATCH /[lang]/api/favourites map config mutations', () => {
     ];
 
     mockedGetUserData.mockResolvedValue({
+      status: 'ok',
       Item: {
         uuid: 'user-1',
         favourites: ['abc'],
@@ -117,6 +119,7 @@ describe('PATCH /[lang]/api/favourites map config mutations', () => {
     }));
 
     mockedGetUserData.mockResolvedValue({
+      status: 'ok',
       Item: {
         uuid: 'user-1',
         favourites: [],

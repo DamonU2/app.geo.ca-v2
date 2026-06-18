@@ -107,6 +107,7 @@ declare global {
         mapConfigs?: MapConfigFavourite[];
         authRevokedAt?: number | null;
       };
+      userDataStatus?: 'anonymous' | 'ok' | 'missing' | 'unavailable';
 
       // SEO/Meta properties
       canonicalUrl?: string;

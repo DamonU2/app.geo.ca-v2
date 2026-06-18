@@ -4,6 +4,7 @@ import { getUserData, putUserData } from '$lib/db/user';
 import type { MapConfigFavourite } from '$lib/db/db-types';
 
 const MAX_SAVED_MAPS = 25;
+const MAX_ITEM_SIZE_BYTES = 300000; // 300KB (conservative safety margin below 400KB DynamoDB limit)
 
 /**
  * Normalizes a candidate favourite id from request payload.
@@ -146,12 +147,20 @@ export const PATCH: RequestHandler = async ({ cookies, request }): Promise<Respo
       createdAt,
     };
 
-    // Persist both collections on each write so partial updates never drop the sibling field.
+    // Check if adding this map would exceed DynamoDB item size limit.
     userData.Item.mapConfigs = [...mapConfigs, mapConfig];
     userData.Item.favourites = userData.Item.favourites ?? [];
+    const estimatedSize = JSON.stringify(userData.Item).length;
+
+    if (estimatedSize > MAX_ITEM_SIZE_BYTES) {
+      // Restore original state before returning error.
+      userData.Item.mapConfigs = mapConfigs;
+      return json({ ok: false, mapConfigs, reason: 'item-too-large' }, { status: 400 });
+    }
 
     const result = await putUserData(userData.Item, cookies);
     if (!result.ok) {
+      console.error('Failed to persist map config. Current map count:', mapConfigs.length + 1);
       return json({ ok: false, mapConfigs, reason: 'persist-failed' }, { status: 500 });
     }
 

@@ -229,10 +229,18 @@ Not stored by current app code:
 
 Guest favourites are stored temporarily in the `guest_favourites` cookie and merged into the signed-in user's `favourites` list after authentication.
 
-Favourites UI split:
+Favourites feature routes:
 
-- `/${lang}/favourites?tab=datasets` reads and manages dataset ids from `favourites`.
-- `/${lang}/favourites?tab=maps` reads and manages saved map configs from `mapConfigs`.
+- `/${lang}/favourites`: Landing page (hub) for signed-in users; displays cards to navigate to datasets and maps sections.
+- `/${lang}/favourites/datasets`: Displays list of saved dataset records with options to delete or view on the map.
+- `/${lang}/favourites/maps`: Displays list of saved map configurations with options to upload, download, delete, or view on the map.
+- `/${lang}/favourites/view`: Shared map viewer for displaying selected datasets (by record IDs) or a single saved map configuration (by mapId).
+- `/[lang]/api/favourites`: RESTful API endpoints (POST/DELETE/PUT/PATCH) for favourites and map config mutations.
+
+Data persistence:
+
+- Dataset favourites: array of record IDs stored in `UserData.favourites`.
+- Saved map configs: array of `MapConfigFavourite` objects stored in `UserData.mapConfigs` (max 25 configs; each config size-limited to stay within 300KB DynamoDB item limit).
 
 ## Building and deploying
 

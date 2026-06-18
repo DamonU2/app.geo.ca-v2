@@ -180,6 +180,16 @@ export interface UserData {
 }
 
 /**
+ * Status returned alongside user data reads.
+ *
+ * - `anonymous`: no authenticated user context is available.
+ * - `ok`: data was loaded from storage.
+ * - `missing`: authenticated user exists but no row exists yet.
+ * - `unavailable`: user row could not be read (storage/config/runtime issue).
+ */
+export type UserDataLoadStatus = 'anonymous' | 'ok' | 'missing' | 'unavailable';
+
+/**
  * Named saved map configuration linked to a user.
  */
 export interface MapConfigFavourite {
@@ -194,6 +204,7 @@ export interface MapConfigFavourite {
  */
 export interface UserInfo {
   Item: UserData;
+  status: UserDataLoadStatus;
 }
 
 /**

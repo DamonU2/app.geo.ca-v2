@@ -95,17 +95,24 @@ function getTokenIssuedAt(token: TokenResponse): number | null {
  * Fetches user data from the database using the provided cookies.
  *
  * @param cookies - The cookies object containing user session data.
- * @returns A promise that resolves to the user data.
+ * @returns A promise that resolves to user data plus status:
+ * `anonymous` when no active user is resolved,
+ * `ok` when storage data is returned,
+ * `missing` when the user row is not yet created,
+ * and `unavailable` when storage access fails.
  */
 const getUserData = async (cookies: Cookies): Promise<UserInfo> => {
   const token: TokenResponse = await getToken(cookies);
   const userKey = getUserKey(token);
-  if (!userKey) return { Item: { uuid: null, favourites: [], mapConfigs: [] } };
+  if (!userKey) {
+    return { Item: { uuid: null, favourites: [], mapConfigs: [] }, status: 'anonymous' };
+  }
 
-  const fallbackUserData: UserInfo = { Item: { uuid: userKey, favourites: [], mapConfigs: [] } };
+  const unavailableUserData: UserInfo = { Item: { uuid: userKey, favourites: [], mapConfigs: [] }, status: 'unavailable' };
+  const missingUserData: UserInfo = { Item: { uuid: userKey, favourites: [], mapConfigs: [] }, status: 'missing' };
 
   if (!USER_TABLE_NAME) {
-    return fallbackUserData;
+    return unavailableUserData;
   }
 
   const command = new GetCommand({
@@ -121,16 +128,20 @@ const getUserData = async (cookies: Cookies): Promise<UserInfo> => {
   } catch (error) {
     if (isExpiredAwsTokenError(error)) {
       warnExpiredAwsTokenOnce();
-      return fallbackUserData;
+      return unavailableUserData;
     }
 
     console.error('Error fetching user data.');
     console.error(error);
-    return fallbackUserData;
+    return unavailableUserData;
   }
 
   if (response?.Item === undefined || response.Item === null) {
-    return fallbackUserData;
+    return missingUserData;
+  }
+
+  if (!Array.isArray(response.Item.favourites)) {
+    response.Item.favourites = [];
   }
 
   if (!Array.isArray(response.Item.mapConfigs)) {
@@ -141,10 +152,10 @@ const getUserData = async (cookies: Cookies): Promise<UserInfo> => {
   // Back-channel revocation is stored server-side; reject tokens issued before that marker.
   if (typeof response.Item.authRevokedAt === 'number' && (tokenIssuedAt === null || tokenIssuedAt <= response.Item.authRevokedAt)) {
     clearAuthCookies(cookies);
-    return { Item: { uuid: null, favourites: [], mapConfigs: [] } };
+    return { Item: { uuid: null, favourites: [], mapConfigs: [] }, status: 'anonymous' };
   }
 
-  return response;
+  return { Item: response.Item, status: 'ok' };
 };
 
 /**
@@ -179,7 +190,15 @@ const putUserData = async (data: Partial<UserData>, cookies: Cookies): Promise<R
       return { ok: false };
     }
 
+    // Handle DynamoDB item size limit error
+    if (error instanceof Error && error.message.includes('Item size has exceeded')) {
+      console.error('Item size limit exceeded. Current item size:', JSON.stringify(data).length, 'bytes');
+      return { ok: false };
+    }
+
     console.error('Error storing user data.');
+    console.error('Error details:', error instanceof Error ? error.message : String(error));
+    console.error('Item size estimate (JSON):', JSON.stringify(data).length, 'bytes');
     console.error(error);
     return { ok: false };
   }

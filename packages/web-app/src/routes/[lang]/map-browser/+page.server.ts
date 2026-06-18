@@ -73,7 +73,7 @@ export const load: PageServerLoad = async ({ request, fetch, params, url, cookie
   const lang = getAppLanguage(params.lang);
   const searchMode: SearchMode = url.searchParams.get('searchMethod') === 'classic' || !SEMANTIC_SEARCH_URL ? 'classic' : 'semantic';
   let parsedResponse: ParsedResponse = {};
-  let userData: UserInfo = { Item: { uuid: '', favourites: [] } };
+  let userData: UserInfo = { Item: { uuid: '', favourites: [] }, status: 'anonymous' };
   let sanitizedResults: ReturnType<typeof sanitize> | ReturnType<typeof sanitizeSemantic> = [];
 
   try {

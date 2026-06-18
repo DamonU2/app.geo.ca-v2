@@ -18,6 +18,12 @@
   import type { AppLanguage } from '$lib/utils/language';
   import { isFrench, pickByLanguage } from '$lib/utils/language';
 
+  /**
+   * Signed-in favourites datasets view.
+   *
+   * Renders saved dataset records, supports selection and deletion,
+   * and opens selected records in the map view route.
+   */
   type FavouritesTranslations = typeof enTranslations;
   const translations: FavouritesTranslations = {
     ...enTranslations,
@@ -28,24 +34,18 @@
   const userDataUnavailable = page.data.userDataStatus === 'unavailable';
 
   // Translations
-  const favouritesTitle = translations.title;
-  const datasetsDescription = translations.datasetsDescription || translations.description;
-  const loginInfo = translations.loginInfo;
-  const landingDescription = translations.landingDescription;
   const datasetsTabLabel = translations.datasetsTab;
-  const mapsTabLabel = translations.mapsTab;
-  const datasetsLinkLabel = translations.datasetsLinkLabel;
-  const mapsLinkLabel = translations.mapsLinkLabel;
-  const datasetsLandingDescription = translations.datasetsLandingDescription;
-  const mapsLandingDescription = translations.mapsLandingDescription;
-  const landingTipLabel = translations.landingTipLabel;
+  const datasetsDescription = translations.datasetsDescription || translations.description;
   const remove = translations.remove;
   const removeAll = translations.removeAll;
+  const resourceFormatsLabel = translations.resourceFormats;
   const resourceListEmpty = translations.resourceListEmpty;
-  const findAResource = translations.findAResource;
+  const resourceNameLabel = translations.resourceName;
   const savedDataUnavailable = translations.savedDataUnavailable;
-  const viewOnMapLabel = translations.viewOnMap;
   const searchFor = translations.searchFor;
+  const viewOnMapLabel = translations.viewOnMap;
+  const findAResource = translations.findAResource;
+  const mapsLinkLabel = translations.mapsLinkLabel;
 
   const langShort = pickByLanguage(lang, 'en', 'fr');
   const titleKey = `title_${langShort}` as 'title_en' | 'title_fr';
@@ -55,33 +55,29 @@
   let selectedIds: string[] = $state([]);
   let numSelected: number = $derived(selectedIds.length);
   let loading: boolean = $state(true);
-
   let favouriteRecordList: string[] = $state(page.data?.userData?.favourites ? [...page.data.userData.favourites] : []);
-  const savedMapsCount = page.data?.userData?.mapConfigs?.length ?? 0;
   let records: FavouritesRecord[] = $state([]);
   let tableDataArray: FavouritesRow[] = $state([]);
 
-  // Derive allSelected state: true only if all non-disabled rows are selected
   let allSelected = $derived(
     tableDataArray.length > 0 && tableDataArray.every((row) => selectedIds.includes(row.id) || row.disableCheckbox)
   );
 
-  const resourceFormatsLabel = translations.resourceFormats;
-  const resourceNameLabel = translations.resourceName;
   const tableLabels: Record<string, string> = {
     name: resourceNameLabel,
     formats: resourceFormatsLabel,
   };
 
-  /************* Handlers ***************/
-
   /**
-   * Handle deleting a resource from the favourites list.
+   * Deletes one favourite resource after user confirmation.
    *
-   * @param id - The ID of the resource to delete.
+   * For signed-in users this persists the deletion through the API,
+   * then synchronizes local table and local-storage state.
+   *
+   * @param id - Favourites record id to delete.
+   * @returns Resolves when deletion flow completes.
    */
   async function handleDeleteResource(id: string): Promise<void> {
-    // Before deleting, ask the user's permission
     const resource = tableDataArray.find((tableData: FavouritesRow) => tableData.id === id);
     const resourceName = resource?.name;
     const permissionText = isFrench(lang)
@@ -89,7 +85,6 @@
       : `Are you sure you want to delete the following resource? \n\n${resourceName} (${id})`;
 
     if (confirm(permissionText) === true) {
-      // If the user confirms, proceed with deletion. For signed-in users, also update the server-side favourites.
       if (signedIn) {
         const response = await fetch(`/${lang}/api/favourites`, {
           method: 'DELETE',
@@ -104,22 +99,24 @@
       let selectedSet = new SvelteSet<string>(sortableTable?.getSelectedIds());
       selectedSet.delete(id);
 
-      // Update resource lists
       favouriteRecordList = favouriteRecordList.filter((listItem) => listItem !== id);
       tableDataArray = tableDataArray.filter((row) => row.id !== id);
       records = records.filter((record) => record.id !== id);
 
-      // Update the table and button label
       sortableTable?.updateTableContent(tableDataArray);
       sortableTable?.setSelectedIds(Array.from(selectedSet));
 
-      // Update localStorage and dispatch localstorage_updated event
       updateLocalStorage(FAVOURITES_STORAGE_KEY, favouriteRecordList);
     }
   }
 
   /**
-   * Handle removing all resources from the favourites list.
+   * Removes all favourite resources after user confirmation.
+   *
+   * For signed-in users this clears server-side favourites before
+   * resetting local records, selection, and local-storage state.
+   *
+   * @returns Resolves when clear-all flow completes.
    */
   async function handleRemoveAllClick(): Promise<void> {
     const permissionText = isFrench(lang)
@@ -127,7 +124,6 @@
       : `Are you sure you want to delete ${favouriteRecordList.length} resources?`;
 
     if (confirm(permissionText) === true) {
-      // If the user confirms, proceed with deletion. For signed-in users, also update the server-side favourites.
       if (signedIn) {
         const response = await fetch(`/${lang}/api/favourites`, {
           method: 'PUT',
@@ -137,34 +133,35 @@
         }
       }
 
-      // Update resource lists
       favouriteRecordList = [];
       tableDataArray = [];
       records = [];
 
-      // Update the table and button label
       sortableTable?.updateTableContent([]);
       sortableTable?.setSelectedIds([]);
 
-      // Update localStorage and dispatch localstorage_updated event
       updateLocalStorage(FAVOURITES_STORAGE_KEY, []);
     }
   }
 
   /**
-   * Handle opening the map view.
+   * Navigates to the shared map view route with selected dataset ids.
+   *
+   * Encodes selected record identifiers into the query string and preserves source context.
    */
   function handleOpenMapClick(): void {
     const ids = selectedIds.join(',');
     goto(resolve(`/${lang}/favourites/view?ids=${encodeURIComponent(ids)}&source=datasets`));
   }
 
+  /**
+   * Initializes the datasets table from server/local favourites data.
+   *
+   * Resolves signed-in and guest sources, fetches matching records, and preselects mappable rows.
+   *
+   * @returns Resolves after initial table state is hydrated.
+   */
   onMount(async () => {
-    if (signedIn) {
-      loading = false;
-      return;
-    }
-
     const storedFavourites = getStoredFavourites(localStorage);
     const resolved = resolveInitialFavourites(signedIn, favouriteRecordList, storedFavourites);
     favouriteRecordList = resolved.favourites;
@@ -192,92 +189,28 @@
         };
       });
 
-      // Select all non-disabled rows by default
       selectedIds = tableDataArray.filter((row) => !row.disableCheckbox).map((row) => row.id);
     }
 
-    // Turn off the loading mask once the records have finished loading
     loading = false;
   });
-
-  const isLanding = $derived(signedIn);
 </script>
 
-<h1 class="mt-12 mb-7 mx-5 md:mx-0 font-custom-style-h1 md:mr-auto leading-tight">
-  {favouritesTitle}
-</h1>
+<h1 class="mt-12 mb-7 mx-5 md:mx-0 font-custom-style-h1 md:mr-auto leading-tight">{datasetsTabLabel}</h1>
 
 <div class="mx-5 md:mx-0 mb-5">
-  {#if isLanding}
-    {#if userDataUnavailable}
-      <div class="rounded border border-red-600 bg-red-50 px-4 py-3 font-custom-style-body-1 text-red-900" role="status" aria-live="polite">
-        {savedDataUnavailable}
-      </div>
-    {:else}
-      <!-- Landing page for signed-in users -->
-      <p class="font-custom-style-body-1 mx-0 mb-7 max-w-4xl leading-relaxed">
+  {#if userDataUnavailable}
+    <div class="rounded border border-red-600 bg-red-50 px-4 py-3 font-custom-style-body-1 text-red-900" role="status" aria-live="polite">
+      {savedDataUnavailable}
+    </div>
+  {:else if !loading}
+    {#if tableDataArray.length > 0}
+      <p class="font-custom-style-body-1 mx-0 mb-6">
         <!-- These are our descriptions, no injection risk -->
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-        {@html landingDescription}
+        {@html datasetsDescription}
       </p>
-      <Card type="tabbed">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <section
-            class="rounded border border-custom-16/35 bg-custom-1 p-5 md:p-6 shadow-[0_0.1875rem_0.375rem_#00000014] transition-shadow hover:shadow-[0_0.375rem_0.75rem_#0000001f]"
-          >
-            <div class="flex items-start justify-between gap-4">
-              <h2 class="font-custom-style-h2-2">
-                <a class="hover:underline" href={resolve(`/${lang}/favourites/datasets`)}>
-                  {datasetsTabLabel} ({favouriteRecordList.length})
-                </a>
-              </h2>
-            </div>
-            <p class="font-custom-style-body-1 mt-3 mb-5 leading-relaxed">{datasetsLandingDescription}</p>
-            <a
-              class="button-3 w-full md:w-fit md:min-w-48 shadow-[0_0.1875rem_0.375rem_#00000029]"
-              href={resolve(`/${lang}/favourites/datasets`)}
-            >
-              {datasetsLinkLabel}
-            </a>
-          </section>
 
-          <section
-            class="rounded border border-custom-16/35 bg-custom-1 p-5 md:p-6 shadow-[0_0.1875rem_0.375rem_#00000014] transition-shadow hover:shadow-[0_0.375rem_0.75rem_#0000001f]"
-          >
-            <div class="flex items-start justify-between gap-4">
-              <h2 class="font-custom-style-h2-2">
-                <a class="hover:underline" href={resolve(`/${lang}/favourites/maps`)}>
-                  {mapsTabLabel} ({savedMapsCount})
-                </a>
-              </h2>
-            </div>
-            <p class="font-custom-style-body-1 mt-3 mb-5 leading-relaxed">{mapsLandingDescription}</p>
-            <a
-              class="button-3 w-full md:w-fit md:min-w-48 shadow-[0_0.1875rem_0.375rem_#00000029]"
-              href={resolve(`/${lang}/favourites/maps`)}
-            >
-              {mapsLinkLabel}
-            </a>
-          </section>
-        </div>
-        <div class="mt-1 rounded border border-custom-16/20 bg-custom-1 px-4 py-3 md:px-5">
-          <p class="font-custom-style-body-9 m-0 text-custom-18">
-            {landingTipLabel}
-          </p>
-        </div>
-      </Card>
-    {/if}
-  {:else if !loading}
-    <!-- Guest list -->
-    <p class="font-custom-style-body-1 mx-0 mb-6">
-      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-      {@html datasetsDescription}
-    </p>
-    <p class="font-custom-style-body-1 mx-0 mb-6">
-      {loginInfo}
-    </p>
-
-    {#if records.length > 0}
       <Card>
         <!-- Table for medium to large screens-->
         <div class="hidden sm:table w-full">
@@ -299,7 +232,6 @@
         <div class="block sm:hidden rounded bg-custom-1 px-5 drop-shadow-[0_0.1875rem_0.375rem_#00000029] divide-y divide-custom-17">
           {#each tableDataArray as item (item.id)}
             <div class="flex items-center py-5">
-              <!-- Checkboxes -->
               <div class="flex pointer-events-auto hover:cursor-pointer w-16 ml-4">
                 <input
                   type="checkbox"
@@ -320,15 +252,12 @@
                 <Checkmark classes="absolute h-4 mt-1.5 ml-1.5 hidden peer-checked:block pointer-events-none text-custom-1" />
               </div>
 
-              <!-- Resource -->
               <div class="flex-1">
-                <!-- Resource data-->
                 <a href={resolve(`/${lang}/map-browser/record/${item.id}`)} class="font-custom-style-h2-2 block">
                   {item.name}
                 </a>
                 <p class="font-custom-style-body-9">{item.id}</p>
 
-                <!-- Remove Button-->
                 <button
                   class="button-3 mt-4 p-2 text-custom-16 rounded border-2 border-transparent hover:border-custom-16 hover:text-custom-1 hover:bg-custom-16 hover:shadow-[0_0.1875rem_0.375rem_#00000029]"
                   onclick={() => handleDeleteResource(item.id)}
@@ -341,7 +270,6 @@
           {/each}
         </div>
 
-        <!-------------- buttons -------------->
         <div class="sm:flex">
           <div class="sm:grow">
             <button
@@ -363,6 +291,12 @@
         {searchFor}
       </h2>
       <SearchBarSimplified />
+
+      <div class="mt-9">
+        <a class="button-3 w-full md:w-fit md:min-w-48 shadow-[0_0.1875rem_0.375rem_#00000029]" href={resolve(`/${lang}/favourites/maps`)}>
+          {mapsLinkLabel}
+        </a>
+      </div>
     {:else}
       <div class="my-8">
         <NoMap classes="text-custom-19 m-auto h-48 md:h-80 lg:h-96" />

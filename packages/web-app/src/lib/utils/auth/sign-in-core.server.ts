@@ -324,6 +324,6 @@ export function getOidcLogoutUrl(requestUrl: URL): string | null {
     return null;
   }
 
-  const logoutUri = `${requestUrl.origin}/sign-in/logout`;
+  const logoutUri = `${requestUrl.origin}/sign-in/logout${requestUrl.search}`;
   return `${customDomain}/oauth2/logout?client_id=${encodeURIComponent(clientId)}&logout_uri=${encodeURIComponent(logoutUri)}`;
 }
