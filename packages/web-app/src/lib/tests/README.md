@@ -64,6 +64,9 @@ npm run test
 - `client-assertion.test.ts`
   - Covers RS256 client assertion JWT creation for `private_key_jwt`, including claim contents, expiration, determinism, and invalid key handling.
 
+- `secrets-manager-policy.test.ts`
+  - Verifies IAM policy generation for AWS Secrets Manager access to the private key used in `private_key_jwt` authentication.
+
 ### Logout handling
 
 - `back-channel-logout.test.ts`
@@ -72,10 +75,22 @@ npm run test
 - `back-channel-logout-route.test.ts`
   - Verifies the back-channel logout route returns the right status codes for missing tokens, invalid tokens, replayed logout notifications, persistence failures, and successful revocation.
 
-### Favourites API
+- `sign-in-logout-route.test.ts`
+  - Verifies the logout route clears auth cookies and redirects appropriately for signed-in and guest users.
+
+- `user-revocation.test.ts`
+  - Covers the `markUserAuthRevoked()` database operation that records back-channel logout revocation markers (`authRevokedAt`).
+
+### Favourites
 
 - `favourites-api.test.ts`
   - Covers map-config create/delete behavior in the favourites API, including duplicate-name auto-renaming and the max-item limit.
+
+- `favourites-route-split.test.ts`
+  - Verifies the split favourites routes (`/favourites`, `/favourites/datasets`, `/favourites/maps`, `/favourites/view`) correctly load page data and remain accessible to guests and signed-in users.
+
+- `user-data-loading.test.ts`
+  - Covers the `getUserData()` function for loading user DynamoDB records by UUID, including various load status states (anonymous, ok, missing, unavailable).
 
 ## Shared test helpers
 
@@ -95,5 +110,11 @@ npm run test -- src/lib/tests/sign-in-core.test.ts src/lib/tests/sign-in-core-to
 - If a change affects logout handling, run:
 
 ```bash
-npm run test -- src/lib/tests/back-channel-logout.test.ts src/lib/tests/back-channel-logout-route.test.ts
+npm run test -- src/lib/tests/back-channel-logout.test.ts src/lib/tests/back-channel-logout-route.test.ts src/lib/tests/sign-in-logout-route.test.ts
+```
+
+- If a change affects favourites routes or API, run:
+
+```bash
+npm run test -- src/lib/tests/favourites-api.test.ts src/lib/tests/favourites-route-split.test.ts src/lib/tests/user-data-loading.test.ts
 ```

@@ -9,7 +9,8 @@ import { getPostLogoutRedirectPath } from '$lib/utils/auth/sign-in-post-auth.ser
  * @param event - SvelteKit load event containing cookies.
  * @returns Redirect response to the default English map browser page.
  */
-export const load: PageServerLoad = ({ cookies }: Parameters<PageServerLoad>[0]): Promise<void> => {
+export const load: PageServerLoad = ({ cookies, url }: Parameters<PageServerLoad>[0]): Promise<void> => {
   clearAuthCookies(cookies);
-  throw redirect(303, getPostLogoutRedirectPath());
+  const returnTo = url.searchParams.get('returnTo');
+  throw redirect(303, getPostLogoutRedirectPath(undefined, returnTo));
 };

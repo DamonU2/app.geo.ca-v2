@@ -14,13 +14,18 @@ import { getOidcLogoutUrl } from '$lib/utils/auth/sign-in-core.server';
  */
 export const load: PageServerLoad = ({ url, params }: Parameters<PageServerLoad>[0]): Promise<void> => {
   const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+  const returnTo = url.searchParams.get('returnTo');
+  const localLogoutPath = returnTo
+    ? `/${params.lang}/sign-in/logout?returnTo=${encodeURIComponent(returnTo)}`
+    : `/${params.lang}/sign-in/logout`;
+
   if (isLocalhost) {
-    throw redirect(303, `/${params.lang}/sign-in/logout`);
+    throw redirect(303, localLogoutPath);
   }
 
   const oidcLogoutUrl = getOidcLogoutUrl(url);
   if (!oidcLogoutUrl) {
-    throw redirect(303, `/${params.lang}/sign-in/logout`);
+    throw redirect(303, localLogoutPath);
   }
 
   throw redirect(303, oidcLogoutUrl);

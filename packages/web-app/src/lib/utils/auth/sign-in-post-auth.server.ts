@@ -125,8 +125,24 @@ export function getPostAuthRedirect(requestUrl: URL, state: string | null, lang:
  * Returns the in-app destination used after local sign-out cookie cleanup.
  *
  * @param lang - Optional language segment. Defaults to `en-ca` when missing.
+ * @param returnTo - Optional explicit in-app path to return to.
  * @returns Language-scoped map browser path.
  */
-export function getPostLogoutRedirectPath(lang?: string): string {
-  return `/${lang ?? 'en-ca'}/map-browser`;
+export function getPostLogoutRedirectPath(lang?: string, returnTo?: string | null): string {
+  const fallbackLang = lang ?? 'en-ca';
+  const fallbackPath = `/${fallbackLang}/map-browser`;
+
+  if (!returnTo) {
+    return fallbackPath;
+  }
+
+  if (lang) {
+    return returnTo === `/${lang}/favourites` ? returnTo : fallbackPath;
+  }
+
+  if (returnTo === '/en-ca/favourites' || returnTo === '/fr-ca/favourites') {
+    return returnTo;
+  }
+
+  return fallbackPath;
 }

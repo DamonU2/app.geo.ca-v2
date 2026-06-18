@@ -46,14 +46,15 @@ export const load: LayoutServerLoad = async ({ params, cookies, depends }) => {
   depends('app:favourites');
 
   const lang = getAppLanguage(params.lang);
-  const userData = await getUserData(cookies);
-  const signedIn = Boolean(userData.Item.uuid);
+  const userInfo = await getUserData(cookies);
+  const signedIn = Boolean(userInfo.Item.uuid);
+  const userDataUnavailable = userInfo.status === 'unavailable';
   const navitems = structuredClone(pickByLanguage(lang, enNavitems, frNavitems)) as NavItems;
 
-  if (signedIn && navitems.favourites) {
+  if (signedIn && !userDataUnavailable && navitems.favourites) {
     // Datasets and saved maps are stored separately and shown as tab-specific counters.
-    const datasetsCount = (userData.Item.favourites ?? []).length;
-    const mapConfigsCount = (userData.Item.mapConfigs ?? []).length;
+    const datasetsCount = (userInfo.Item.favourites ?? []).length;
+    const mapConfigsCount = (userInfo.Item.mapConfigs ?? []).length;
     const datasetsLabel = isFrench(lang) ? 'Jeux de donnees' : 'Datasets';
     const mapsLabel = isFrench(lang) ? 'Cartes' : 'Maps';
 
@@ -64,11 +65,11 @@ export const load: LayoutServerLoad = async ({ params, cookies, depends }) => {
           links: [
             {
               title: `${datasetsLabel} (${datasetsCount})`,
-              href: `/${lang}/favourites?tab=datasets`,
+              href: `/${lang}/favourites/datasets`,
             },
             {
               title: `${mapsLabel} (${mapConfigsCount})`,
-              href: `/${lang}/favourites?tab=maps`,
+              href: `/${lang}/favourites/maps`,
             },
           ],
         },
@@ -80,7 +81,8 @@ export const load: LayoutServerLoad = async ({ params, cookies, depends }) => {
     lang,
     signedIn,
     FEATURE_SIGN_IN: isOidcConfigured(),
-    userData: userData.Item,
+    userData: userInfo.Item,
+    userDataStatus: userInfo.status,
     footerLinks: pickByLanguage(lang, enFooterLinks, frFooterLinks),
     legalData: pickByLanguage(lang, enLegal, frLegal),
     navitems,

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { navigating, page } from '$app/state';
   import LoadingMask from '$lib/components/loading-mask/loading-mask.svelte';
-  import Favourites from '$lib/components/favourites/favourites.svelte';
+  import FavouritesView from '$lib/components/favourites/favourites-view.svelte';
 
   const lang = page.data.lang;
   const title = lang === 'fr-ca' ? 'app.geo.ca - Favoris' : 'app.geo.ca - Favourites';
@@ -23,6 +23,4 @@
   <LoadingMask classes="fixed left-0 top-0 items-center" />
 {/if}
 
-<div style="min-height: 300px;">
-  <Favourites />
-</div>
+<div style="min-height: 300px;"><FavouritesView /></div>

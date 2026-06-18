@@ -1,7 +1,7 @@
 import type { Cookies } from '@sveltejs/kit';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getUserData, putUserData } from '$lib/db/user';
-import { getPostAuthRedirect, mergeGuestFavourites } from '$lib/utils/auth/sign-in-post-auth.server';
+import { getPostAuthRedirect, getPostLogoutRedirectPath, mergeGuestFavourites } from '$lib/utils/auth/sign-in-post-auth.server';
 
 vi.mock('$lib/db/user', () => ({
   getUserData: vi.fn(),
@@ -51,8 +51,19 @@ describe('sign-in post-auth helpers', () => {
     expect(redirectPath).toBe('/en-ca/map-browser');
   });
 
+  it('returns favourites path for safe language-scoped logout return target', () => {
+    const redirectPath = getPostLogoutRedirectPath('en-ca', '/en-ca/favourites');
+    expect(redirectPath).toBe('/en-ca/favourites');
+  });
+
+  it('falls back to map-browser when logout return target is outside allowed favourites path', () => {
+    const redirectPath = getPostLogoutRedirectPath('en-ca', '/en-ca/favourites/datasets');
+    expect(redirectPath).toBe('/en-ca/map-browser');
+  });
+
   it('merges guest favourites with server favourites and clears cookie when persisted', async () => {
     mockedGetUserData.mockResolvedValue({
+      status: 'ok',
       Item: {
         uuid: 'user-123',
         favourites: ['dataset-a', 'dataset-b'],
@@ -78,6 +89,7 @@ describe('sign-in post-auth helpers', () => {
 
   it('does not clear guest favourites cookie when persistence fails', async () => {
     mockedGetUserData.mockResolvedValue({
+      status: 'ok',
       Item: {
         uuid: 'user-123',
         favourites: ['dataset-a'],

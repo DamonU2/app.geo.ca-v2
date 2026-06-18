@@ -18,6 +18,13 @@
 
   const signInText = $derived(pickByLanguage(lang, 'Sign in', 'Ouverture de Session'));
   const signOutText = $derived(pickByLanguage(lang, 'Sign out', 'Fermer la session'));
+  const shouldReturnToFavourites = $derived.by(() => {
+    const currentPath = page.url.pathname;
+    const datasetsPath = `/${lang}/favourites/datasets`;
+    const mapsPath = `/${lang}/favourites/maps`;
+
+    return currentPath === datasetsPath || currentPath === mapsPath;
+  });
 
   let showLeavingNotice = $state(false);
 
@@ -57,7 +64,14 @@
 <div class="flex h-full items-center whitespace-nowrap">
   {#if featureSignIn}
     {#if signedIn}
-      <a transition:slide data-sveltekit-reload href={resolve(`/${lang}/sign-in/oidc-logout`)} class="divide-y divide-custom-16">
+      <a
+        transition:slide
+        data-sveltekit-reload
+        href={shouldReturnToFavourites
+          ? resolve(`/${lang}/sign-in/oidc-logout?returnTo=${encodeURIComponent(`/${lang}/favourites`)}`)
+          : resolve(`/${lang}/sign-in/oidc-logout`)}
+        class="divide-y divide-custom-16"
+      >
         <button class={light ? 'button-2' : 'button-1'}>{signOutText}</button>
       </a>
     {:else}
