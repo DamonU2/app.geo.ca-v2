@@ -144,4 +144,114 @@ describe('PATCH /[lang]/api/favourites map config mutations', () => {
     expect(payload.mapConfigs).toHaveLength(25);
     expect(mockedPutUserData).not.toHaveBeenCalled();
   });
+
+  it('rejects uploaded map configs that do not contain a map object', async () => {
+    mockedGetUserData.mockResolvedValue({
+      status: 'ok',
+      Item: {
+        uuid: 'user-1',
+        favourites: [],
+        mapConfigs: [],
+      },
+    });
+
+    const response = await PATCH({
+      cookies: {} as never,
+      request: createPatchRequest({
+        action: 'createMapConfig',
+        name: 'Imported',
+        config: { viewSettings: { some: 'value' } },
+      }),
+    } as never);
+
+    expect(response.status).toBe(400);
+    const payload = (await response.json()) as { ok: boolean; reason: string };
+
+    expect(payload.ok).toBe(false);
+    expect(payload.reason).toBe('invalid-config');
+    expect(mockedPutUserData).not.toHaveBeenCalled();
+  });
+
+  it('sanitizes uploaded map configs before persistence', async () => {
+    mockedGetUserData.mockResolvedValue({
+      status: 'ok',
+      Item: {
+        uuid: 'user-1',
+        favourites: [],
+        mapConfigs: [],
+      },
+    });
+
+    const response = await PATCH({
+      cookies: {} as never,
+      request: createPatchRequest({
+        action: 'createMapConfig',
+        name: 'Imported',
+        config: {
+          map: {
+            interaction: 'dynamic',
+            listOfGeoviewLayerConfig: [
+              {
+                geoviewLayerId: 'layer-1',
+                geoviewLayerType: 'geoCore',
+                metadataAccessPath: 'https://example.test/metadata',
+                unexpectedLayerProp: true,
+              },
+            ],
+          },
+          theme: 'geo.ca',
+          unexpectedTopLevel: { keepMe: false },
+        },
+      }),
+    } as never);
+
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as { ok: boolean; mapConfigs: MapConfigFavourite[] };
+
+    expect(payload.ok).toBe(true);
+    expect(payload.mapConfigs).toHaveLength(1);
+    expect(payload.mapConfigs[0].config).not.toHaveProperty('unexpectedTopLevel');
+    expect(payload.mapConfigs[0].config).toMatchObject({
+      map: {
+        interaction: 'dynamic',
+        listOfGeoviewLayerConfig: [
+          {
+            geoviewLayerId: 'layer-1',
+            geoviewLayerType: 'geoCore',
+          },
+        ],
+      },
+      theme: 'geo.ca',
+    });
+    expect(mockedPutUserData).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects uploaded map configs containing unsafe object keys', async () => {
+    mockedGetUserData.mockResolvedValue({
+      status: 'ok',
+      Item: {
+        uuid: 'user-1',
+        favourites: [],
+        mapConfigs: [],
+      },
+    });
+
+    const unsafeConfig = JSON.parse('{"map":{},"components":{"__proto__":{"polluted":true}}}') as Record<string, unknown>;
+
+    const response = await PATCH({
+      cookies: {} as never,
+      request: createPatchRequest({
+        action: 'createMapConfig',
+        name: 'Imported',
+        config: unsafeConfig,
+      }),
+    } as never);
+
+    expect(response.status).toBe(400);
+    const payload = (await response.json()) as { ok: boolean; reason: string };
+
+    expect(payload.ok).toBe(false);
+    expect(payload.reason).toBe('invalid-config');
+    expect(mockedPutUserData).not.toHaveBeenCalled();
+  });
 });

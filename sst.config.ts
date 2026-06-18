@@ -84,14 +84,19 @@ export default $config({
       transform: {
         server: (args: any) => {
           args.logging = logRetention;
-          if (!args.policies) {
-            args.policies = [];
-          }
-
+          
           if (oidcPrivateKeySecretResourceArn) {
-            args.policies.push({
-              actions: ["secretsmanager:GetSecretValue"],
-              resources: [oidcPrivateKeySecretResourceArn],
+            // Add inline policy for Secrets Manager access
+            args.inlinePolicies = args.inlinePolicies || {};
+            args.inlinePolicies["SecretsManagerAccess"] = JSON.stringify({
+              Version: "2012-10-17",
+              Statement: [
+                {
+                  Effect: "Allow",
+                  Action: ["secretsmanager:GetSecretValue"],
+                  Resource: [oidcPrivateKeySecretResourceArn],
+                },
+              ],
             });
           }
         },

@@ -4,7 +4,7 @@ import frLabels from '$lib/components/favourites/i18n/fr/translations.json';
 
 /**
  * Loads localized labels and forwards server data for the maps tab.
-
+ *
  * Merges route language labels with server-provided metadata and user data.
  *
  * @param params - Route parameters containing language.

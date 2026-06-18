@@ -6,6 +6,9 @@ import { loadFavouritesPageData } from '$lib/utils/favourites/page-load.server';
 /**
  * Loads the favourites page data by reading user favourites, fetching matching
  * GeoCore records, and preparing localized SEO metadata.
+ *
+ * @param event - SvelteKit page-server load event.
+ * @returns Localized favourites page data and metadata.
  */
 export const load: PageServerLoad = async ({ fetch, params, url, cookies }) => {
   const lang = getAppLanguage(params.lang);

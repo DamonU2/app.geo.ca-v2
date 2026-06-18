@@ -54,6 +54,7 @@
   let sortableTable: SortableTable | undefined = $state();
   let selectedIds: string[] = $state([]);
   let numSelected: number = $derived(selectedIds.length);
+  let canOpenMap: boolean = $derived(numSelected > 0);
   let loading: boolean = $state(true);
 
   let favouriteRecordList: string[] = $state(page.data?.userData?.favourites ? [...page.data.userData.favourites] : []);
@@ -120,6 +121,9 @@
 
   /**
    * Handle removing all resources from the favourites list.
+    *
+    * For signed-in users this also clears server-side favourites before
+    * resetting local table state and local-storage data.
    */
   async function handleRemoveAllClick(): Promise<void> {
     const permissionText = isFrench(lang)
@@ -153,12 +157,23 @@
 
   /**
    * Handle opening the map view.
+    *
+    * Encodes selected dataset ids in the query string and preserves source context.
    */
   function handleOpenMapClick(): void {
+    if (!canOpenMap) {
+      return;
+    }
+
     const ids = selectedIds.join(',');
     goto(resolve(`/${lang}/favourites/view?ids=${encodeURIComponent(ids)}&source=datasets`));
   }
 
+  /**
+   * Initializes guest favourites state from local storage and fetched records.
+   *
+   * Signed-in users skip this fetch path because server data is already available.
+   */
   onMount(async () => {
     if (signedIn) {
       loading = false;
@@ -234,7 +249,7 @@
             </div>
             <p class="font-custom-style-body-1 mt-3 mb-5 leading-relaxed">{datasetsLandingDescription}</p>
             <a
-              class="button-3 w-full md:w-fit md:min-w-48 shadow-[0_0.1875rem_0.375rem_#00000029]"
+              class="button-5 w-full md:w-fit md:min-w-48 shadow-[0_0.1875rem_0.375rem_#00000029]"
               href={resolve(`/${lang}/favourites/datasets`)}
             >
               {datasetsLinkLabel}
@@ -253,7 +268,7 @@
             </div>
             <p class="font-custom-style-body-1 mt-3 mb-5 leading-relaxed">{mapsLandingDescription}</p>
             <a
-              class="button-3 w-full md:w-fit md:min-w-48 shadow-[0_0.1875rem_0.375rem_#00000029]"
+              class="button-5 w-full md:w-fit md:min-w-48 shadow-[0_0.1875rem_0.375rem_#00000029]"
               href={resolve(`/${lang}/favourites/maps`)}
             >
               {mapsLinkLabel}
@@ -347,6 +362,8 @@
             <button
               class="sm:inline-block button-5 w-full sm:w-fit mb-4 sm:mb-0 shadow-[0_0.1875rem_0.375rem_#00000029]"
               onclick={handleOpenMapClick}
+              disabled={!canOpenMap}
+              aria-disabled={!canOpenMap}
             >
               {viewOnMapLabel} ({numSelected})
             </button>

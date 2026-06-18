@@ -8,7 +8,9 @@
     "dev": "sst dev",
     "deploy-dev": "sst deploy --stage development",
     "deploy-stage": "sst deploy --stage staging",
-    "deploy-prod": "sst deploy --stage production"
+    "deploy-prod": "sst deploy --stage production",
+    "check-staging": "node scripts/staging-go-no-go.mjs --stage staging",
+    "check-stage": "node scripts/staging-go-no-go.mjs"
   },
   "devDependencies": {
     "@tsconfig/node20": "^20.1.9",

@@ -29,6 +29,7 @@
   // Translations
   const mapsTabLabel = translations.mapsTab;
   const mapsDescription = translations.mapsDescription;
+  const mapsTipLabel = translations.mapsTipLabel;
   const uploadMapLabel = translations.uploadMap;
   const viewMapLabel = translations.viewMap;
   const downloadMapLabel = translations.downloadMap;
@@ -250,6 +251,11 @@
       <!-- eslint-disable-next-line svelte/no-at-html-tags -->
       {@html mapsDescription}
     </p>
+    <div class="mt-1 mb-6 rounded border border-custom-16/20 bg-custom-1 px-4 py-3 md:px-5">
+      <p class="font-custom-style-body-9 m-0 text-custom-18">
+        {mapsTipLabel}
+      </p>
+    </div>
 
     {#if statusType && statusMessage}
       <div
@@ -315,7 +321,7 @@
 
     <div class="mt-9">
       <a
-        class="button-3 w-full md:w-fit md:min-w-48 shadow-[0_0.1875rem_0.375rem_#00000029]"
+        class="button-5 w-full md:w-fit md:min-w-48 shadow-[0_0.1875rem_0.375rem_#00000029]"
         href={resolve(`/${lang}/favourites/datasets`)}
       >
         {datasetsLinkLabel}

@@ -114,12 +114,19 @@
   @apply px-6;
   @apply py-2;
   @apply cursor-pointer;
+  @apply disabled:cursor-not-allowed;
+  @apply disabled:bg-custom-17;
+  @apply disabled:border-custom-17;
+  @apply disabled:text-custom-1;
+  @apply disabled:opacity-80;
   @apply font-open-sans;
   @apply font-semibold;
   @apply text-[16px];
   @apply text-custom-1;
   @apply hover:bg-custom-23;
   @apply hover:border-custom-23;
+  @apply hover:disabled:bg-custom-17;
+  @apply hover:disabled:border-custom-17;
 }
 
 .select-button {
