@@ -253,10 +253,10 @@
   }
 
   /**
-   * Builds the URL search parameters based on the filters.
+   * Validates that a bounding box contains numeric coordinates.
    *
-   * @param filters - The filters object.
-   * @returns The URL search parameters.
+   * @param bbox - Candidate bounding box.
+   * @returns True when all coordinates are numeric.
    */
   function isValidBbox(bbox: BBox | null | undefined): bbox is BBox {
     if (!bbox) return false;
@@ -267,6 +267,12 @@
     return !isNaN(north) && !isNaN(east) && !isNaN(south) && !isNaN(west);
   }
 
+  /**
+   * Builds URL search parameters from the current filter selections.
+   *
+   * @param filters - The selected filters.
+   * @returns URL search parameters used for navigation.
+   */
   function buildFilterParams(filters: Filters): URLSearchParams {
     const bbox: BBox | null | undefined = filters.bbox;
     const relation = filters.relation;
@@ -397,16 +403,17 @@
   role="dialog"
   aria-modal="true"
   tabindex="0"
-  class={['fixed flex justify-center z-10020 inset-0 bg-custom-7/75 overflow-y-scroll hide-scroll pb-4', !active && 'hidden']}
+  class={['fixed flex justify-center z-10020 inset-0 bg-custom-7/75 overflow-hidden', !active && 'hidden']}
   onkeydown={(event) => {
     if (event.key === 'Escape') closeModal();
   }}
 >
   <form
-    class="md:grid md:grid-cols-6 bg-custom-1 border border-custom-21 w-full md:w-2/3 h-fit md:mt-2 m-5 md:m-0"
+    class="flex flex-col bg-custom-1 border border-custom-21 w-full md:w-2/3 max-h-[calc(100vh-2.5rem)] md:max-h-[calc(100vh-1rem)] md:mt-2 md:mb-2 m-5 md:m-0"
     onsubmit={handleSubmit}
     use:clickOutside={handleClickOutside}
   >
+    <div class="relative flex-1 overflow-y-auto min-h-0 md:grid md:grid-cols-6 hide-scroll">
     <div class="col-span-5 flex flex-col gap-5 px-5 pb-5 pt-8 font-custom-style-body-1">
       <div>
         <h1 class="font-custom-style-h1-2">{filterByText}</h1>
@@ -434,8 +441,9 @@
         <Close classes="h-4 md:h-[1.3125rem]" />
       </button>
     </div>
+    </div>
     <div
-      class="grid grid-cols-1 md:grid-cols-2 col-span-6 bg-custom-5 md:border-t border-custom-21
+      class="grid grid-cols-1 md:grid-cols-2 bg-custom-5 md:border-t border-custom-21
         px-5 py-7 md:py-[1.125rem] gap-y-8"
     >
       <button
