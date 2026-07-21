@@ -75,7 +75,12 @@
         <button class={light ? 'button-2' : 'button-1'}>{signOutText}</button>
       </a>
     {:else}
-      <button class={light ? 'button-2' : 'button-1'} onclick={handleSignInClick}>{signInText}</button>
+      <div class="flex flex-col items-center gap-0.5">
+        <button class={light ? 'button-2' : 'button-1'} onclick={handleSignInClick}>{signInText}</button>
+        <span class={['text-xs pointer-events-none select-none', light ? 'text-custom-1 opacity-80' : 'text-custom-8 opacity-80']}>
+          {pickByLanguage(lang, 'with CanadaLogin', 'par ConnexionCanada')}
+        </span>
+      </div>
     {/if}
   {/if}
 </div>

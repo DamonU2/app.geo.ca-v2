@@ -34,6 +34,8 @@
   const saveSearchParamsText = translations?.saveSearchParams ? translations['saveSearchParams'] : 'Save Search Parameters';
   const formatText = translations?.formatParams ? translations['format'] : 'Format';
   const organizationText = translations?.organization ? translations['organization'] : 'Organization';
+  const expandMapTooltipText = translations?.expandToShowMap ? translations['expandToShowMap'] : 'Expand to display map';
+  const collapseMapTooltipText = translations?.collapseToHideMap ? translations['collapseToHideMap'] : 'Collapse to hide map';
   const windowTooSmall = translations?.windowTooSmall ? translations['windowTooSmall'] : '';
   const removeFromFavouritesTitle = translations?.removeFromFavourites || 'Remove from Favourites';
   const addToFavouritesTitle = translations?.addToFavourites || 'Add to Favourites';
@@ -252,7 +254,7 @@
     <!-- List -->
     {#each results as result, index (`${result.id}-${index}`)}
       <div class="bg-custom-1 px-5 py-4">
-        <Accordion bind:this={accordionComponents[index]}>
+        <Accordion bind:this={accordionComponents[index]} expandTooltip={expandMapTooltipText} collapseTooltip={collapseMapTooltipText}>
           {#snippet accordionTitle()}
             <div class="sm:grid grid-cols-10">
               <!------------- Record info ------------->
@@ -269,6 +271,20 @@
                 <div class="line-clamp-2 pt-1">
                   <!-- Remove new line characters -->
                   {lang === 'fr' ? result.description_fr.replaceAll('\\n', '') : result.description_en.replaceAll('\\n', '')}
+                </div>
+                <div class="mt-3">
+                  <p>
+                    <span class="font-semibold">{organizationText}: </span>
+                    {lang === 'fr'
+                      ? result.contact[0]?.organisation?.fr?.replaceAll(';', '; ')
+                      : result.contact[0]?.organisation?.en?.replaceAll(';', '; ')}
+                  </p>
+                  <p class="mt-2">
+                    <span class="font-semibold">{formatText}: </span>
+                    {#each getFormats(result) as format (format)}
+                      <span class="text-sm bg-custom-16/15 py-0.5 px-2 mt-1 mr-2 rounded inline-block">{format}</span>
+                    {/each}
+                  </p>
                 </div>
               </div>
 
@@ -296,22 +312,6 @@
           {/snippet}
           {#snippet accordionContent()}
             <div class="mt-5">
-              <!------------- Record Details ------------->
-              <div class="mb-5">
-                <p>
-                  <span class="font-semibold">{organizationText}: </span>
-                  {lang === 'fr'
-                    ? result.contact[0]?.organisation?.fr?.replaceAll(';', '; ')
-                    : result.contact[0]?.organisation?.en?.replaceAll(';', '; ')}
-                </p>
-                <p class="mt-2">
-                  <span class="font-semibold">{formatText}: </span>
-                  {#each getFormats(result) as format (format)}
-                    <span class="text-sm bg-custom-16/15 py-0.5 px-2 mt-1 mr-2 rounded inline-block">{format}</span>
-                  {/each}
-                </p>
-              </div>
-
               <!------------- Map ------------->
               <!-- Note: We will only show a map for screens larger than 640px -->
               {#if result.coordinates}
