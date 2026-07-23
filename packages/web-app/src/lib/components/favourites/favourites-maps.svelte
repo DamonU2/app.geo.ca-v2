@@ -238,15 +238,15 @@
   }
 </script>
 
-<h1 class="mt-12 mb-7 mx-5 md:mx-0 font-custom-style-h1 md:mr-auto leading-tight">{mapsTabLabel}</h1>
+<h1 class="page-title-favourites font-custom-style-h1">{mapsTabLabel}</h1>
 
-<div class="mx-5 md:mx-0 mb-5">
+<div class="page-section-favourites">
   {#if userDataUnavailable}
-    <div class="rounded border border-red-600 bg-red-50 px-4 py-3 font-custom-style-body-1 text-red-900" role="status" aria-live="polite">
+    <div class="status-alert-error font-custom-style-body-1" role="status" aria-live="polite">
       {savedDataUnavailable}
     </div>
   {:else}
-    <p class="font-custom-style-body-1 mx-0 mb-6">
+    <p class="page-copy-block">
       <!-- These are our descriptions, no injection risk -->
       <!-- eslint-disable-next-line svelte/no-at-html-tags -->
       {@html mapsDescription}
@@ -254,7 +254,7 @@
 
     {#if statusType && statusMessage}
       <div
-        class={`mb-4 rounded border px-4 py-3 font-custom-style-body-1 ${statusType === 'success' ? 'border-green-600 bg-green-50 text-green-900' : 'border-red-600 bg-red-50 text-red-900'}`}
+        class={`mb-4 status-alert-base font-custom-style-body-1 ${statusType === 'success' ? 'status-alert-success' : 'status-alert-danger'}`}
         role="status"
         aria-live="polite"
       >
@@ -262,8 +262,8 @@
       </div>
     {/if}
     <div class="pb-3">
-      <button class="button-3 w-full sm:w-fit shadow-[0_0.1875rem_0.375rem_#00000029]" onclick={handleUploadMapClick}>
-        <UploadIcon classes="h-5 inline mb-1" />
+      <button class="button-action-light surface-shadow button-width-mobile-full" onclick={handleUploadMapClick}>
+        <UploadIcon classes="h-5 button-icon-inline" />
         {uploadMapLabel}
       </button>
     </div>
@@ -280,37 +280,37 @@
 
                 <div class="flex flex-wrap gap-2">
                   <button
-                    class="button-5 shadow-[0_0.1875rem_0.375rem_#00000029]"
+                    class="button-action-dark"
                     onclick={() => {
                       handleOpenSavedMapClick(mapItem);
                     }}
                   >
-                    <MapIcon classes="h-5 inline mb-1" />
+                    <MapIcon classes="h-5 button-icon-inline" />
                     {viewMapLabel}
                   </button>
                   <button
-                    class="button-3 shadow-[0_0.1875rem_0.375rem_#00000029]"
+                    class="button-action-light"
                     onclick={() => {
                       handleDownloadSavedMapClick(mapItem);
                     }}
                   >
-                    <DownloadIcon classes="h-5 inline mb-1" />
+                    <DownloadIcon classes="h-5 button-icon-inline" />
                     {downloadMapLabel}
                   </button>
                   <button
-                    class="button-3 shadow-[0_0.1875rem_0.375rem_#00000029]"
+                    class="button-action-light"
                     onclick={() => {
                       handleDeleteSavedMapClick(mapItem.id);
                     }}
                   >
-                    <GarbageCan classes="h-4 inline mb-1" />
+                    <GarbageCan classes="h-4 button-icon-inline" />
                     {deleteMapLabel}
                   </button>
                 </div>
               </div>
             {/each}
           </div>
-          <div class="mt-1 rounded border border-custom-16/20 bg-custom-1 px-4 py-3 md:px-5">
+          <div class="info-tip-card">
             <p class="font-custom-style-body-9 m-0 text-custom-18">
               <!-- Translation content is controlled in-repo; safe to render as HTML for inline icon/text formatting. -->
               <!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -324,10 +324,7 @@
     {/if}
 
     <div class="mt-9">
-      <a
-        class="button-5 w-full md:w-fit md:min-w-48 shadow-[0_0.1875rem_0.375rem_#00000029]"
-        href={resolve(`/${lang}/favourites/datasets`)}
-      >
+      <a class="button-action-dark button-cta-link-dark" href={resolve(`/${lang}/favourites/datasets`)}>
         {datasetsLinkLabel}
       </a>
     </div>

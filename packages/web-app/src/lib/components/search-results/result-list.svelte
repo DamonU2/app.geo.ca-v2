@@ -24,14 +24,12 @@
     coordinates: number[][];
   };
 
-  const userId = page.data.userData?.uuid;
   const signedIn = Boolean(page.data.signedIn);
 
   // TODO: Centralize translations
   const translations = page.data.t;
 
   const mapNotAvailableText = translations?.mapNotAvailable ? translations['mapNotAvailable'] : 'Map not available';
-  const saveSearchParamsText = translations?.saveSearchParams ? translations['saveSearchParams'] : 'Save Search Parameters';
   const formatText = translations?.formatParams ? translations['format'] : 'Format';
   const organizationText = translations?.organization ? translations['organization'] : 'Organization';
   const expandMapTooltipText = translations?.expandToShowMap ? translations['expandToShowMap'] : 'Expand to display map';
@@ -244,10 +242,6 @@
           <div>
             <SelectCustomized selectType="resultList" optionsData={sortBySelectData} bind:selected selectedChange={changeSort} />
           </div>
-          {#if userId}
-            <!-- TODO: Add a method for this button -->
-            <button class="button-3">{saveSearchParamsText}</button>
-          {/if}
         </div>
       {/if}
     </div>

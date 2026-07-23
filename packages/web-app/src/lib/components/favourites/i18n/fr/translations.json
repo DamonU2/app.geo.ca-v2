@@ -31,8 +31,6 @@
   "resourceName": "Nom de la ressource",
   "savedDataUnavailable": "Vos jeux de données et cartes enregistrés sont temporairement indisponibles. Veuillez actualiser la page après avoir rétabli la connexion à la base de données.",
   "returnToList": "Retour aux favoris",
-  "returnToDatasets": "Retour aux jeux de données",
-  "returnToMaps": "Retour aux cartes",
   "saveMap": "Enregistrer la carte",
   "saveMapHelp": "Cliquez sur <span class='font-semibold'>Enregistrer la carte</span> pour enregistrer une configuration de la carte telle qu'elle s'affiche actuellement, y compris les onglets ouverts et tout panoramique ou zoom.",
   "saveMapFailed": "Impossible d'enregistrer la carte actuelle. Veuillez réessayer.",

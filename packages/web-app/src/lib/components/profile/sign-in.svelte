@@ -72,11 +72,15 @@
           : resolve(`/${lang}/sign-in/oidc-logout`)}
         class="divide-y divide-custom-16"
       >
-        <button class={light ? 'button-2' : 'button-1'}>{signOutText}</button>
+        <button class={['button-signin', light ? 'button-action-light' : 'button-action-dark']}>
+          {signOutText}
+        </button>
       </a>
     {:else}
       <div class="flex flex-col items-center gap-0.5">
-        <button class={light ? 'button-2' : 'button-1'} onclick={handleSignInClick}>{signInText}</button>
+        <button class={['button-signin', light ? 'button-action-light' : 'button-action-dark']} onclick={handleSignInClick}>
+          {signInText}
+        </button>
         <span class={['text-xs pointer-events-none select-none', light ? 'text-custom-1 opacity-80' : 'text-custom-8 opacity-80']}>
           {pickByLanguage(lang, 'with CanadaLogin', 'par ConnexionCanada')}
         </span>

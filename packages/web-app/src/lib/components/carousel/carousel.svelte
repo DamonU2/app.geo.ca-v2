@@ -231,6 +231,5 @@
 
   .change-index-button:hover {
     @apply bg-custom-5;
-    @apply shadow-[0_0.1875rem_0.375rem_#00000029];
   }
 </style>
