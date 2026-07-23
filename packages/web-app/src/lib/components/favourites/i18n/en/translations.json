@@ -31,8 +31,6 @@
   "resourceName": "Resource name",
   "savedDataUnavailable": "Your saved datasets and maps are temporarily unavailable. Please refresh after reconnecting to the database.",
   "returnToList": "Return to favourites",
-  "returnToDatasets": "Return to datasets",
-  "returnToMaps": "Return to maps",
   "saveMap": "Save map",
   "saveMapHelp": "Click on <span class='font-semibold'>Save map</span> to save a configuration of the map as it currently looks, including open tabs and any panning or zooming.",
   "saveMapFailed": "Unable to save the current map. Please try again.",

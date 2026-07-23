@@ -218,14 +218,14 @@
   const isLanding = $derived(signedIn);
 </script>
 
-<h1 class="mt-12 mb-7 mx-5 md:mx-0 font-custom-style-h1 md:mr-auto leading-tight">
+<h1 class="page-title-favourites font-custom-style-h1">
   {favouritesTitle}
 </h1>
 
-<div class="mx-5 md:mx-0 mb-5">
+<div class="page-section-favourites">
   {#if isLanding}
     {#if userDataUnavailable}
-      <div class="rounded border border-red-600 bg-red-50 px-4 py-3 font-custom-style-body-1 text-red-900" role="status" aria-live="polite">
+      <div class="status-alert-error font-custom-style-body-1" role="status" aria-live="polite">
         {savedDataUnavailable}
       </div>
     {:else}
@@ -248,10 +248,7 @@
               </h2>
             </div>
             <p class="font-custom-style-body-1 mt-3 mb-5 leading-relaxed">{datasetsLandingDescription}</p>
-            <a
-              class="button-5 w-full md:w-fit md:min-w-48 shadow-[0_0.1875rem_0.375rem_#00000029]"
-              href={resolve(`/${lang}/favourites/datasets`)}
-            >
+            <a class="button-action-dark button-cta-link-dark" href={resolve(`/${lang}/favourites/datasets`)}>
               {datasetsLinkLabel}
             </a>
           </section>
@@ -267,15 +264,12 @@
               </h2>
             </div>
             <p class="font-custom-style-body-1 mt-3 mb-5 leading-relaxed">{mapsLandingDescription}</p>
-            <a
-              class="button-5 w-full md:w-fit md:min-w-48 shadow-[0_0.1875rem_0.375rem_#00000029]"
-              href={resolve(`/${lang}/favourites/maps`)}
-            >
+            <a class="button-action-dark button-cta-link-dark" href={resolve(`/${lang}/favourites/maps`)}>
               {mapsLinkLabel}
             </a>
           </section>
         </div>
-        <div class="mt-1 rounded border border-custom-16/20 bg-custom-1 px-4 py-3 md:px-5">
+        <div class="info-tip-card">
           <p class="font-custom-style-body-9 m-0 text-custom-18">
             {landingTipLabel}
           </p>
@@ -284,11 +278,11 @@
     {/if}
   {:else if !loading}
     <!-- Guest list -->
-    <p class="font-custom-style-body-1 mx-0 mb-6">
+    <p class="page-copy-block">
       <!-- eslint-disable-next-line svelte/no-at-html-tags -->
       {@html datasetsDescription}
     </p>
-    <p class="font-custom-style-body-1 mx-0 mb-6">
+    <p class="page-copy-block">
       {loginInfo}
     </p>
 
@@ -311,7 +305,7 @@
         </div>
 
         <!-- Cards for mobile screens -->
-        <div class="block sm:hidden rounded bg-custom-1 px-5 drop-shadow-[0_0.1875rem_0.375rem_#00000029] divide-y divide-custom-17">
+        <div class="block sm:hidden mobile-list-card">
           {#each tableDataArray as item (item.id)}
             <div class="flex items-center py-5">
               <!-- Checkboxes -->
@@ -320,7 +314,7 @@
                   type="checkbox"
                   id={`check-${item.id}`}
                   name={`check-${item.id}`}
-                  class="peer appearance-none min-w-[1.6875rem] h-[1.6875rem] border-2 border-custom-16 rounded-sm bg-custom-1 checked:bg-custom-16 hover:cursor-pointer"
+                  class="peer checkbox-standard"
                   checked={selectedIds.includes(item.id)}
                   onchange={(event: Event) => {
                     const idSet = new SvelteSet(selectedIds);
@@ -344,11 +338,8 @@
                 <p class="font-custom-style-body-9">{item.id}</p>
 
                 <!-- Remove Button-->
-                <button
-                  class="button-3 mt-4 p-2 text-custom-16 rounded border-2 border-transparent hover:border-custom-16 hover:text-custom-1 hover:bg-custom-16 hover:shadow-[0_0.1875rem_0.375rem_#00000029]"
-                  onclick={() => handleDeleteResource(item.id)}
-                >
-                  <GarbageCan classes="h-4 inline mb-1" />
+                <button class="button-action-light button-action-remove" onclick={() => handleDeleteResource(item.id)}>
+                  <GarbageCan classes="h-4 button-icon-inline" />
                   {remove}
                 </button>
               </div>
@@ -360,7 +351,7 @@
         <div class="sm:flex">
           <div class="sm:grow">
             <button
-              class="sm:inline-block button-5 w-full sm:w-fit mb-4 sm:mb-0 shadow-[0_0.1875rem_0.375rem_#00000029]"
+              class="button-inline-desktop button-action-dark button-width-mobile-full mb-4 sm:mb-0"
               onclick={handleOpenMapClick}
               disabled={!canOpenMap}
               aria-disabled={!canOpenMap}
@@ -369,8 +360,8 @@
             </button>
           </div>
 
-          <button class="sm:inline-block button-3 w-full sm:w-fit shadow-[0_0.1875rem_0.375rem_#00000029]" onclick={handleRemoveAllClick}>
-            <GarbageCan classes="h-4 inline mb-1" />
+          <button class="button-inline-desktop button-action-light button-width-mobile-full" onclick={handleRemoveAllClick}>
+            <GarbageCan classes="h-4 button-icon-inline" />
             {removeAll}
           </button>
         </div>
@@ -389,7 +380,7 @@
         </p>
 
         <a class="block m-auto w-fit mt-5" href={resolve(`/${lang}/map-browser`)}>
-          <div class="button-3 w-fit shadow-[0_0.1875rem_0.375rem_#00000029]">
+          <div class="surface-action-light surface-shadow w-fit">
             {findAResource}
           </div>
         </a>

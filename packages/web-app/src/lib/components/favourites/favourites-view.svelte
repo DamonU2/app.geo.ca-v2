@@ -27,8 +27,8 @@
   // Translations
   const mapTitle = translations.mapTitle;
   const returnToList = translations.returnToList;
-  const returnToDatasetsLabel = translations.returnToDatasets;
-  const returnToMapsLabel = translations.returnToMaps;
+  const goToDatasetsLabel = translations.datasetsLinkLabel;
+  const goToMapsLabel = translations.mapsLinkLabel;
   const savedDataUnavailable = translations.savedDataUnavailable;
   const saveMapLabel = translations.saveMap;
   const saveMapHelp = translations.saveMapHelp;
@@ -47,14 +47,6 @@
   let loading: boolean = $state(true);
   let mapComponent: MycartMap | undefined = $state();
   let savedMaps: MapConfigFavourite[] = $state([]);
-
-  const returnFromMapLabel = $derived.by(() => {
-    if (!signedIn) {
-      return returnToList;
-    }
-
-    return viewSource === 'maps' ? returnToMapsLabel : returnToDatasetsLabel;
-  });
 
   /**
    * Generates a map name that does not collide with existing saved maps.
@@ -98,6 +90,20 @@
    */
   function handleReturnToListClick(): void {
     goto(resolve(`/${lang}/favourites/${viewSource}`));
+  }
+
+  /**
+   * Navigates back to saved maps.
+   */
+  function handleGoToMapsClick(): void {
+    goto(resolve(`/${lang}/favourites/maps`));
+  }
+
+  /**
+   * Navigates back to favourite datasets.
+   */
+  function handleGoToDatasetsClick(): void {
+    goto(resolve(`/${lang}/favourites/datasets`));
   }
 
   /**
@@ -196,22 +202,22 @@
   });
 </script>
 
-<h1 class="mt-12 mb-7 mx-5 md:mx-0 font-custom-style-h1 md:mr-auto leading-tight">
+<h1 class="page-title-favourites font-custom-style-h1">
   {selectedMapConfig ? selectedMapConfig.name : mapTitle}
 </h1>
 
-<div class="mx-5 md:mx-0 mb-5">
+<div class="page-section-favourites">
   {#if !loading}
     {#if selectedMapConfig || selectedIds.length > 0}
       <MycartMap layerIds={selectedIds} mapConfig={selectedMapConfig ? selectedMapConfig.config : null} bind:this={mapComponent} />
     {:else if userDataUnavailable && viewSource === 'maps'}
-      <div class="rounded border border-red-600 bg-red-50 px-4 py-3 font-custom-style-body-1 text-red-900" role="status" aria-live="polite">
+      <div class="status-alert-error font-custom-style-body-1" role="status" aria-live="polite">
         {savedDataUnavailable}
       </div>
     {/if}
     {#if statusType && statusMessage}
       <div
-        class={`mt-5 rounded border px-4 py-3 font-custom-style-body-1 ${statusType === 'success' ? 'border-green-600 bg-green-50 text-green-900' : 'border-red-600 bg-red-50 text-red-900'}`}
+        class={`mt-5 status-alert-base font-custom-style-body-1 ${statusType === 'success' ? 'status-alert-success' : 'status-alert-danger'}`}
         role="status"
         aria-live="polite"
       >
@@ -225,12 +231,21 @@
       </p>
     {/if}
     <div class="flex flex-wrap gap-3 mt-5 mb-5">
-      <button class="sm:inline-block button-5 w-full sm:w-fit shadow-[0_0.1875rem_0.375rem_#00000029]" onclick={handleReturnToListClick}>
-        {returnFromMapLabel}
-      </button>
+      {#if signedIn}
+        <button class="button-inline-desktop button-action-dark surface-shadow button-width-mobile-full" onclick={handleGoToDatasetsClick}>
+          {goToDatasetsLabel}
+        </button>
+        <button class="button-inline-desktop button-action-dark surface-shadow button-width-mobile-full" onclick={handleGoToMapsClick}>
+          {goToMapsLabel}
+        </button>
+      {:else}
+        <button class="button-inline-desktop button-action-dark surface-shadow button-width-mobile-full" onclick={handleReturnToListClick}>
+          {returnToList}
+        </button>
+      {/if}
 
       {#if signedIn && (selectedMapConfig || selectedIds.length > 0)}
-        <button class="sm:inline-block button-3 w-full sm:w-fit shadow-[0_0.1875rem_0.375rem_#00000029]" onclick={handleSaveMapClick}>
+        <button class="button-inline-desktop button-action-light surface-shadow button-width-mobile-full" onclick={handleSaveMapClick}>
           {saveMapLabel}
         </button>
       {/if}

@@ -414,33 +414,32 @@
     use:clickOutside={handleClickOutside}
   >
     <div class="relative flex-1 overflow-y-auto min-h-0 md:grid md:grid-cols-6 hide-scroll">
-    <div class="col-span-5 flex flex-col gap-5 px-5 pb-5 pt-8 font-custom-style-body-1">
-      <div>
-        <h1 class="font-custom-style-h1-2">{filterByText}</h1>
-        <p>{filterDescriptionText}</p>
+      <div class="col-span-5 flex flex-col gap-5 px-5 pb-5 pt-8 font-custom-style-body-1">
+        <div>
+          <h1 class="font-custom-style-h1-2">{filterByText}</h1>
+          <p>{filterDescriptionText}</p>
+        </div>
+        <div class="flex flex-col gap-y-5">
+          <CategoryOfInterest bind:this={categoriesComponent} />
+          <SpatioTemporal bind:temporalActive bind:spatialActive bind:this={spatioTemporalComponent} />
+          <Organizations bind:this={orgCompontent} />
+          <Types bind:this={typeCompontent} />
+          <Themes bind:this={themeCompontent} />
+          <EoCollections bind:this={eoCollectionsComponent} />
+          <SourceSystem bind:this={sourceSystemComponent} />
+          <OtherFilters bind:this={othersCompontent} />
+        </div>
       </div>
-      <div class="flex flex-col gap-y-5">
-        <CategoryOfInterest bind:this={categoriesComponent} />
-        <SpatioTemporal bind:temporalActive bind:spatialActive bind:this={spatioTemporalComponent} />
-        <Organizations bind:this={orgCompontent} />
-        <Types bind:this={typeCompontent} />
-        <Themes bind:this={themeCompontent} />
-        <EoCollections bind:this={eoCollectionsComponent} />
-        <SourceSystem bind:this={sourceSystemComponent} />
-        <OtherFilters bind:this={othersCompontent} />
+      <div class="absolute md:static top-2 right-4 col-span-1 px-5 pt-8 justify-self-end">
+        <button
+          type="button"
+          class="button-tone-light button-icon flex justify-center items-center rounded-[50%]
+          h-9 w-9 md:h-[3.0625rem] md:w-[3.0625rem]"
+          onclick={handleCloseButtonClick}
+        >
+          <Close classes="h-4 md:h-[1.3125rem]" />
+        </button>
       </div>
-    </div>
-    <div class="absolute md:static top-2 right-4 col-span-1 px-5 pt-8 justify-self-end">
-      <button
-        type="button"
-        class="flex justify-center items-center border border-custom-16 rounded-[50%]
-          h-9 w-9 md:h-[3.0625rem] md:w-[3.0625rem] hover:bg-custom-16 text-custom-16
-          hover:text-custom-1 cursor-pointer"
-        onclick={handleCloseButtonClick}
-      >
-        <Close classes="h-4 md:h-[1.3125rem]" />
-      </button>
-    </div>
     </div>
     <div
       class="grid grid-cols-1 md:grid-cols-2 bg-custom-5 md:border-t border-custom-21
@@ -448,17 +447,13 @@
     >
       <button
         type="button"
-        class="row-start-2 md:row-start-1 w-full md:w-auto justify-self-start button-3
-          h-12 md:h-auto cursor-pointer"
+        class="row-start-2 md:row-start-1 w-full md:w-auto justify-self-start button-action-light
+          h-12 md:h-auto"
         onclick={handleClearAllClick}
       >
         {clearAllText}
       </button>
-      <button
-        type="submit"
-        class="w-full md:w-auto justify-self-end button-5 h-12 md:h-auto
-          shadow-[0rem_0.1875rem_0.375rem_#00000029] cursor-pointer"
-      >
+      <button type="submit" class="w-full md:w-auto justify-self-end button-action-dark h-12 md:h-auto">
         {applyText}
       </button>
     </div>

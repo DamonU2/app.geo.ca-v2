@@ -241,8 +241,7 @@
                 id="checkAll"
                 name="checkAll"
                 checked={visibleRows.every((row) => selectedIds.includes(row.id) || row.disableCheckbox)}
-                class="peer appearance-none min-w-[1.6875rem] h-[1.6875rem] border-2
-                  border-custom-16 rounded-sm bg-custom-1 checked:bg-custom-16 hover:cursor-pointer"
+                class="peer checkbox-standard focus-visible-standard"
                 onchange={(event) => handleSelectAllChange(event)}
               />
               <Checkmark
@@ -258,7 +257,7 @@
           <th class={[index === 0 && tableLabelsArray.length > 1 && 'w-1/2']}>
             <div class="flex flex-row justify-between font-custom-style-header-1">
               {tableLabels[labelTranslation]}
-              <button class="px-2" onclick={() => handleSortButtonClick(labelTranslation)}>
+              <button class="px-2 rounded focus-visible-standard" onclick={() => handleSortButtonClick(labelTranslation)}>
                 {#if sortDirection === 1 && labelTranslation === sortColumn}
                   <SortUp classes="inline w-4 h-4 text-custom-16" />
                 {:else if sortDirection === 2 && labelTranslation === sortColumn}
@@ -305,9 +304,7 @@
                   name={`check-${row.id}`}
                   checked={selectedIds.includes(row.id) && !row.disableCheckbox}
                   disabled={row.disableCheckbox}
-                  class="peer appearance-none min-w-[1.6875rem] h-[1.6875rem] border-2
-                    border-custom-16 rounded-sm bg-custom-1 checked:bg-custom-16 hover:cursor-pointer
-                    disabled:bg-gray-200 disabled:border-gray-400 disabled:hover:cursor-default"
+                  class="peer checkbox-standard focus-visible-standard"
                   onchange={(event) => handleCheckboxOnChange(event, row.id)}
                 />
                 <Checkmark
@@ -321,7 +318,7 @@
             {#each tableLabelsArray as label, index (`${index}-${label}`)}
               <!-------------- Clickable Row -------------->
               <td class="font-custom-style-body-4">
-                <a href={row.url} rel="external" class="block w-full h-full p-2.5">
+                <a href={row.url} rel="external" class="block w-full h-full p-2.5 focus-visible-standard">
                   <!-- These are our labels, so no danger of injection -->
                   <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                   {@html row[label]}
@@ -345,8 +342,7 @@
               <div class="flex pointer-events-auto w-fit mx-auto hover:cursor-pointer">
                 <button
                   id={`garbage-${row.id}`}
-                  class="p-2 text-custom-16 rounded border-2 border-transparent hover:border-custom-16
-                    hover:text-custom-1 hover:bg-custom-16 hover:shadow-[0_0.1875rem_0.375rem_#00000029] cursor-pointer"
+                  class="button-tone-light button-icon focus-visible-standard"
                   onclick={(event) => handleDeleteRowClick(event, row.id)}
                 >
                   <GarbageCan classes="h-6" />
