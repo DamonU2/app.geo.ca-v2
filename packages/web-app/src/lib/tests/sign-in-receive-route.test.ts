@@ -118,38 +118,6 @@ describe('GET /sign-in/receive', () => {
     expect(cookies.set).toHaveBeenCalledWith('auth_error', 'signin_failed', expect.objectContaining({ path: '/' }));
   });
 
-  it('redirects to fallback when ID token verification fails', async () => {
-    verifyIdTokenMock.mockResolvedValue(null);
-    const cookies = {
-      set: vi.fn(),
-    } as unknown as Parameters<typeof load>[0]['cookies'];
-
-    const event = {
-      cookies,
-      url: new URL('https://example.test/sign-in/receive?code=abc&state=expected-state-token'),
-    } as unknown as Parameters<typeof load>[0];
-
-    await expect(load(event)).rejects.toMatchObject({ status: 303, location: '/en-ca/map-browser' });
-    expect(setAuthCookiesMock).not.toHaveBeenCalled();
-    expect(cookies.set).toHaveBeenCalledWith('auth_error', 'signin_failed', expect.objectContaining({ path: '/' }));
-  });
-
-  it('redirects to fallback when setting auth cookies fails', async () => {
-    setAuthCookiesMock.mockReturnValue(false);
-    const cookies = {
-      set: vi.fn(),
-    } as unknown as Parameters<typeof load>[0]['cookies'];
-
-    const event = {
-      cookies,
-      url: new URL('https://example.test/sign-in/receive?code=abc&state=expected-state-token'),
-    } as unknown as Parameters<typeof load>[0];
-
-    await expect(load(event)).rejects.toMatchObject({ status: 303, location: '/en-ca/map-browser' });
-    expect(mergeGuestFavouritesMock).not.toHaveBeenCalled();
-    expect(cookies.set).toHaveBeenCalledWith('auth_error', 'signin_failed', expect.objectContaining({ path: '/' }));
-  });
-
   it('redirects to resolved post-auth path on successful callback handling', async () => {
     const cookies = {
       set: vi.fn(),

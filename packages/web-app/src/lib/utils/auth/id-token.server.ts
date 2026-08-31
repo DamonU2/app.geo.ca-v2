@@ -4,7 +4,7 @@ import { decodeBase64UrlJson } from '$lib/utils/auth/base64url';
 import { splitJwt } from '$lib/utils/auth/jwt';
 import { verifyJwtSignatureWithJwks } from '$lib/utils/auth/jwt-signature.server';
 import { getAudienceValues, hasNumericIat, hasValidExp, hasValidNbf, issuerMatches } from '$lib/utils/auth/oidc-claims.server';
-import { getOidcMinimalConfigOrFail, resolveVerifiedDiscovery } from '$lib/utils/auth/oidc.server';
+import { ensureTrailingSlashless, getOidcPublicConfig, getOpenIdConfiguration, isHttpsOrLocalhostUrl } from '$lib/utils/auth/oidc.server';
 import { getRequestedScopes, validateScopedIdTokenClaims } from '$lib/utils/auth/scope-policy.server';
 import type { JwtHeader } from '$lib/utils/auth/jwt-types';
 
@@ -54,7 +54,7 @@ export async function verifyIdToken(idToken: string, expectedNonce?: string | nu
     return fail('decode_failed');
   }
 
-  const oidcConfig = getOidcMinimalConfigOrFail();
+  const oidcConfig = getOidcPublicConfig();
   if (!oidcConfig) {
     return fail('missing_oidc_config');
   }
@@ -67,11 +67,18 @@ export async function verifyIdToken(idToken: string, expectedNonce?: string | nu
     });
   }
 
-  const discovery = await resolveVerifiedDiscovery(customDomain);
-  if (!discovery) {
-    return fail('discovery_failed', { customDomain });
+  const openIdConfiguration = await getOpenIdConfiguration(customDomain);
+  const normalizedIssuer = openIdConfiguration?.issuer ? ensureTrailingSlashless(openIdConfiguration.issuer) : null;
+  const configuredJwksUri = openIdConfiguration?.jwks_uri ?? null;
+  const discoveryFailureDetails = {
+    hasIssuer: Boolean(openIdConfiguration?.issuer),
+    hasJwksUri: Boolean(openIdConfiguration?.jwks_uri),
+    customDomain,
+  };
+
+  if (!normalizedIssuer || !configuredJwksUri || !isHttpsOrLocalhostUrl(normalizedIssuer) || !isHttpsOrLocalhostUrl(configuredJwksUri)) {
+    return fail('discovery_failed', discoveryFailureDetails);
   }
-  const { issuer: normalizedIssuer, jwksUri: configuredJwksUri } = discovery;
   const jwksCandidates = [configuredJwksUri];
 
   if (!issuerMatches(payload.iss, normalizedIssuer)) {

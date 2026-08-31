@@ -15,13 +15,12 @@ import { createSessionCookie } from '$lib/utils/auth/session-cookie.server';
 
 const AUTH_ERROR_COOKIE_NAME = 'auth_error';
 
-function setAuthErrorCookie(cookies: Parameters<PageServerLoad>[0]['cookies']): void {
+function setAuthErrorCookie(cookies: Parameters<PageServerLoad>[0]['cookies'], url: URL): void {
   cookies.set(AUTH_ERROR_COOKIE_NAME, 'signin_failed', {
     path: '/',
     httpOnly: true,
     sameSite: 'lax',
-    // Matches the shared auth-cookie secure-flag rule in sign-in-core.server.ts / session-cookie.server.ts.
-    secure: process.env.NODE_ENV === 'production',
+    secure: url.protocol === 'https:',
     maxAge: 60,
   });
 }
@@ -42,25 +41,24 @@ export const load: PageServerLoad = async ({ cookies, url }: Parameters<PageServ
   const lang = getLangFromState(returnTo ?? callbackState);
   const fallbackPath = `/${lang}/map-browser`;
 
-  // Sets the error cookie, logs the reason in non-prod, and aborts to the fallback path.
-  function failAuth(reason: string, details?: Record<string, unknown>): never {
-    setAuthErrorCookie(cookies);
+  if (!code) {
+    setAuthErrorCookie(cookies, url);
     if (isNonProd) {
       console.warn(`[sign-in/receive] ${reason}`, details);
     }
     throw redirect(303, fallbackPath);
   }
 
-  if (!code) {
-    failAuth('Missing authorization code in callback');
-  }
-
   if (!expectedStateToken || !callbackState || callbackState !== expectedStateToken) {
-    failAuth('State validation failed', {
-      hasExpectedStateToken: Boolean(expectedStateToken),
-      hasCallbackState: Boolean(callbackState),
-      matchesStateToken: callbackState === expectedStateToken,
-    });
+    setAuthErrorCookie(cookies, url);
+    if (isNonProd) {
+      console.warn('[sign-in/receive] State validation failed', {
+        hasExpectedStateToken: Boolean(expectedStateToken),
+        hasCallbackState: Boolean(callbackState),
+        matchesStateToken: callbackState === expectedStateToken,
+      });
+    }
+    throw redirect(303, fallbackPath);
   }
 
   const codeVerifier = consumePkceVerifierCookie(cookies);
@@ -68,27 +66,39 @@ export const load: PageServerLoad = async ({ cookies, url }: Parameters<PageServ
   const keyMaterial = await getPrivateKeyMaterial();
   const tokenResponse = await exchangeCodeForTokens(code, url, codeVerifier, keyMaterial?.pem ?? null, keyMaterial?.x5tS256 ?? null);
   if (!tokenResponse || !expectedNonce) {
-    failAuth('Token exchange/nonce validation failed', {
-      hasCodeVerifier: Boolean(codeVerifier),
-      hasExpectedNonce: Boolean(expectedNonce),
-    });
+    setAuthErrorCookie(cookies, url);
+    if (isNonProd) {
+      console.warn('[sign-in/receive] Token exchange/nonce validation failed', {
+        hasCodeVerifier: Boolean(codeVerifier),
+        hasExpectedNonce: Boolean(expectedNonce),
+      });
+    }
+    throw redirect(303, fallbackPath);
   }
 
   const idTokenPayload = tokenResponse.id_token ? await verifyIdToken(tokenResponse.id_token, expectedNonce) : null;
   if (!idTokenPayload) {
-    failAuth('ID token verification failed', {
-      hasIdToken: Boolean(tokenResponse.id_token),
-      hasExpectedNonce: Boolean(expectedNonce),
-    });
+    setAuthErrorCookie(cookies, url);
+    if (isNonProd) {
+      console.warn('[sign-in/receive] ID token verification failed', {
+        hasIdToken: Boolean(tokenResponse.id_token),
+        hasExpectedNonce: Boolean(expectedNonce),
+      });
+    }
+    throw redirect(303, fallbackPath);
   }
 
   const didSetCookies = setAuthCookies(cookies, tokenResponse);
   if (!didSetCookies) {
-    failAuth('Failed to set auth cookies', {
-      hasIdToken: Boolean(tokenResponse.id_token),
-      hasAccessToken: Boolean(tokenResponse.access_token),
-      hasRefreshToken: Boolean(tokenResponse.refresh_token),
-    });
+    setAuthErrorCookie(cookies, url);
+    if (isNonProd) {
+      console.warn('[sign-in/receive] Failed to set auth cookies', {
+        hasIdToken: Boolean(tokenResponse.id_token),
+        hasAccessToken: Boolean(tokenResponse.access_token),
+        hasRefreshToken: Boolean(tokenResponse.refresh_token),
+      });
+    }
+    throw redirect(303, fallbackPath);
   }
 
   createSessionCookie(cookies, idTokenPayload.sub ?? idTokenPayload.username ?? '', idTokenPayload.sid ?? null);
