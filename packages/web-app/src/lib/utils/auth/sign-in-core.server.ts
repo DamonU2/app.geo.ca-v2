@@ -212,6 +212,20 @@ export function setOidcStateCookies(cookies: Cookies, stateToken: string, return
 }
 
 /**
+ * Stores the one-time OIDC state token and paired return path for callback validation.
+ *
+ * @param cookies - Cookie jar from the request context.
+ * @param requestUrl - Current request URL.
+ * @param stateToken - One-time random state token.
+ * @param returnTo - Safe in-app return path.
+ */
+export function setOidcStateCookies(cookies: Cookies, requestUrl: URL, stateToken: string, returnTo: string): void {
+  const options = getCookieOptions(requestUrl, TEN_MINUTES_SECONDS);
+  cookies.set(OIDC_STATE_COOKIE_NAME, stateToken, options);
+  cookies.set(OIDC_RETURN_TO_COOKIE_NAME, returnTo, options);
+}
+
+/**
  * Reads and clears the PKCE verifier cookie for one-time token exchange.
  *
  * @param cookies - Cookie jar from the request context.
