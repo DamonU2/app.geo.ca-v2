@@ -173,4 +173,56 @@ describe('verifyBackChannelLogoutToken', () => {
     expect(result?.sub).toBe('user-456');
     expect(result?.aud).toBe(clientId);
   });
+
+  it('accepts a back-channel logout token when sid is present', async () => {
+    const kid = 'logout-key-1';
+    const { jwk, privateKeyPem } = createTestSigningKey(kid);
+
+    stubOidcDiscoveryAndJwksFetch(issuer, jwksUri, jwk);
+
+    const now = Math.floor(Date.now() / 1000);
+    const header = { alg: 'RS256', kid, typ: 'JWT' };
+    const payload = {
+      iss: issuer,
+      aud: clientId,
+      iat: now,
+      exp: now + 300,
+      jti: 'logout-token-with-sid',
+      sid: 'session-123',
+      sub: 'user-789',
+      events: {
+        'http://schemas.openid.net/event/backchannel-logout': {},
+      },
+    };
+    const token = signTestJwt(privateKeyPem, header, payload);
+
+    const result = await verifyBackChannelLogoutToken(token);
+    expect(result?.sid).toBe('session-123');
+    expect(result?.sub).toBe('user-789');
+  });
+
+  it('rejects a back-channel logout token when nonce is present', async () => {
+    const kid = 'logout-key-1';
+    const { jwk, privateKeyPem } = createTestSigningKey(kid);
+
+    stubOidcDiscoveryAndJwksFetch(issuer, jwksUri, jwk);
+
+    const now = Math.floor(Date.now() / 1000);
+    const header = { alg: 'RS256', kid, typ: 'JWT' };
+    const payload = {
+      iss: issuer,
+      aud: clientId,
+      iat: now,
+      exp: now + 300,
+      jti: 'logout-token-with-nonce',
+      sub: 'user-456',
+      nonce: 'should-not-be-here',
+      events: {
+        'http://schemas.openid.net/event/backchannel-logout': {},
+      },
+    };
+    const token = signTestJwt(privateKeyPem, header, payload);
+
+    await expect(verifyBackChannelLogoutToken(token)).resolves.toBeNull();
+  });
 });

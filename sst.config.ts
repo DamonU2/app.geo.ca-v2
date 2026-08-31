@@ -11,6 +11,9 @@ const env = {
   oidcClientSecret: process.env.OIDC_CLIENT_SECRET ?? "",
   oidcPrivateKeySecretId: process.env.OIDC_PRIVATE_KEY_SECRET_ID ?? "",
   oidcRequestedScopes: process.env.OIDC_REQUESTED_SCOPES ?? "",
+  sessionCookieSecret: process.env.SESSION_COOKIE_SECRET ?? "",
+  // Stage-specific HTTPS base URL for the CanadaLogin account-management portal.
+  oidcManageBaseUrl: process.env.OIDC_MANAGE_BASE_URL ?? "",
 };
 
 // Logging configuration for long-running functions
@@ -40,6 +43,9 @@ export default $config({
       isStaging ||
       isProduction ||
       (process.env.OIDC_USE_PRIVATE_KEY_JWT ?? "").toLowerCase() === "true";
+    if ((isStaging || isProduction) && !env.sessionCookieSecret) {
+      throw new Error(`SESSION_COOKIE_SECRET is required for stage '${$app.stage}'.`);
+    }
     const oidcPrivateKeySecretResourceArn = toSecretsManagerResourceArn(
       env.oidcPrivateKeySecretId,
       AWS_REGION,
@@ -112,6 +118,8 @@ export default $config({
         OIDC_CLIENT_SECRET: env.oidcClientSecret,
         OIDC_PRIVATE_KEY_SECRET_ID: env.oidcPrivateKeySecretId,
         OIDC_REQUESTED_SCOPES: env.oidcRequestedScopes,
+        SESSION_COOKIE_SECRET: env.sessionCookieSecret,
+        OIDC_MANAGE_BASE_URL: env.oidcManageBaseUrl,
         OIDC_USE_PRIVATE_KEY_JWT: String(usePrivateKeyJwt),
         USER_TABLE_NAME: users.name,
         BUCKET_NAME: hnapBucket.name,

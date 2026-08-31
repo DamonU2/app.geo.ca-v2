@@ -71,15 +71,68 @@ describe('sign-out route redirects', () => {
 
   it('redirects /sign-in/logout to provided favourites return target', async () => {
     const event = {
-      cookies: {} as never,
+      cookies: {
+        get: vi.fn().mockReturnValue(undefined),
+        delete: vi.fn(),
+      } as never,
       url: new URL('https://example.test/sign-in/logout?returnTo=%2Ffr-ca%2Ffavourites'),
     } as unknown as Parameters<typeof loadRootLogout>[0];
 
     await expectRedirect(() => loadRootLogout(event), { status: 303, location: '/fr-ca/favourites' });
   });
 
-  it('keeps returnTo when /[lang]/sign-in/oidc-logout falls back on localhost', async () => {
+  it('treats sid-bearing front-channel logout requests as local sign-out and clears auth cookies', async () => {
+    const cookies = {
+      get: vi.fn().mockReturnValue(undefined),
+      delete: vi.fn(),
+    } as never;
+
     const event = {
+      cookies,
+      url: new URL('https://example.test/sign-in/logout?sid=session-123'),
+    } as unknown as Parameters<typeof loadRootLogout>[0];
+
+    await expectRedirect(() => loadRootLogout(event), { status: 303, location: '/en-ca/map-browser' });
+    expect(clearAuthCookiesMock).toHaveBeenCalled();
+  });
+
+  it('treats logout-marker front-channel requests as local sign-out and clears auth cookies', async () => {
+    const cookies = {
+      get: vi.fn().mockReturnValue(undefined),
+      delete: vi.fn(),
+    } as never;
+
+    const event = {
+      cookies,
+      url: new URL('https://example.test/sign-in/logout?logout=true'),
+    } as unknown as Parameters<typeof loadRootLogout>[0];
+
+    await expectRedirect(() => loadRootLogout(event), { status: 303, location: '/en-ca/map-browser' });
+    expect(clearAuthCookiesMock).toHaveBeenCalled();
+  });
+
+  it('uses post_logout_lang cookie to preserve French fallback locale', async () => {
+    const cookies = {
+      get: vi.fn().mockReturnValue('fr-ca'),
+      delete: vi.fn(),
+    };
+
+    const event = {
+      cookies,
+      url: new URL('https://example.test/sign-in/logout'),
+    } as unknown as Parameters<typeof loadRootLogout>[0];
+
+    await expectRedirect(() => loadRootLogout(event), { status: 303, location: '/fr-ca/map-browser' });
+    expect(cookies.delete).toHaveBeenCalledWith('post_logout_lang', { path: '/' });
+  });
+
+  it('keeps returnTo when /[lang]/sign-in/oidc-logout falls back on localhost', async () => {
+    const cookies = {
+      set: vi.fn(),
+    };
+
+    const event = {
+      cookies,
       params: { lang: 'en-ca' },
       url: new URL('http://localhost:8080/en-ca/sign-in/oidc-logout?returnTo=%2Fen-ca%2Ffavourites'),
     } as unknown as Parameters<typeof loadOidcLogout>[0];
@@ -88,12 +141,22 @@ describe('sign-out route redirects', () => {
       status: 303,
       location: '/en-ca/sign-in/logout?returnTo=%2Fen-ca%2Ffavourites',
     });
+    expect(cookies.set).toHaveBeenCalledWith(
+      'post_logout_lang',
+      'en-ca',
+      expect.objectContaining({ path: '/', httpOnly: true, sameSite: 'lax', secure: false, maxAge: 600 })
+    );
   });
 
   it('redirects to provider logout URL when available', async () => {
     getOidcLogoutUrlMock.mockResolvedValue('https://auth.example.test/logout');
 
+    const cookies = {
+      set: vi.fn(),
+    };
+
     const event = {
+      cookies,
       params: { lang: 'en-ca' },
       url: new URL('https://example.test/en-ca/sign-in/oidc-logout'),
     } as unknown as Parameters<typeof loadOidcLogout>[0];
@@ -102,5 +165,10 @@ describe('sign-out route redirects', () => {
       status: 303,
       location: 'https://auth.example.test/logout',
     });
+    expect(cookies.set).toHaveBeenCalledWith(
+      'post_logout_lang',
+      'en-ca',
+      expect.objectContaining({ path: '/', httpOnly: true, sameSite: 'lax', secure: true, maxAge: 600 })
+    );
   });
 });

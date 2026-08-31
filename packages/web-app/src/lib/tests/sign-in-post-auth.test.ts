@@ -1,45 +1,22 @@
 /**
- * Test coverage: Unit tests for post-auth redirect and guest-favourites merge helpers used after sign-in/logout.
+ * Test coverage: Unit tests for post-auth and post-logout redirect helpers used after sign-in/logout.
  */
 import type { Cookies } from '@sveltejs/kit';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-vi.mock('$lib/db/user', () => ({
-  getUserData: vi.fn(),
-  putUserData: vi.fn(),
-}));
-
-import { getUserData, putUserData } from '$lib/db/user';
-import { getPostAuthRedirect, getPostLogoutRedirectPath, mergeGuestFavourites } from '$lib/utils/auth/sign-in-post-auth.server';
-
-const mockedGetUserData = vi.mocked(getUserData);
-const mockedPutUserData = vi.mocked(putUserData);
-
-type CookieHarness = {
-  cookies: Cookies;
-  deletedNames: string[];
-};
+import { describe, expect, it } from 'vitest';
+import { completeLocalLogout, getPostAuthRedirect, getPostLogoutRedirectPath } from '$lib/utils/auth/sign-in-post-auth.server';
 
 /**
- * Creates a cookie test harness that records deleted cookie names.
+ * Creates a minimal cookie jar test double that records deleted cookie names.
  *
- * @param initialValues - Initial cookie values.
- * @returns Cookie harness with cookies test double and deletion log.
+ * @returns Cookie jar double and the list of names it has deleted so far.
  */
-function createCookieHarness(initialValues: Record<string, string> = {}): CookieHarness {
-  const values = new Map<string, string>(Object.entries(initialValues));
+function createCookieHarness(): { cookies: Cookies; deletedNames: string[] } {
   const deletedNames: string[] = [];
-
   const cookies = {
-    get(name: string): string | undefined {
-      return values.get(name);
-    },
-    set(name: string, value: string): void {
-      values.set(name, value);
-    },
-    delete(name: string): void {
+    get: () => undefined,
+    set: () => undefined,
+    delete: (name: string) => {
       deletedNames.push(name);
-      values.delete(name);
     },
   } as unknown as Cookies;
 
@@ -47,10 +24,6 @@ function createCookieHarness(initialValues: Record<string, string> = {}): Cookie
 }
 
 describe('sign-in post-auth helpers', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('falls back to map-browser when state points to another origin', () => {
     const redirectPath = getPostAuthRedirect(
       new URL('https://example.test/sign-in/receive'),
@@ -70,51 +43,26 @@ describe('sign-in post-auth helpers', () => {
     const redirectPath = getPostLogoutRedirectPath('en-ca', '/en-ca/favourites/datasets');
     expect(redirectPath).toBe('/en-ca/map-browser');
   });
+});
 
-  it('merges guest favourites with server favourites and clears cookie when persisted', async () => {
-    mockedGetUserData.mockResolvedValue({
-      status: 'ok',
-      Item: {
-        uuid: 'user-123',
-        favourites: ['dataset-a', 'dataset-b'],
-        mapConfigs: [],
-      },
-    });
-    mockedPutUserData.mockResolvedValue({ ok: true });
+describe('completeLocalLogout', () => {
+  it('clears all auth cookies and resolves the language-scoped redirect path', () => {
+    const { cookies, deletedNames } = createCookieHarness();
 
-    const { cookies, deletedNames } = createCookieHarness({
-      guest_favourites: encodeURIComponent('dataset-b, dataset-c, dataset-d, dataset-c'),
-    });
+    const redirectPath = completeLocalLogout(cookies, new URL('https://example.test/sign-in/logout?returnTo=%2Ffr-ca%2Ffavourites'), 'fr-ca');
 
-    await mergeGuestFavourites(cookies);
-
-    expect(mockedPutUserData).toHaveBeenCalledTimes(1);
-    expect(mockedPutUserData.mock.calls[0][0]).toEqual({
-      uuid: 'user-123',
-      favourites: ['dataset-a', 'dataset-b', 'dataset-c', 'dataset-d'],
-      mapConfigs: [],
-    });
-    expect(deletedNames).toContain('guest_favourites');
+    expect(redirectPath).toBe('/fr-ca/favourites');
+    expect(deletedNames).toEqual(
+      expect.arrayContaining(['auth_session', 'access_token', 'id_token', 'refresh_token', 'pkce_verifier', 'oidc_nonce'])
+    );
   });
 
-  it('does not clear guest favourites cookie when persistence fails', async () => {
-    mockedGetUserData.mockResolvedValue({
-      status: 'ok',
-      Item: {
-        uuid: 'user-123',
-        favourites: ['dataset-a'],
-        mapConfigs: [],
-      },
-    });
-    mockedPutUserData.mockResolvedValue({ ok: false });
+  it('falls back to map-browser when returnTo is unsafe and lang is unknown', () => {
+    const { cookies, deletedNames } = createCookieHarness();
 
-    const { cookies, deletedNames } = createCookieHarness({
-      guest_favourites: 'dataset-z',
-    });
+    const redirectPath = completeLocalLogout(cookies, new URL('https://example.test/sign-in/logout?returnTo=https%3A%2F%2Fevil.example'));
 
-    await mergeGuestFavourites(cookies);
-
-    expect(mockedPutUserData).toHaveBeenCalledTimes(1);
-    expect(deletedNames).not.toContain('guest_favourites');
+    expect(redirectPath).toBe('/en-ca/map-browser');
+    expect(deletedNames.length).toBeGreaterThan(0);
   });
 });

@@ -6,6 +6,7 @@ import type { UserInfo, UserData, TokenResponse } from './db-types';
 import type { Cookies } from '@sveltejs/kit';
 import { USER_TABLE_NAME } from '$env/static/private';
 import { clearAuthCookies } from '$lib/utils/auth/auth-cookies';
+import { touchSessionCookie } from '$lib/utils/auth/session-cookie.server';
 
 const awsRegion = getAwsRegion();
 const client = new DynamoDBClient({ region: awsRegion });
@@ -92,6 +93,17 @@ function getTokenIssuedAt(token: TokenResponse): number | null {
 }
 
 /**
+ * Extracts the session identifier from the token payload when available.
+ */
+function getTokenSid(token: TokenResponse): string | null {
+  if (!token.ok || !token.value || typeof token.value.sid !== 'string' || token.value.sid.length === 0) {
+    return null;
+  }
+
+  return token.value.sid;
+}
+
+/**
  * Fetches user data from the database using the provided cookies.
  *
  * @param cookies - The cookies object containing user session data.
@@ -106,6 +118,11 @@ const getUserData = async (cookies: Cookies): Promise<UserInfo> => {
   const userKey = getUserKey(token);
   if (!userKey) {
     return { Item: { uuid: null, favourites: [], mapConfigs: [] }, status: 'anonymous', sessionExpired: token.staleCleared === true };
+  }
+
+  if (!touchSessionCookie(cookies, userKey, getTokenSid(token))) {
+    clearAuthCookies(cookies);
+    return { Item: { uuid: null, favourites: [], mapConfigs: [] }, status: 'anonymous', sessionExpired: true };
   }
 
   const unavailableUserData: UserInfo = { Item: { uuid: userKey, favourites: [], mapConfigs: [] }, status: 'unavailable' };
@@ -150,6 +167,15 @@ const getUserData = async (cookies: Cookies): Promise<UserInfo> => {
   }
 
   const tokenIssuedAt = getTokenIssuedAt(token);
+  const tokenSid = getTokenSid(token);
+
+  if (tokenSid && response.Item.authRevokedSids?.[tokenSid] !== undefined) {
+    const sidRevokedAt = response.Item.authRevokedSids[tokenSid];
+    if (tokenIssuedAt === null || tokenIssuedAt < sidRevokedAt) {
+      clearAuthCookies(cookies);
+      return { Item: { uuid: null, favourites: [], mapConfigs: [] }, status: 'anonymous' };
+    }
+  }
 
   // Reject only tokens strictly older than the revocation second. Equality can occur when
   // logout and login are processed within the same second by the provider.
@@ -222,7 +248,8 @@ const putUserData = async (data: Partial<UserData>, cookies: Cookies): Promise<R
 const markUserAuthRevoked = async (
   userKey: string,
   revokedAt: number,
-  logoutTokenJti: string
+  logoutTokenJti: string,
+  sid?: string
 ): Promise<'stored' | 'replayed' | 'error'> => {
   if (!USER_TABLE_NAME) {
     return 'error';
@@ -232,18 +259,28 @@ const markUserAuthRevoked = async (
   const replayWindowCutoff = nowSeconds - BACK_CHANNEL_LOGOUT_REPLAY_WINDOW_SECONDS;
 
   try {
+    const hasSid = typeof sid === 'string' && sid.length > 0;
     await docClient.send(
       new UpdateCommand({
         TableName: USER_TABLE_NAME,
         Key: {
           uuid: userKey,
         },
-        UpdateExpression:
-          'SET authRevokedAt = :authRevokedAt, lastBackChannelLogoutJti = :logoutTokenJti, lastBackChannelLogoutJtiSeenAt = :seenAt',
-        ConditionExpression:
-          '(attribute_not_exists(lastBackChannelLogoutJti) OR lastBackChannelLogoutJti <> :logoutTokenJti OR attribute_not_exists(lastBackChannelLogoutJtiSeenAt) OR lastBackChannelLogoutJtiSeenAt < :replayWindowCutoff) AND (attribute_not_exists(authRevokedAt) OR :authRevokedAt >= authRevokedAt)',
+        UpdateExpression: hasSid
+          ? 'SET #authRevokedSids = if_not_exists(#authRevokedSids, :emptyMap), #authRevokedSids.#sid = :authRevokedAt, lastBackChannelLogoutJti = :logoutTokenJti, lastBackChannelLogoutJtiSeenAt = :seenAt'
+          : 'SET authRevokedAt = :authRevokedAt, lastBackChannelLogoutJti = :logoutTokenJti, lastBackChannelLogoutJtiSeenAt = :seenAt',
+        ConditionExpression: hasSid
+          ? '(attribute_not_exists(lastBackChannelLogoutJti) OR lastBackChannelLogoutJti <> :logoutTokenJti OR attribute_not_exists(lastBackChannelLogoutJtiSeenAt) OR lastBackChannelLogoutJtiSeenAt < :replayWindowCutoff) AND (attribute_not_exists(#authRevokedSids.#sid) OR :authRevokedAt >= #authRevokedSids.#sid)'
+          : '(attribute_not_exists(lastBackChannelLogoutJti) OR lastBackChannelLogoutJti <> :logoutTokenJti OR attribute_not_exists(lastBackChannelLogoutJtiSeenAt) OR lastBackChannelLogoutJtiSeenAt < :replayWindowCutoff) AND (attribute_not_exists(authRevokedAt) OR :authRevokedAt >= authRevokedAt)',
+        ExpressionAttributeNames: hasSid
+          ? {
+              '#authRevokedSids': 'authRevokedSids',
+              '#sid': sid,
+            }
+          : undefined,
         ExpressionAttributeValues: {
           ':authRevokedAt': revokedAt,
+          ':emptyMap': {},
           ':logoutTokenJti': logoutTokenJti,
           ':seenAt': nowSeconds,
           ':replayWindowCutoff': replayWindowCutoff,

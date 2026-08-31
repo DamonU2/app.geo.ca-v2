@@ -27,7 +27,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
   // Use provider iat when present; fallback keeps revocation monotonic if a malformed token slips through.
   const revokedAt = token.iat ?? Math.floor(Date.now() / 1000);
-  const stored = await markUserAuthRevoked(token.sub, revokedAt, token.jti);
+  const stored = await markUserAuthRevoked(token.sub, revokedAt, token.jti, token.sid);
   if (stored === 'replayed') {
     // Treat replays as idempotent success so provider retries do not fail noisily.
     return new Response(null, { status: 204 });

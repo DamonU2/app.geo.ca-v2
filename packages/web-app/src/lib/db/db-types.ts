@@ -177,6 +177,7 @@ export interface UserData {
   favourites: string[]; // Array of record UUIDs
   mapConfigs?: MapConfigFavourite[];
   authRevokedAt?: number | null;
+  authRevokedSids?: Record<string, number> | null;
   lastBackChannelLogoutJti?: string | null;
   lastBackChannelLogoutJtiSeenAt?: number | null;
 }

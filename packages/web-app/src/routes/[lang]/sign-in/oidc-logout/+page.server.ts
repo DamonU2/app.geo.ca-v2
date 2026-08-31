@@ -12,18 +12,28 @@ import { getOidcLogoutUrl } from '$lib/utils/auth/sign-in-core.server';
  * @param event - SvelteKit load event containing URL and language params.
  * @returns Redirect response to provider logout URL or local logout path.
  */
-export const load: PageServerLoad = async ({ url, params }: Parameters<PageServerLoad>[0]): Promise<void> => {
+export const load: PageServerLoad = async ({ url, params, cookies }: Parameters<PageServerLoad>[0]): Promise<void> => {
   const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
   const returnTo = url.searchParams.get('returnTo');
   const localLogoutPath = returnTo
     ? `/${params.lang}/sign-in/logout?returnTo=${encodeURIComponent(returnTo)}`
     : `/${params.lang}/sign-in/logout`;
 
+  // The provider returns to the registered root callback, so bridge the localized route's
+  // language through a short-lived cookie instead of adding arbitrary redirect URLs.
+  cookies.set('post_logout_lang', params.lang, {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: url.protocol === 'https:',
+    maxAge: 600,
+  });
+
   if (isLocalhost) {
     throw redirect(303, localLogoutPath);
   }
 
-  const oidcLogoutUrl = await getOidcLogoutUrl(url);
+  const oidcLogoutUrl = await getOidcLogoutUrl(url, cookies);
   if (!oidcLogoutUrl) {
     throw redirect(303, localLogoutPath);
   }

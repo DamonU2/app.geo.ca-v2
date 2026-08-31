@@ -9,11 +9,26 @@ vi.mock('$lib/db/user', () => ({
   putUserData: vi.fn(),
 }));
 
-import { PATCH } from '../../routes/[lang]/api/favourites/+server';
+import { DELETE, PATCH, POST, PUT } from '../../routes/[lang]/api/favourites/+server';
 import { getUserData, putUserData } from '$lib/db/user';
 
 const mockedGetUserData = vi.mocked(getUserData);
 const mockedPutUserData = vi.mocked(putUserData);
+
+/**
+ * Creates a JSON request for the favourites API test route.
+ *
+ * @param method - HTTP method to use.
+ * @param payload - Optional JSON payload sent to the route.
+ * @returns Request configured with the given method and JSON body.
+ */
+function createFavouritesRequest(method: string, payload?: Record<string, unknown>): Request {
+  return new Request('http://localhost/en-ca/api/favourites', {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: payload ? JSON.stringify(payload) : undefined,
+  });
+}
 
 /**
  * Creates a PATCH request for the favourites API test route.
@@ -22,11 +37,7 @@ const mockedPutUserData = vi.mocked(putUserData);
  * @returns Request configured for PATCH with JSON body.
  */
 function createPatchRequest(payload: Record<string, unknown>): Request {
-  return new Request('http://localhost/en-ca/api/favourites', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
+  return createFavouritesRequest('PATCH', payload);
 }
 
 describe('PATCH /[lang]/api/favourites map config mutations', () => {
@@ -262,6 +273,165 @@ describe('PATCH /[lang]/api/favourites map config mutations', () => {
 
     expect(payload.ok).toBe(false);
     expect(payload.reason).toBe('invalid-config');
+    expect(mockedPutUserData).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /[lang]/api/favourites', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedPutUserData.mockResolvedValue({ ok: true });
+  });
+
+  it('adds a record id to favourites and persists', async () => {
+    mockedGetUserData.mockResolvedValue({
+      status: 'ok',
+      Item: { uuid: 'user-1', favourites: ['dataset-a'], mapConfigs: [] },
+    });
+
+    const response = await POST({
+      cookies: {} as never,
+      request: createFavouritesRequest('POST', { id: 'dataset-b' }),
+    } as never);
+
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as { ok: boolean; favourites: string[] };
+    expect(payload.ok).toBe(true);
+    expect(payload.favourites).toEqual(['dataset-a', 'dataset-b']);
+    expect(mockedPutUserData).toHaveBeenCalledTimes(1);
+  });
+
+  it('deduplicates when the id is already a favourite', async () => {
+    mockedGetUserData.mockResolvedValue({
+      status: 'ok',
+      Item: { uuid: 'user-1', favourites: ['dataset-a'], mapConfigs: [] },
+    });
+
+    const response = await POST({
+      cookies: {} as never,
+      request: createFavouritesRequest('POST', { id: 'dataset-a' }),
+    } as never);
+
+    const payload = (await response.json()) as { favourites: string[] };
+    expect(payload.favourites).toEqual(['dataset-a']);
+  });
+
+  it('rejects a missing or blank id', async () => {
+    mockedGetUserData.mockResolvedValue({
+      status: 'ok',
+      Item: { uuid: 'user-1', favourites: ['dataset-a'], mapConfigs: [] },
+    });
+
+    const response = await POST({
+      cookies: {} as never,
+      request: createFavouritesRequest('POST', { id: '  ' }),
+    } as never);
+
+    expect(response.status).toBe(400);
+    expect(mockedPutUserData).not.toHaveBeenCalled();
+  });
+
+  it('rejects when there is no signed-in user', async () => {
+    mockedGetUserData.mockResolvedValue({
+      status: 'missing',
+      Item: { uuid: null, favourites: [], mapConfigs: [] },
+    });
+
+    const response = await POST({
+      cookies: {} as never,
+      request: createFavouritesRequest('POST', { id: 'dataset-a' }),
+    } as never);
+
+    expect(response.status).toBe(401);
+    expect(mockedPutUserData).not.toHaveBeenCalled();
+  });
+});
+
+describe('DELETE /[lang]/api/favourites', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedPutUserData.mockResolvedValue({ ok: true });
+  });
+
+  it('removes a record id from favourites and persists', async () => {
+    mockedGetUserData.mockResolvedValue({
+      status: 'ok',
+      Item: { uuid: 'user-1', favourites: ['dataset-a', 'dataset-b'], mapConfigs: [] },
+    });
+
+    const response = await DELETE({
+      cookies: {} as never,
+      request: createFavouritesRequest('DELETE', { id: 'dataset-a' }),
+    } as never);
+
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as { ok: boolean; favourites: string[] };
+    expect(payload.ok).toBe(true);
+    expect(payload.favourites).toEqual(['dataset-b']);
+    expect(mockedPutUserData).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects a missing or blank id', async () => {
+    mockedGetUserData.mockResolvedValue({
+      status: 'ok',
+      Item: { uuid: 'user-1', favourites: ['dataset-a'], mapConfigs: [] },
+    });
+
+    const response = await DELETE({
+      cookies: {} as never,
+      request: createFavouritesRequest('DELETE', {}),
+    } as never);
+
+    expect(response.status).toBe(400);
+    expect(mockedPutUserData).not.toHaveBeenCalled();
+  });
+
+  it('rejects when there is no signed-in user', async () => {
+    mockedGetUserData.mockResolvedValue({
+      status: 'missing',
+      Item: { uuid: null, favourites: [], mapConfigs: [] },
+    });
+
+    const response = await DELETE({
+      cookies: {} as never,
+      request: createFavouritesRequest('DELETE', { id: 'dataset-a' }),
+    } as never);
+
+    expect(response.status).toBe(401);
+    expect(mockedPutUserData).not.toHaveBeenCalled();
+  });
+});
+
+describe('PUT /[lang]/api/favourites', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedPutUserData.mockResolvedValue({ ok: true });
+  });
+
+  it('clears all favourites and persists', async () => {
+    mockedGetUserData.mockResolvedValue({
+      status: 'ok',
+      Item: { uuid: 'user-1', favourites: ['dataset-a', 'dataset-b'], mapConfigs: [] },
+    });
+
+    const response = await PUT({ cookies: {} as never } as never);
+
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as { ok: boolean; favourites: string[] };
+    expect(payload.ok).toBe(true);
+    expect(payload.favourites).toEqual([]);
+    expect(mockedPutUserData).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects when there is no signed-in user', async () => {
+    mockedGetUserData.mockResolvedValue({
+      status: 'missing',
+      Item: { uuid: null, favourites: [], mapConfigs: [] },
+    });
+
+    const response = await PUT({ cookies: {} as never } as never);
+
+    expect(response.status).toBe(401);
     expect(mockedPutUserData).not.toHaveBeenCalled();
   });
 });

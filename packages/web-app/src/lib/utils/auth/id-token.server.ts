@@ -3,8 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { decodeBase64UrlJson } from '$lib/utils/auth/base64url';
 import { splitJwt } from '$lib/utils/auth/jwt';
 import { verifyJwtSignatureWithJwks } from '$lib/utils/auth/jwt-signature.server';
-import { getAudienceValues, hasNumericIat, hasValidExp, issuerMatches } from '$lib/utils/auth/oidc-claims.server';
-import { ensureTrailingSlashless, getOidcPublicConfig, getOpenIdConfiguration } from '$lib/utils/auth/oidc.server';
+import { getAudienceValues, hasNumericIat, hasValidExp, hasValidNbf, issuerMatches } from '$lib/utils/auth/oidc-claims.server';
+import { getOidcMinimalConfigOrFail, resolveVerifiedDiscovery } from '$lib/utils/auth/oidc.server';
 import { getRequestedScopes, validateScopedIdTokenClaims } from '$lib/utils/auth/scope-policy.server';
 import type { JwtHeader } from '$lib/utils/auth/jwt-types';
 
@@ -54,13 +54,11 @@ export async function verifyIdToken(idToken: string, expectedNonce?: string | nu
     return fail('decode_failed');
   }
 
-  const { clientId, customDomain } = getOidcPublicConfig();
-  if (!clientId || !customDomain) {
-    return fail('missing_oidc_config', {
-      hasClientId: Boolean(clientId),
-      hasCustomDomain: Boolean(customDomain),
-    });
+  const oidcConfig = getOidcMinimalConfigOrFail();
+  if (!oidcConfig) {
+    return fail('missing_oidc_config');
   }
+  const { clientId, customDomain } = oidcConfig;
 
   if (header.alg !== 'RS256' || typeof header.kid !== 'string') {
     return fail('unsupported_header', {
@@ -69,44 +67,12 @@ export async function verifyIdToken(idToken: string, expectedNonce?: string | nu
     });
   }
 
-  const openIdConfiguration = await getOpenIdConfiguration(customDomain);
-  const fallbackIssuer = typeof payload.iss === 'string' ? ensureTrailingSlashless(payload.iss) : null;
-  const normalizedIssuer = openIdConfiguration?.issuer ? ensureTrailingSlashless(openIdConfiguration.issuer) : fallbackIssuer;
-  const configuredJwksUri = openIdConfiguration?.jwks_uri ?? null;
-  const discoveryFailureDetails = {
-    hasIssuer: Boolean(openIdConfiguration?.issuer),
-    hasJwksUri: Boolean(openIdConfiguration?.jwks_uri),
-    hasFallbackIssuer: Boolean(fallbackIssuer),
-    customDomain,
-  };
-
-  if (!normalizedIssuer) {
-    return fail('discovery_failed', discoveryFailureDetails);
+  const discovery = await resolveVerifiedDiscovery(customDomain);
+  if (!discovery) {
+    return fail('discovery_failed', { customDomain });
   }
-
-  const issuerOrigin = (() => {
-    try {
-      return new URL(normalizedIssuer).origin;
-    } catch {
-      return null;
-    }
-  })();
-
-  const jwksCandidates = Array.from(
-    new Set(
-      [
-        configuredJwksUri,
-        `${normalizedIssuer}/.well-known/jwks.json`,
-        `${normalizedIssuer}/jwks`,
-        issuerOrigin ? `${issuerOrigin}/.well-known/jwks.json` : null,
-        issuerOrigin ? `${issuerOrigin}/oauth2/jwks` : null,
-      ].filter((value): value is string => typeof value === 'string' && value.length > 0)
-    )
-  );
-
-  if (jwksCandidates.length === 0) {
-    return fail('discovery_failed', discoveryFailureDetails);
-  }
+  const { issuer: normalizedIssuer, jwksUri: configuredJwksUri } = discovery;
+  const jwksCandidates = [configuredJwksUri];
 
   if (!issuerMatches(payload.iss, normalizedIssuer)) {
     return fail('issuer_mismatch', {
@@ -129,11 +95,18 @@ export async function verifyIdToken(idToken: string, expectedNonce?: string | nu
     });
   }
 
+  if (!hasValidNbf(payload.nbf)) {
+    return fail('nbf_in_future', {
+      nbf: payload.nbf,
+    });
+  }
+
   if (!hasNumericIat(payload.iat) || (!payload.sub && !payload.username)) {
     return fail('missing_required_claims', {
       hasIat: hasNumericIat(payload.iat),
       hasSub: Boolean(payload.sub),
       hasUsername: Boolean(payload.username),
+      iat: payload.iat,
     });
   }
 

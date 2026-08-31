@@ -11,6 +11,7 @@ import enShareTranslations from '$lib/components/share/i18n/en/translations.json
 import frShareTranslations from '$lib/components/share/i18n/fr/translations.json';
 import { getUserData } from '$lib/db/user';
 import { isOidcConfigured } from '$lib/utils/auth/sign-in-core.server';
+import { getOidcManageUrl } from '$lib/utils/auth/oidc.server';
 import { getAppLanguage, isFrench, pickByLanguage } from '$lib/utils/language';
 
 type NavLink = {
@@ -71,6 +72,10 @@ export const load: LayoutServerLoad = async ({ params, cookies, depends, url }) 
   if (sessionExpired) {
     cookies.delete('session_expired', { path: '/' });
   }
+  const authError = cookies.get('auth_error') === 'signin_failed';
+  if (authError) {
+    cookies.delete('auth_error', { path: '/' });
+  }
   const userDataUnavailable = userInfo.status === 'unavailable';
   const navitems = structuredClone(pickByLanguage(lang, enNavitems, frNavitems)) as NavItems;
 
@@ -104,7 +109,10 @@ export const load: LayoutServerLoad = async ({ params, cookies, depends, url }) 
     lang,
     signedIn,
     sessionExpired,
+    authError,
     FEATURE_SIGN_IN: isOidcConfigured(),
+    // Expose the deployment-controlled management portal only to authenticated users and only over HTTPS.
+    manageCanadaLoginUrl: signedIn ? getOidcManageUrl() : null,
     userData: userInfo.Item,
     userDataStatus: userInfo.status,
     footerLinks: pickByLanguage(lang, enFooterLinks, frFooterLinks),

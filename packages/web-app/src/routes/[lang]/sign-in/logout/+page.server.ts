@@ -1,7 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
-import { clearAuthCookies } from '$lib/utils/auth/auth-cookies';
-import { getPostLogoutRedirectPath } from '$lib/utils/auth/sign-in-post-auth.server';
+import { completeLocalLogout } from '$lib/utils/auth/sign-in-post-auth.server';
 
 /**
  * Clears local auth cookies and redirects to the map browser.
@@ -10,7 +9,5 @@ import { getPostLogoutRedirectPath } from '$lib/utils/auth/sign-in-post-auth.ser
  * @returns Redirect response to the language-scoped map browser page.
  */
 export const load: PageServerLoad = ({ cookies, params, url }: Parameters<PageServerLoad>[0]): Promise<void> => {
-  clearAuthCookies(cookies);
-  const returnTo = url.searchParams.get('returnTo');
-  throw redirect(303, getPostLogoutRedirectPath(params.lang, returnTo));
+  throw redirect(303, completeLocalLogout(cookies, url, params.lang));
 };

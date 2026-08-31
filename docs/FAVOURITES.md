@@ -16,11 +16,13 @@ packages/web-app/src/
 │   │   └── favourites.svelte               # Landing page (hub)
 │   ├── db/
 │   │   ├── db-types.ts                     # Type definitions (UserData, MapConfigFavourite)
-│   │   └── user.ts                         # DynamoDB user operations (getUserData)
+│   │   ├── user.ts                         # DynamoDB user operations (getUserData, putUserData)
+│   │   └── favourites.ts                   # mergeGuestFavourites (guest -> signed-in profile merge)
 │   └── utils/
 │       ├── favourites/
-│       │   ├── page-load.server.ts         # Shared server-side loader
-│       │   └── favourites-storage.ts       # Cookie & browser storage utilities
+│       │   └── page-load.server.ts         # Shared server-side loader
+│       ├── favourites-storage.ts           # Local-storage favourites read/normalize helpers
+│       ├── guest-favourites.ts             # Guest favourites cookie encode/decode (client + server)
 │       └── map-config-sanitizer.ts         # Removes large style data for storage
 └── routes/
     └── [lang]/
@@ -37,17 +39,17 @@ packages/web-app/src/
 
 ```typescript
 interface UserData {
-  uuid: string; // User ID from auth token
+  uuid: string | null; // User ID from auth token (null before first write)
   favourites: string[]; // Array of saved dataset record IDs
-  mapConfigs: MapConfigFavourite[]; // Array of saved map configurations
-  authRevokedAt?: number; // Back-channel logout marker
+  mapConfigs?: MapConfigFavourite[]; // Array of saved map configurations
+  authRevokedAt?: number | null; // Back-channel logout marker
 }
 
 interface MapConfigFavourite {
-  mapId: string; // UUID for the saved map
+  id: string; // UUID for the saved map
   name: string; // User-provided name
-  createdAt: number; // Timestamp (milliseconds)
-  geoviewConfig: GeoviewConfig; // Serialized map state
+  config: Record<string, unknown>; // Sanitized, serialized map state
+  createdAt: string; // ISO 8601 timestamp
 }
 ```
 
@@ -121,7 +123,11 @@ interface MapConfigFavourite {
 **PATCH**: Create or delete map configs
 
 ```json
-{ "mapId": "<uuid>", "action": "create"|"delete", "name": "<name>", "geoviewConfig": {...} }
+// Create
+{ "action": "createMapConfig", "name": "<name>", "config": {...} }
+
+// Delete
+{ "action": "deleteMapConfig", "id": "<uuid>" }
 ```
 
 ## Data Flow
@@ -148,14 +154,13 @@ interface MapConfigFavourite {
 
 ### Guest → Sign-In Merge
 
-1. Guest clicks "Add to favourites"
-2. ID stored in `guest_favourites` cookie
-3. Guest completes sign-in flow
-4. `/sign-in/receive` route:
-   - Verifies ID token
-   - Merges `guest_favourites` cookie into `UserData.favourites`
+1. Guest clicks "Add to favourites"; the id is stored in local storage and, on sign-in click, encoded into the `guest_favourites` cookie (`lib/utils/guest-favourites.ts`)
+2. Guest completes sign-in flow
+3. `/sign-in/receive` route verifies the ID token, then calls `mergeGuestFavourites()` (`lib/db/favourites.ts`), which:
+   - Decodes and normalizes the `guest_favourites` cookie
+   - Merges it into `UserData.favourites` (deduped)
    - Persists merged data to DynamoDB
-   - Clears cookie after successful persistence
+   - Clears the cookie only after successful persistence
 
 ## Key Utilities
 
@@ -178,10 +183,17 @@ Reduces map config size by removing style/layer data before storage:
 
 ### `favourites-storage.ts`
 
-Browser storage utilities:
+Local storage utilities:
 
-- Guest favourite cookie management
-- Local storage for UI state (if needed)
+- Reads/normalizes favourites from browser local storage (trim, dedupe, drop empties)
+- Resolves initial favourites source on page load (server vs. local storage fallback)
+
+### `guest-favourites.ts`
+
+Shared guest favourites cookie contract used by both the client and server:
+
+- `encodeGuestFavouritesCookieValue()` / `decodeGuestFavouritesCookieValue()`
+- Used by the sign-in component (client) when caching favourites before redirect, and by `mergeGuestFavourites()` (server) when merging after sign-in
 
 ## Development Notes
 

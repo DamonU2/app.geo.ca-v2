@@ -65,6 +65,22 @@ describe('markUserAuthRevoked', () => {
     expect(conditionExpression).toContain('attribute_not_exists(authRevokedAt) OR :authRevokedAt >= authRevokedAt');
   });
 
+  it('writes a sid-specific monotonic condition when sid-based revocation is used', async () => {
+    docSendMock.mockResolvedValueOnce({});
+
+    await expect(markUserAuthRevoked('user-123', 1700000000, 'logout-jti-1', 'session-123')).resolves.toBe('stored');
+
+    expect(docSendMock).toHaveBeenCalledTimes(1);
+    const command = docSendMock.mock.calls[0]?.[0] as { input?: Record<string, unknown> };
+    const updateExpression = String(command.input?.UpdateExpression ?? '');
+    const conditionExpression = String(command.input?.ConditionExpression ?? '');
+    const names = command.input?.ExpressionAttributeNames as Record<string, string>;
+
+    expect(updateExpression).toContain('#authRevokedSids.#sid = :authRevokedAt');
+    expect(conditionExpression).toContain('attribute_not_exists(#authRevokedSids.#sid) OR :authRevokedAt >= #authRevokedSids.#sid');
+    expect(names).toMatchObject({ '#authRevokedSids': 'authRevokedSids', '#sid': 'session-123' });
+  });
+
   it('returns replayed when DynamoDB conditional update fails', async () => {
     docSendMock.mockRejectedValueOnce({ name: 'ConditionalCheckFailedException' });
 

@@ -6,7 +6,7 @@ export const FAVOURITES_STORAGE_KEY = 'FavouritesResources';
  * @param values - Candidate favourite IDs.
  * @returns Cleaned list of favourite IDs.
  */
-function normalizeFavourites(values: string[]): string[] {
+export function normalizeFavourites(values: string[]): string[] {
   return Array.from(new Set(values.map((id) => id.trim()).filter((id) => id.length > 0)));
 }
 

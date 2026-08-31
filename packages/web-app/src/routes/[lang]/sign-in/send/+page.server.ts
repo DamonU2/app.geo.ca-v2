@@ -2,10 +2,12 @@ import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
 import {
   createOidcNonce,
+  createOidcStateToken,
   createPkceChallenge,
   createPkceVerifier,
   getSignInUrl,
   setOidcNonceCookie,
+  setOidcStateCookies,
   setPkceVerifierCookie,
 } from '$lib/utils/auth/sign-in-core.server';
 
@@ -29,10 +31,11 @@ export const load: PageServerLoad = async ({ cookies, params, url }: Parameters<
   }
 
   const fallbackPath = `/${params.lang}/map-browser`;
-  const state = url.searchParams.get('state') ?? fallbackPath;
+  const returnTo = url.searchParams.get('state') ?? fallbackPath;
   const pkceVerifier = createPkceVerifier();
   const oidcNonce = createOidcNonce();
-  const signInUrl = getSignInUrl(url, state, createPkceChallenge(pkceVerifier), oidcNonce);
+  const oidcState = createOidcStateToken();
+  const signInUrl = getSignInUrl(url, oidcState, createPkceChallenge(pkceVerifier), oidcNonce);
 
   if (!signInUrl) {
     if (process.env.NODE_ENV !== 'production') {
@@ -41,7 +44,8 @@ export const load: PageServerLoad = async ({ cookies, params, url }: Parameters<
     throw redirect(303, fallbackPath);
   }
 
-  setPkceVerifierCookie(cookies, url, pkceVerifier);
-  setOidcNonceCookie(cookies, url, oidcNonce);
+  setPkceVerifierCookie(cookies, pkceVerifier);
+  setOidcNonceCookie(cookies, oidcNonce);
+  setOidcStateCookies(cookies, oidcState, returnTo);
   throw redirect(303, signInUrl);
 };

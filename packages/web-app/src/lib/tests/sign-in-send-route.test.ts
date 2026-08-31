@@ -5,26 +5,32 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   createOidcNonceMock,
+  createOidcStateTokenMock,
   createPkceChallengeMock,
   createPkceVerifierMock,
   getSignInUrlMock,
   setOidcNonceCookieMock,
+  setOidcStateCookiesMock,
   setPkceVerifierCookieMock,
 } = vi.hoisted(() => ({
   createOidcNonceMock: vi.fn<() => string>(),
+  createOidcStateTokenMock: vi.fn<() => string>(),
   createPkceChallengeMock: vi.fn<(verifier: string) => string>(),
   createPkceVerifierMock: vi.fn<() => string>(),
   getSignInUrlMock: vi.fn<(requestUrl: URL, state: string, codeChallenge: string, nonce: string) => string | null>(),
   setOidcNonceCookieMock: vi.fn(),
+  setOidcStateCookiesMock: vi.fn(),
   setPkceVerifierCookieMock: vi.fn(),
 }));
 
 vi.mock('$lib/utils/auth/sign-in-core.server', () => ({
   createOidcNonce: createOidcNonceMock,
+  createOidcStateToken: createOidcStateTokenMock,
   createPkceChallenge: createPkceChallengeMock,
   createPkceVerifier: createPkceVerifierMock,
   getSignInUrl: getSignInUrlMock,
   setOidcNonceCookie: setOidcNonceCookieMock,
+  setOidcStateCookies: setOidcStateCookiesMock,
   setPkceVerifierCookie: setPkceVerifierCookieMock,
 }));
 
@@ -50,6 +56,7 @@ describe('GET /[lang]/sign-in/send', () => {
 
     createPkceVerifierMock.mockReturnValue('pkce-verifier');
     createOidcNonceMock.mockReturnValue('oidc-nonce');
+    createOidcStateTokenMock.mockReturnValue('oidc-state-token');
     createPkceChallengeMock.mockReturnValue('pkce-challenge');
   });
 
@@ -84,7 +91,9 @@ describe('GET /[lang]/sign-in/send', () => {
       expectRedirect(error, 303, 'https://auth.example.test/oauth2/authorize?x=1');
     }
 
-    expect(setPkceVerifierCookieMock).toHaveBeenCalledWith(cookies, event.url, 'pkce-verifier');
-    expect(setOidcNonceCookieMock).toHaveBeenCalledWith(cookies, event.url, 'oidc-nonce');
+    expect(setPkceVerifierCookieMock).toHaveBeenCalledWith(cookies, 'pkce-verifier');
+    expect(setOidcNonceCookieMock).toHaveBeenCalledWith(cookies, 'oidc-nonce');
+    expect(setOidcStateCookiesMock).toHaveBeenCalledWith(cookies, 'oidc-state-token', '/fr-ca/map-browser');
+    expect(getSignInUrlMock).toHaveBeenCalledWith(event.url, 'oidc-state-token', 'pkce-challenge', 'oidc-nonce');
   });
 });

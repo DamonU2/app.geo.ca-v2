@@ -13,20 +13,25 @@ vi.mock('$lib/utils/auth/client-assertion.server', () => ({
 }));
 
 vi.mock('$lib/utils/auth/oidc.server', () => ({
+  isHttpsOrLocalhostUrl: (value: string) => value.startsWith('https://') || value.startsWith('http://localhost'),
+  isLocalhostUrl: (value: string) => value.startsWith('http://localhost') || value.startsWith('https://localhost'),
   getOidcConfig: getOidcConfigMock,
 }));
 
-import { exchangeCodeForTokens } from '$lib/utils/auth/sign-in-core.server';
+import { exchangeCodeForTokens, exchangeRefreshToken } from '$lib/utils/auth/sign-in-core.server';
 
 describe('exchangeCodeForTokens', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.unstubAllEnvs();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
 
     getOidcConfigMock.mockReturnValue({
       clientId: 'client-id-123',
       clientSecret: 'client-secret-xyz',
       customDomain: 'https://auth.example.test',
+      tokenEndpoint: '',
+      jwtKid: '',
     });
 
     createClientAssertionJwtMock.mockReturnValue('signed-assertion-jwt');
@@ -46,6 +51,7 @@ describe('exchangeCodeForTokens', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
   });
@@ -105,5 +111,168 @@ describe('exchangeCodeForTokens', () => {
     expect(params.get('client_assertion')).toBe('signed-assertion-jwt');
     expect(params.get('client_assertion_type')).toBe('urn:ietf:params:oauth:client-assertion-type:jwt-bearer');
     expect(params.get('client_secret')).toBeNull();
+  });
+
+  it('uses configured token endpoint and jwt kid when provided', async () => {
+    getOidcConfigMock.mockReturnValue({
+      clientId: 'client-id-123',
+      clientSecret: 'client-secret-xyz',
+      customDomain: 'https://auth.example.test',
+      tokenEndpoint: 'https://tokens.example.test/custom/token',
+      jwtKid: 'test-kid-123',
+    });
+
+    await exchangeCodeForTokens(
+      'code-abc',
+      new URL('https://app.example.test/sign-in/receive'),
+      'pkce-verifier-123',
+      '-----BEGIN PRIVATE KEY-----test-----END PRIVATE KEY-----'
+    );
+
+    expect(createClientAssertionJwtMock).toHaveBeenCalledWith(
+      'client-id-123',
+      'https://tokens.example.test/custom/token',
+      '-----BEGIN PRIVATE KEY-----test-----END PRIVATE KEY-----',
+      null,
+      'test-kid-123'
+    );
+
+    const [fetchUrl] = vi.mocked(globalThis.fetch).mock.calls[0] ?? [];
+    expect(fetchUrl).toBe('https://tokens.example.test/custom/token');
+  });
+
+  it('returns null when code_verifier is missing', async () => {
+    const result = await exchangeCodeForTokens('code-abc', new URL('https://app.example.test/sign-in/receive'), null);
+
+    expect(result).toBeNull();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it('returns null when token endpoint returns a non-2xx response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: vi.fn().mockResolvedValue({
+          error: 'invalid_client',
+          error_description: 'client authentication failed',
+        }),
+      })
+    );
+
+    const result = await exchangeCodeForTokens('code-abc', new URL('https://app.example.test/sign-in/receive'), 'pkce-verifier-123');
+
+    expect(result).toBeNull();
+  });
+
+  it('returns null when token endpoint returns a non-2xx response with a non-JSON body', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: vi.fn().mockRejectedValue(new Error('invalid json')),
+      })
+    );
+
+    const result = await exchangeCodeForTokens('code-abc', new URL('https://app.example.test/sign-in/receive'), 'pkce-verifier-123');
+
+    expect(result).toBeNull();
+  });
+
+  it('returns null when a successful token response body cannot be parsed as JSON', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockRejectedValue(new Error('invalid json')),
+      })
+    );
+
+    const result = await exchangeCodeForTokens('code-abc', new URL('https://app.example.test/sign-in/receive'), 'pkce-verifier-123');
+
+    expect(result).toBeNull();
+  });
+
+  it('returns null when token endpoint request throws', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
+
+    const result = await exchangeCodeForTokens('code-abc', new URL('https://app.example.test/sign-in/receive'), 'pkce-verifier-123');
+
+    expect(result).toBeNull();
+  });
+
+  it('exchanges a refresh token using the configured client authentication', async () => {
+    const result = await exchangeRefreshToken('refresh-token-123');
+
+    expect(result).toMatchObject({
+      id_token: 'id-token',
+      access_token: 'access-token',
+    });
+
+    const [, requestInit] = vi.mocked(globalThis.fetch).mock.calls[0] ?? [];
+    const params = new URLSearchParams(String(requestInit?.body ?? ''));
+    expect(params.get('grant_type')).toBe('refresh_token');
+    expect(params.get('refresh_token')).toBe('refresh-token-123');
+    expect(params.get('client_secret')).toBe('client-secret-xyz');
+  });
+
+  it('returns null and logs when the refresh token is missing', async () => {
+    const result = await exchangeRefreshToken('');
+
+    expect(result).toBeNull();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith('[auth/token-refresh] missing_required_input', expect.objectContaining({ hasRefreshToken: false }));
+  });
+
+  it('fails closed outside localhost when OIDC_USE_PRIVATE_KEY_JWT is true and no private key is available', async () => {
+    vi.stubEnv('OIDC_USE_PRIVATE_KEY_JWT', 'true');
+
+    const result = await exchangeRefreshToken('refresh-token-123', null);
+
+    expect(result).toBeNull();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith('[auth/token-refresh] policy_blocked_fallback', expect.objectContaining({ isLocalhost: false }));
+  });
+
+  it('returns null and logs when neither a private key nor a client secret is configured', async () => {
+    getOidcConfigMock.mockReturnValue({
+      clientId: 'client-id-123',
+      clientSecret: '',
+      customDomain: 'https://auth.example.test',
+      tokenEndpoint: '',
+      jwtKid: '',
+    });
+
+    const result = await exchangeRefreshToken('refresh-token-123');
+
+    expect(result).toBeNull();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith('[auth/token-refresh] missing_client_credentials', expect.any(Object));
+  });
+
+  it('returns null and logs when the token endpoint returns a non-2xx response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+      })
+    );
+
+    const result = await exchangeRefreshToken('refresh-token-123');
+
+    expect(result).toBeNull();
+    expect(console.error).toHaveBeenCalledWith('[auth/token-refresh] token_request_failed', expect.objectContaining({ status: 400 }));
+  });
+
+  it('returns null and logs when the token endpoint request throws', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
+
+    const result = await exchangeRefreshToken('refresh-token-123');
+
+    expect(result).toBeNull();
+    expect(console.error).toHaveBeenCalledWith('[auth/token-refresh] token_request_exception', expect.objectContaining({ error: 'network down' }));
   });
 });

@@ -18,6 +18,41 @@ export function ensureTrailingSlashless(url: string): string {
 }
 
 /**
+ * Reports whether a URL uses HTTPS, or plain HTTP against localhost/127.0.0.1 for local dev only.
+ *
+ * Used to fail closed against any accidental plaintext fallback to CanadaLogin endpoints (DR8).
+ *
+ * @param url - URL to check.
+ * @returns True when the URL is HTTPS, or HTTP against localhost.
+ */
+export function isHttpsOrLocalhostUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'https:') {
+      return true;
+    }
+    return parsed.protocol === 'http:' && isLocalhostUrl(url);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Reports whether a URL's host is localhost or 127.0.0.1, regardless of protocol.
+ *
+ * @param url - URL to check.
+ * @returns True when the URL targets localhost.
+ */
+export function isLocalhostUrl(url: string): boolean {
+  try {
+    const { hostname } = new URL(url);
+    return hostname === 'localhost' || hostname === '127.0.0.1';
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Reads OIDC settings from the server environment.
  *
  * @returns Client id, client secret, and normalized custom domain.
@@ -43,6 +78,34 @@ export function getOidcPublicConfig(): { clientId: string; customDomain: string 
 }
 
 /**
+ * Reads client id and custom domain, failing when either is missing.
+ *
+ * Replaces the repeated `getOidcConfig()` + `!clientId || !customDomain` guard
+ * used by callers that only need the minimal OIDC identity.
+ *
+ * @returns Client id and normalized custom domain, or null when not configured.
+ */
+export function getOidcMinimalConfigOrFail(): { clientId: string; customDomain: string } | null {
+  const { clientId, customDomain } = getOidcConfig();
+  return clientId && customDomain ? { clientId, customDomain } : null;
+}
+
+/**
+ * Builds the CanadaLogin management URL for the configured deployment stage.
+ *
+ * @returns HTTPS management URL with the RP client identifier, or null when incomplete.
+ */
+export function getOidcManageUrl(): string | null {
+  const { clientId } = getOidcConfig();
+  const baseUrl = (env.OIDC_MANAGE_BASE_URL ?? process.env.OIDC_MANAGE_BASE_URL ?? '').trim().replace(/\/$/, '');
+  if (!clientId || !baseUrl || !isHttpsOrLocalhostUrl(baseUrl)) {
+    return null;
+  }
+
+  return `${baseUrl}/?rp_client_id=${encodeURIComponent(clientId)}`;
+}
+
+/**
  * Fetches the provider's OIDC discovery document with a short-lived cache.
  *
  * @param customDomain - Normalized provider domain.
@@ -50,6 +113,14 @@ export function getOidcPublicConfig(): { clientId: string; customDomain: string 
  */
 export async function getOpenIdConfiguration(customDomain: string): Promise<OpenIdConfiguration | null> {
   if (!customDomain) {
+    return null;
+  }
+
+  if (!isHttpsOrLocalhostUrl(customDomain)) {
+    console.error('[auth/discovery] insecure_custom_domain_rejected', {
+      endpointCategory: 'discovery',
+      customDomain,
+    });
     return null;
   }
 
@@ -77,17 +148,13 @@ export async function getOpenIdConfiguration(customDomain: string): Promise<Open
   for (const path of OPENID_CONFIGURATION_PATHS) {
     try {
       const response = await fetch(`${customDomain}${path}`);
+      attempts.push({ path, status: response.status });
       if (!response.ok) {
-        attempts.push({ path, status: response.status });
         continue;
       }
 
       const configuration = (await response.json()) as OpenIdConfiguration;
-      attempts.push({ path, status: response.status });
-      if (!bestConfiguration) {
-        bestConfiguration = configuration;
-      }
-
+      bestConfiguration ??= configuration;
       if (configuration.issuer && configuration.jwks_uri) {
         bestConfiguration = configuration;
         break;
@@ -121,6 +188,27 @@ export async function getOpenIdConfiguration(customDomain: string): Promise<Open
 
   openIdConfigurationCache.set(customDomain, { value: bestConfiguration, fetchedAt: now });
   return bestConfiguration;
+}
+
+/**
+ * Fetches OIDC discovery and validates the issuer/JWKS endpoints are present and secure.
+ *
+ * Shared by ID token and back-channel logout token verification so both fail closed
+ * against an incomplete or insecure discovery document (DR8).
+ *
+ * @param customDomain - Normalized provider domain.
+ * @returns Normalized issuer and JWKS URI, or null when discovery is missing/insecure.
+ */
+export async function resolveVerifiedDiscovery(customDomain: string): Promise<{ issuer: string; jwksUri: string } | null> {
+  const discovery = await getOpenIdConfiguration(customDomain);
+  const issuer = discovery?.issuer ? ensureTrailingSlashless(discovery.issuer) : null;
+  const jwksUri = discovery?.jwks_uri ?? null;
+
+  if (!issuer || !jwksUri || !isHttpsOrLocalhostUrl(issuer) || !isHttpsOrLocalhostUrl(jwksUri)) {
+    return null;
+  }
+
+  return { issuer, jwksUri };
 }
 
 /**

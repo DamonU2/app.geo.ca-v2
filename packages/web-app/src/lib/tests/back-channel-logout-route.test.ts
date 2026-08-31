@@ -68,7 +68,7 @@ describe('POST /sign-in/back-channel-logout', () => {
     const response = await POST({ request } as Parameters<typeof POST>[0]);
 
     expect(response.status).toBe(204);
-    expect(markUserAuthRevokedMock).toHaveBeenCalledWith('user-123', 1700000000, 'logout-jti-1');
+    expect(markUserAuthRevokedMock).toHaveBeenCalledWith('user-123', 1700000000, 'logout-jti-1', undefined);
   });
 
   it('returns 500 when revocation persistence fails', async () => {
@@ -108,6 +108,27 @@ describe('POST /sign-in/back-channel-logout', () => {
     const response = await POST({ request } as Parameters<typeof POST>[0]);
 
     expect(response.status).toBe(204);
-    expect(markUserAuthRevokedMock).toHaveBeenCalledWith('user-123', 1700000000, 'logout-jti-1');
+    expect(markUserAuthRevokedMock).toHaveBeenCalledWith('user-123', 1700000000, 'logout-jti-1', undefined);
+  });
+
+  it('passes sid through for session-targeted revocation when present in the logout token payload', async () => {
+    verifyBackChannelLogoutTokenMock.mockResolvedValue({
+      sub: 'user-123',
+      sid: 'session-123',
+      iat: 1700000000,
+      jti: 'logout-jti-1',
+    });
+    markUserAuthRevokedMock.mockResolvedValue('stored');
+
+    const request = new Request('https://example.test/sign-in/back-channel-logout', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ logout_token: 'jwt-value' }),
+    });
+
+    const response = await POST({ request } as Parameters<typeof POST>[0]);
+
+    expect(response.status).toBe(204);
+    expect(markUserAuthRevokedMock).toHaveBeenCalledWith('user-123', 1700000000, 'logout-jti-1', 'session-123');
   });
 });

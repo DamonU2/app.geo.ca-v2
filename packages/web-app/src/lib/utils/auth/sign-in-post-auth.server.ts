@@ -1,5 +1,6 @@
 import type { Cookies } from '@sveltejs/kit';
-import { getUserData, putUserData } from '$lib/db/user';
+import { clearAuthCookies } from '$lib/utils/auth/auth-cookies';
+import { getLangFromPath } from '$lib/utils/language';
 
 /**
  * Normalizes and validates post-auth state redirects.
@@ -34,79 +35,7 @@ function normalizeStateUrl(requestUrl: URL, state: string | null, lang: string):
  * @returns `fr-ca` when state points to French routes; otherwise `en-ca`.
  */
 export function getLangFromState(state: string | null): 'en-ca' | 'fr-ca' {
-  if (!state) {
-    return 'en-ca';
-  }
-
-  try {
-    const parsed = new URL(state);
-    if (parsed.pathname.startsWith('/fr-ca/')) {
-      return 'fr-ca';
-    }
-  } catch {
-    if (state.startsWith('/fr-ca/')) {
-      return 'fr-ca';
-    }
-  }
-
-  return 'en-ca';
-}
-
-/**
- * Merges guest favourites captured before sign-in into the signed-in profile.
- *
- * @param cookies - Cookie jar from the request context.
- */
-export async function mergeGuestFavourites(cookies: Cookies): Promise<void> {
-  const guestCookie = cookies.get('guest_favourites') ?? '';
-  if (!guestCookie) {
-    return;
-  }
-
-  let decodedGuestCookie = guestCookie;
-  try {
-    decodedGuestCookie = decodeURIComponent(guestCookie);
-  } catch {
-    // Keep raw cookie content when decoding fails.
-  }
-
-  // Retrieve guest favourites from cookies
-  const guest = decodedGuestCookie
-    .split(',')
-    .map((id) => id.trim())
-    .filter((id) => id.length > 0);
-
-  if (guest.length === 0) {
-    cookies.delete('guest_favourites', { path: '/' });
-    return;
-  }
-
-  const userData = await getUserData(cookies);
-  if (!userData.Item.uuid) {
-    return;
-  }
-
-  const server = userData.Item.favourites ?? [];
-  const merged = Array.from(new Set([...server, ...guest]));
-
-  let didPersist = true;
-
-  // Write only when order/content changed to avoid unnecessary DynamoDB writes.
-  if (merged.length !== server.length || server.some((id, index) => id !== merged[index])) {
-    const result = await putUserData(
-      {
-        uuid: userData.Item.uuid,
-        favourites: merged,
-        mapConfigs: userData.Item.mapConfigs ?? [],
-      },
-      cookies
-    );
-    didPersist = result.ok;
-  }
-
-  if (didPersist) {
-    cookies.delete('guest_favourites', { path: '/' });
-  }
+  return getLangFromPath(state);
 }
 
 /**
@@ -138,4 +67,21 @@ export function getPostLogoutRedirectPath(lang?: string, returnTo?: string | nul
   }
 
   return fallbackPath;
+}
+
+/**
+ * Clears local auth cookies and resolves the redirect target for the local sign-out routes.
+ *
+ * Shared by the localized and non-localized `/sign-in/logout` routes so both apply
+ * the same cookie-clearing and redirect-resolution behavior.
+ *
+ * @param cookies - Cookie jar from the request context.
+ * @param url - Current request URL, used to read the `returnTo` query param.
+ * @param lang - Active language segment, when known.
+ * @returns Language-scoped redirect path after local sign-out cookie cleanup.
+ */
+export function completeLocalLogout(cookies: Cookies, url: URL, lang?: string): string {
+  clearAuthCookies(cookies);
+  const returnTo = url.searchParams.get('returnTo');
+  return getPostLogoutRedirectPath(lang, returnTo);
 }

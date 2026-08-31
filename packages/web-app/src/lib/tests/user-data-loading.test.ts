@@ -109,4 +109,51 @@ describe('getUserData', () => {
     });
     expect(clearAuthCookiesMock).toHaveBeenCalledTimes(1);
   });
+
+  it('signs user out when token sid matches a revoked sid with newer revocation time', async () => {
+    getTokenMock.mockResolvedValueOnce({ ok: true, value: { sub: 'user-123', sid: 'session-123', iat: 1699999999 } });
+    docSendMock.mockResolvedValueOnce({
+      Item: {
+        uuid: 'user-123',
+        favourites: [],
+        mapConfigs: [],
+        authRevokedSids: {
+          'session-123': 1700000000,
+        },
+      },
+    });
+
+    await expect(getUserData({} as never)).resolves.toMatchObject({
+      status: 'anonymous',
+      Item: { uuid: null, favourites: [], mapConfigs: [] },
+    });
+    expect(clearAuthCookiesMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps other sessions signed in when a different sid was revoked', async () => {
+    getTokenMock.mockResolvedValueOnce({ ok: true, value: { sub: 'user-123', sid: 'session-456', iat: 1699999999 } });
+    docSendMock.mockResolvedValueOnce({
+      Item: {
+        uuid: 'user-123',
+        favourites: [],
+        mapConfigs: [],
+        authRevokedSids: {
+          'session-123': 1700000000,
+        },
+      },
+    });
+
+    await expect(getUserData({} as never)).resolves.toMatchObject({
+      status: 'ok',
+      Item: {
+        uuid: 'user-123',
+        favourites: [],
+        mapConfigs: [],
+        authRevokedSids: {
+          'session-123': 1700000000,
+        },
+      },
+    });
+    expect(clearAuthCookiesMock).not.toHaveBeenCalled();
+  });
 });

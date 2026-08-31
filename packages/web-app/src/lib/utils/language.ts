@@ -58,3 +58,26 @@ export function isFrench(lang: AppLanguage): boolean {
 export function pickByLanguage<T>(lang: AppLanguage, enValue: T, frValue: T): T {
   return isFrench(lang) ? frValue : enValue;
 }
+
+/**
+ * Extracts the app language from a path, relative state value, or absolute URL string.
+ *
+ * Looks for an `/en-ca/` or `/fr-ca/` path segment; falls back to English Canadian
+ * when the segment is missing, unparsable, or the input is empty.
+ *
+ * @param pathOrUrl Path (e.g. `/fr-ca/map-browser`) or absolute URL string.
+ * @returns A normalized supported app language.
+ */
+export function getLangFromPath(pathOrUrl?: string | null): AppLanguage {
+  if (!pathOrUrl) return DEFAULT_LANGUAGE;
+
+  let pathname = pathOrUrl;
+  try {
+    pathname = new URL(pathOrUrl).pathname;
+  } catch {
+    // Not an absolute URL; treat input as a path directly.
+  }
+
+  const langSegment = pathname.split('/').find((segment) => isAppLanguage(segment));
+  return getAppLanguage(langSegment);
+}
