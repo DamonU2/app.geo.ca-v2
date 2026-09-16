@@ -73,8 +73,8 @@ function getRedirectUri(requestUrl: URL): string {
  * @param requestUrl - Current request URL.
  * @returns OIDC locale code expected by the provider.
  */
-function getUiLocalesValue(requestUrl: URL): 'en' | 'fr' {
-  return isFrench(getLangFromPath(requestUrl.pathname)) ? 'fr' : 'en';
+function getUiLocalesValue(requestUrl: URL): 'en-CA' | 'fr-CA' {
+  return isFrench(getLangFromPath(requestUrl.pathname)) ? 'fr-CA' : 'en-CA';
 }
 
 /**
@@ -161,6 +161,11 @@ export function getSignInUrl(requestUrl: URL, state: string, codeChallenge: stri
     return null;
   }
 
+  if (!isHttpsOrLocalhostUrl(customDomain)) {
+    console.error('[auth/authorize] insecure_custom_domain_rejected', { endpointCategory: 'authorization', customDomain });
+    return null;
+  }
+
   const redirectUri = getRedirectUri(requestUrl);
   // Include nonce so the callback can bind ID token claims to this authorize request.
   const params = new URLSearchParams({
@@ -212,20 +217,6 @@ export function setOidcStateCookies(cookies: Cookies, stateToken: string, return
 }
 
 /**
- * Stores the one-time OIDC state token and paired return path for callback validation.
- *
- * @param cookies - Cookie jar from the request context.
- * @param requestUrl - Current request URL.
- * @param stateToken - One-time random state token.
- * @param returnTo - Safe in-app return path.
- */
-export function setOidcStateCookies(cookies: Cookies, requestUrl: URL, stateToken: string, returnTo: string): void {
-  const options = getCookieOptions(requestUrl, TEN_MINUTES_SECONDS);
-  cookies.set(OIDC_STATE_COOKIE_NAME, stateToken, options);
-  cookies.set(OIDC_RETURN_TO_COOKIE_NAME, returnTo, options);
-}
-
-/**
  * Reads and clears the PKCE verifier cookie for one-time token exchange.
  *
  * @param cookies - Cookie jar from the request context.
@@ -263,6 +254,20 @@ export function consumeOidcStateCookies(cookies: Cookies): { stateToken: string 
   return { stateToken, returnTo };
 }
 
+function isTokenExchangeEvidenceLoggingEnabled(): boolean {
+  return (process.env.OIDC_AUTH_EVIDENCE_LOGGING ?? '').toLowerCase() === 'true';
+}
+
+function getEvidenceFingerprint(value: string | null | undefined): string | null {
+  return value ? createHash('sha256').update(value).digest('base64url') : null;
+}
+
+function logTokenExchangeEvidence(event: string, telemetry: Record<string, unknown>, details: Record<string, unknown>): void {
+  if (isTokenExchangeEvidenceLoggingEnabled()) {
+    console.info(`[auth/token-exchange-evidence] ${event}`, { ...telemetry, ...details });
+  }
+}
+
 /**
  * Exchanges an authorization code for provider tokens.
  *
@@ -292,6 +297,7 @@ export async function exchangeCodeForTokens(
   const telemetry = {
     correlationId: randomUUID(),
     endpointCategory: 'token_endpoint',
+    grantType: 'authorization_code',
     authMethod: privateKeyPem ? 'private_key_jwt' : 'client_secret_post',
     providerHost: (() => {
       try {
@@ -353,9 +359,10 @@ export async function exchangeCodeForTokens(
   };
 
   // Use private_key_jwt when available, otherwise fall back to client_secret_post
+  let clientAssertion: string | null = null;
   if (privateKeyPem) {
     // CanadaLogin uses this header to select the registered public key for the assertion.
-    const clientAssertion = createClientAssertionJwt(clientId, tokenUrl, privateKeyPem, x5tS256, jwtKid || null);
+    clientAssertion = createClientAssertionJwt(clientId, tokenUrl, privateKeyPem, x5tS256, jwtKid || null);
     bodyParams.client_assertion_type = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
     bodyParams.client_assertion = clientAssertion;
   } else {
@@ -363,6 +370,20 @@ export async function exchangeCodeForTokens(
   }
 
   const body = new URLSearchParams(bodyParams);
+  const requestTimestampMs = Date.now();
+  logTokenExchangeEvidence('request_prepared', telemetry, {
+    redirectUri,
+    hasCode: Boolean(code),
+    codeFingerprint: getEvidenceFingerprint(code),
+    hasCodeVerifier: Boolean(codeVerifier),
+    codeVerifierFingerprint: getEvidenceFingerprint(codeVerifier),
+    hasClientAssertion: Boolean(clientAssertion),
+    clientAssertionFingerprint: getEvidenceFingerprint(clientAssertion),
+    clientAssertionType: bodyParams.client_assertion_type ?? null,
+    kid: jwtKid || null,
+    x5tS256: x5tS256 || null,
+    hasClientSecret: !privateKeyPem && Boolean(clientSecret),
+  });
 
   // Make the token request to the provider
   try {
@@ -381,10 +402,28 @@ export async function exchangeCodeForTokens(
         status: response.status,
         ...errorDetails,
       });
+      logTokenExchangeEvidence('failure', telemetry, {
+        status: response.status,
+        requestTimestampMs,
+        responseTimestampMs: Date.now(),
+      });
       return null;
     }
 
-    return (await response.json()) as OAuthTokenResponse;
+    const tokenResponse = (await response.json()) as OAuthTokenResponse;
+    const responseTimestampMs = Date.now();
+    logTokenExchangeEvidence('success', telemetry, {
+      status: response.status,
+      requestTimestampMs,
+      responseTimestampMs,
+      roundTripMs: responseTimestampMs - requestTimestampMs,
+      tokenType: tokenResponse.token_type ?? null,
+      expiresIn: tokenResponse.expires_in ?? null,
+      hasAccessToken: Boolean(tokenResponse.access_token),
+      hasIdToken: Boolean(tokenResponse.id_token),
+      hasRefreshToken: Boolean(tokenResponse.refresh_token),
+    });
+    return tokenResponse;
   } catch (error) {
     console.error('[auth/token-exchange] token_request_exception', {
       ...telemetry,
@@ -454,13 +493,27 @@ export async function exchangeRefreshToken(
     client_id: clientId,
     refresh_token: refreshToken,
   };
+  let clientAssertion: string | null = null;
   if (privateKeyPem) {
     // Keep key selection consistent between authorization-code and refresh exchanges.
     bodyParams.client_assertion_type = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
-    bodyParams.client_assertion = createClientAssertionJwt(clientId, tokenUrl, privateKeyPem, x5tS256, jwtKid || null);
+    clientAssertion = createClientAssertionJwt(clientId, tokenUrl, privateKeyPem, x5tS256, jwtKid || null);
+    bodyParams.client_assertion = clientAssertion;
   } else {
     bodyParams.client_secret = clientSecret;
   }
+
+  const requestTimestampMs = Date.now();
+  logTokenExchangeEvidence('refresh_request_prepared', telemetry, {
+    hasRefreshToken: Boolean(refreshToken),
+    refreshTokenFingerprint: getEvidenceFingerprint(refreshToken),
+    hasClientAssertion: Boolean(clientAssertion),
+    clientAssertionFingerprint: getEvidenceFingerprint(clientAssertion),
+    clientAssertionType: bodyParams.client_assertion_type ?? null,
+    kid: jwtKid || null,
+    x5tS256: x5tS256 || null,
+    hasClientSecret: !privateKeyPem && Boolean(clientSecret),
+  });
 
   try {
     const response = await fetch(tokenUrl, {
@@ -471,10 +524,28 @@ export async function exchangeRefreshToken(
     if (!response.ok) {
       const errorDetails = await getTokenErrorDetails(response);
       console.error('[auth/token-refresh] token_request_failed', { ...telemetry, status: response.status, ...errorDetails });
+      logTokenExchangeEvidence('refresh_failure', telemetry, {
+        status: response.status,
+        requestTimestampMs,
+        responseTimestampMs: Date.now(),
+      });
       return null;
     }
 
-    return (await response.json()) as OAuthTokenResponse;
+    const tokenResponse = (await response.json()) as OAuthTokenResponse;
+    const responseTimestampMs = Date.now();
+    logTokenExchangeEvidence('refresh_success', telemetry, {
+      status: response.status,
+      requestTimestampMs,
+      responseTimestampMs,
+      roundTripMs: responseTimestampMs - requestTimestampMs,
+      tokenType: tokenResponse.token_type ?? null,
+      expiresIn: tokenResponse.expires_in ?? null,
+      hasAccessToken: Boolean(tokenResponse.access_token),
+      hasIdToken: Boolean(tokenResponse.id_token),
+      hasRefreshToken: Boolean(tokenResponse.refresh_token),
+    });
+    return tokenResponse;
   } catch (error) {
     console.error('[auth/token-refresh] token_request_exception', {
       ...telemetry,
@@ -514,7 +585,12 @@ export function setAuthCookies(cookies: Cookies, tokenResponse: OAuthTokenRespon
  * falling back to `${customDomain}/oauth2/logout`. Uses the standard
  * `post_logout_redirect_uri` parameter per the OIDC Session Management spec.
  *
+ * When `idTokenHint` is provided, builds the CATS 3.0.2 request variant 4a
+ * (`id_token_hint` + `post_logout_redirect_uri`, no `client_id`). Otherwise builds
+ * variant 4c (`client_id` + `post_logout_redirect_uri`).
+ *
  * @param requestUrl - Current request URL.
+ * @param idTokenHint - Current session's raw id_token, when available, to request variant 4a.
  * @returns Provider logout URL or null when OIDC config is missing.
  */
 export async function getOidcLogoutUrl(requestUrl: URL, cookies?: Cookies): Promise<string | null> {

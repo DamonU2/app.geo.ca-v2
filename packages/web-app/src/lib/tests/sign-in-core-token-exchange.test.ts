@@ -25,6 +25,7 @@ describe('exchangeCodeForTokens', () => {
     vi.clearAllMocks();
     vi.unstubAllEnvs();
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'info').mockImplementation(() => {});
 
     getOidcConfigMock.mockReturnValue({
       clientId: 'client-id-123',
@@ -40,6 +41,7 @@ describe('exchangeCodeForTokens', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
+        status: 200,
         json: vi.fn().mockResolvedValue({
           id_token: 'id-token',
           access_token: 'access-token',
@@ -113,6 +115,62 @@ describe('exchangeCodeForTokens', () => {
     expect(params.get('client_secret')).toBeNull();
   });
 
+  it('does not emit token exchange evidence when logging is disabled', async () => {
+    await exchangeCodeForTokens('code-abc', new URL('https://app.example.test/sign-in/receive'), 'pkce-verifier-123');
+
+    expect(console.info).not.toHaveBeenCalled();
+  });
+
+  it('emits redacted token exchange evidence when logging is enabled', async () => {
+    vi.stubEnv('OIDC_AUTH_EVIDENCE_LOGGING', 'true');
+
+    await exchangeCodeForTokens(
+      'code-abc',
+      new URL('https://app.example.test/sign-in/receive'),
+      'pkce-verifier-123',
+      '-----BEGIN PRIVATE KEY-----test-----END PRIVATE KEY-----',
+      'certificate-thumbprint'
+    );
+
+    const infoCalls = vi.mocked(console.info).mock.calls;
+    expect(infoCalls).toEqual(
+      expect.arrayContaining([
+        [
+          '[auth/token-exchange-evidence] request_prepared',
+          expect.objectContaining({
+            grantType: 'authorization_code',
+            authMethod: 'private_key_jwt',
+            hasCode: true,
+            hasCodeVerifier: true,
+            hasClientAssertion: true,
+            clientAssertionType: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+            kid: null,
+            x5tS256: 'certificate-thumbprint',
+          }),
+        ],
+        [
+          '[auth/token-exchange-evidence] success',
+          expect.objectContaining({
+            status: 200,
+            hasAccessToken: true,
+            hasIdToken: true,
+            hasRefreshToken: false,
+            roundTripMs: expect.any(Number),
+          }),
+        ],
+      ])
+    );
+
+    const serializedInfo = JSON.stringify(infoCalls);
+    expect(serializedInfo).not.toContain('code-abc');
+    expect(serializedInfo).not.toContain('pkce-verifier-123');
+    expect(serializedInfo).not.toContain('signed-assertion-jwt');
+    expect(serializedInfo).not.toContain('id-token');
+    expect(serializedInfo).not.toContain('access-token');
+    expect(serializedInfo).not.toContain('client-secret-xyz');
+    expect(serializedInfo).not.toContain('BEGIN PRIVATE KEY');
+  });
+
   it('uses configured token endpoint and jwt kid when provided', async () => {
     getOidcConfigMock.mockReturnValue({
       clientId: 'client-id-123',
@@ -143,6 +201,21 @@ describe('exchangeCodeForTokens', () => {
 
   it('returns null when code_verifier is missing', async () => {
     const result = await exchangeCodeForTokens('code-abc', new URL('https://app.example.test/sign-in/receive'), null);
+
+    expect(result).toBeNull();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-HTTPS token endpoint (DR8)', async () => {
+    getOidcConfigMock.mockReturnValue({
+      clientId: 'client-id-123',
+      clientSecret: 'client-secret-xyz',
+      customDomain: 'https://auth.example.test',
+      tokenEndpoint: 'http://tokens.example.test/custom/token',
+      jwtKid: '',
+    });
+
+    const result = await exchangeCodeForTokens('code-abc', new URL('https://app.example.test/sign-in/receive'), 'pkce-verifier-123');
 
     expect(result).toBeNull();
     expect(globalThis.fetch).not.toHaveBeenCalled();

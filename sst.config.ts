@@ -8,6 +8,7 @@ const env = {
   oidcCustomDomain: process.env.OIDC_CUSTOM_DOMAIN ?? "",
   oidcTokenEndpoint: process.env.OIDC_TOKEN_ENDPOINT ?? "",
   oidcJwtKid: process.env.OIDC_JWT_KID ?? "",
+  oidcAuthEvidenceLogging: process.env.OIDC_AUTH_EVIDENCE_LOGGING ?? "",
   oidcClientSecret: process.env.OIDC_CLIENT_SECRET ?? "",
   oidcPrivateKeySecretId: process.env.OIDC_PRIVATE_KEY_SECRET_ID ?? "",
   oidcRequestedScopes: process.env.OIDC_REQUESTED_SCOPES ?? "",
@@ -44,9 +45,7 @@ export default $config({
       isProduction ||
       (process.env.OIDC_USE_PRIVATE_KEY_JWT ?? "").toLowerCase() === "true";
     if ((isStaging || isProduction) && !env.sessionCookieSecret) {
-      throw new Error(
-        `SESSION_COOKIE_SECRET is required for stage '${$app.stage}'.`,
-      );
+      throw new Error(`SESSION_COOKIE_SECRET is required for stage '${$app.stage}'.`);
     }
     const oidcPrivateKeySecretResourceArn = toSecretsManagerResourceArn(
       env.oidcPrivateKeySecretId,
@@ -117,6 +116,7 @@ export default $config({
         OIDC_CUSTOM_DOMAIN: env.oidcCustomDomain,
         OIDC_TOKEN_ENDPOINT: env.oidcTokenEndpoint,
         OIDC_JWT_KID: env.oidcJwtKid,
+        OIDC_AUTH_EVIDENCE_LOGGING: env.oidcAuthEvidenceLogging,
         OIDC_CLIENT_SECRET: env.oidcClientSecret,
         OIDC_PRIVATE_KEY_SECRET_ID: env.oidcPrivateKeySecretId,
         OIDC_REQUESTED_SCOPES: env.oidcRequestedScopes,

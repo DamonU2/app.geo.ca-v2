@@ -1,0 +1,1076 @@
+{
+  "version": "CATS 3.0.2",
+  "profile": "CanadaLogin",
+  "generatedAt": "2026-09-24T15:26:13.495Z",
+  "deterministicRun": {
+    "success": true,
+    "totalSuites": 29,
+    "failedSuites": 0,
+    "totalTests": 121,
+    "failedTests": 0
+  },
+  "liveSmokeRun": {
+    "generatedAt": "2026-09-24T15:26:12.865Z",
+    "checkCount": 2
+  },
+  "assertions": [
+    {
+      "id": "DR1",
+      "officialId": "DR1",
+      "category": "discovery-registration",
+      "title": "Discovery includes issuer, authorization_endpoint, token_endpoint, and jwks_uri",
+      "automation": "live-smoke",
+      "owner": "packages/web-app/scripts/cats-live-smoke.mjs",
+      "evidence": "http-trace",
+      "status": "live-pass",
+      "details": {
+        "missing": []
+      }
+    },
+    {
+      "id": "DR2",
+      "officialId": "DR2",
+      "category": "discovery-registration",
+      "title": "Discovery exposes end_session_endpoint",
+      "automation": "live-smoke",
+      "owner": "packages/web-app/scripts/cats-live-smoke.mjs",
+      "evidence": "discovery-json",
+      "status": "live-pass",
+      "details": {
+        "end_session_endpoint": "https://auth.login-connexion.alpha.canada.ca/oauth2/rplogout",
+        "availabilityStatus": 200,
+        "redirectLocation": null
+      }
+    },
+    {
+      "id": "DR3",
+      "officialId": "DR3",
+      "category": "discovery-registration",
+      "title": "Registered redirect URIs exactly match runtime usage",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-core.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 17,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 17
+      }
+    },
+    {
+      "id": "DR4",
+      "officialId": "DR4",
+      "category": "discovery-registration",
+      "title": "Redirect URIs use HTTPS",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "registration-and-config",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "DR5",
+      "officialId": "DR5",
+      "category": "discovery-registration",
+      "title": "No open redirect behavior on redirect endpoints",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-post-auth.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 5,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 5
+      }
+    },
+    {
+      "id": "DR6",
+      "officialId": "DR6",
+      "category": "discovery-registration",
+      "title": "post_logout_redirect_uri is preregistered when RP-initiated logout is used",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "registration-screenshot",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "DR7",
+      "officialId": "DR7",
+      "category": "discovery-registration",
+      "title": "Registered authentication method in CanadaLogin matches the runtime token path",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "registration-screenshot-and-token-request-capture",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "DR8",
+      "officialId": "DR8",
+      "category": "discovery-registration",
+      "title": "Requests are made over TLS per hardening requirements",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "tls-scan",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "DR9",
+      "officialId": "DR9",
+      "category": "discovery-registration",
+      "title": "private_key_jwt public key material is registered and available for validation",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "registration-screenshot-and-jwks-or-certificate-proof",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "AA1",
+      "officialId": "AA1",
+      "category": "authentication-request",
+      "title": "Authentication request is sent via supported HTTP transport",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-send-route.test.ts",
+      "evidence": "route-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 2,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 2
+      }
+    },
+    {
+      "id": "AA2",
+      "officialId": "AA2",
+      "category": "authentication-request",
+      "title": "Authentication request includes client_id matching CanadaLogin registration or onboarding record",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "registration-or-onboarding-record-and-request-capture",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "AA3",
+      "officialId": "AA3",
+      "category": "authentication-request",
+      "title": "Authentication request includes redirect_uri matching CanadaLogin registration or onboarding record",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "registration-screenshot-and-request-capture",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "AA4",
+      "officialId": "AA4",
+      "category": "authentication-request",
+      "title": "Authentication request uses response_type=code",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-core.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 17,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 17
+      }
+    },
+    {
+      "id": "AA5",
+      "officialId": "AA5",
+      "category": "authentication-request",
+      "title": "Authentication request scope contains openid",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-core.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 17,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 17
+      }
+    },
+    {
+      "id": "AA6",
+      "officialId": "AA6",
+      "category": "authentication-request",
+      "title": "Authentication request includes state",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-core.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 17,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 17
+      }
+    },
+    {
+      "id": "AA7",
+      "officialId": "AA7",
+      "category": "authentication-request",
+      "title": "Authentication request includes nonce with high-entropy source",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-core.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 17,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 17
+      }
+    },
+    {
+      "id": "AA8",
+      "officialId": "AA8",
+      "category": "authentication-request",
+      "title": "Authentication request includes ui_locales matching language",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-core.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 17,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 17
+      }
+    },
+    {
+      "id": "AA9",
+      "officialId": "AA9",
+      "category": "authentication-request",
+      "title": "Authentication UI and RP pages follow the user's language preference",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "screenshots",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "AA10",
+      "officialId": "AA10",
+      "category": "authentication-request",
+      "title": "Token request uses grant_type=authorization_code",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-core-token-exchange.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 16,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 16
+      }
+    },
+    {
+      "id": "AA11",
+      "officialId": "AA11",
+      "category": "authentication-request",
+      "title": "Token request code matches the authorization response code",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-receive-route.test.ts",
+      "evidence": "route-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 7,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 7
+      }
+    },
+    {
+      "id": "AA12",
+      "officialId": "AA12",
+      "category": "authentication-request",
+      "title": "Authorization response state matches the original request state",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-receive-route.test.ts",
+      "evidence": "route-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 7,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 7
+      }
+    },
+    {
+      "id": "AA13",
+      "officialId": "AA13",
+      "category": "authentication-request",
+      "title": "Token request includes code_verifier when PKCE is enabled",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-core-token-exchange.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 16,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 16
+      }
+    },
+    {
+      "id": "AA14",
+      "officialId": "AA14",
+      "category": "authentication-request",
+      "title": "ID token exp and nbf claims allow bounded clock skew",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/id-token-verification.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 18,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 18
+      }
+    },
+    {
+      "id": "AA15",
+      "officialId": "AA15",
+      "category": "authentication-request",
+      "title": "RP validates iss, aud, and nonce in the ID token",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/id-token-verification.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 18,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 18
+      }
+    },
+    {
+      "id": "AP1",
+      "officialId": "AP1",
+      "category": "private-key-jwt",
+      "title": "Token request includes client_assertion_type for private_key_jwt",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-core-token-exchange.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 16,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 16
+      }
+    },
+    {
+      "id": "AP2",
+      "officialId": "AP2",
+      "category": "private-key-jwt",
+      "title": "Token request includes a fresh client_assertion JWT",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/client-assertion.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 11,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 11
+      }
+    },
+    {
+      "id": "AP3",
+      "officialId": "AP3",
+      "category": "private-key-jwt",
+      "title": "Token request includes grant_type=authorization_code under private_key_jwt",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-core-token-exchange.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 16,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 16
+      }
+    },
+    {
+      "id": "AP4",
+      "officialId": "AP4",
+      "category": "private-key-jwt",
+      "title": "Token request includes the authorization code under private_key_jwt",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-receive-route.test.ts",
+      "evidence": "route-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 7,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 7
+      }
+    },
+    {
+      "id": "AP5",
+      "officialId": "AP5",
+      "category": "private-key-jwt",
+      "title": "JWT assertion is signed with the RP private key",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/client-assertion.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 11,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 11
+      }
+    },
+    {
+      "id": "AP6",
+      "officialId": "AP6",
+      "category": "private-key-jwt",
+      "title": "JWT assertion contains iss claim",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/client-assertion.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 11,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 11
+      }
+    },
+    {
+      "id": "AP7",
+      "officialId": "AP7",
+      "category": "private-key-jwt",
+      "title": "JWT assertion contains sub claim",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/client-assertion.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 11,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 11
+      }
+    },
+    {
+      "id": "AP8",
+      "officialId": "AP8",
+      "category": "private-key-jwt",
+      "title": "JWT assertion contains aud claim",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/client-assertion.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 11,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 11
+      }
+    },
+    {
+      "id": "AP9",
+      "officialId": "AP9",
+      "category": "private-key-jwt",
+      "title": "JWT assertion contains exp claim",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/client-assertion.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 11,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 11
+      }
+    },
+    {
+      "id": "AP10",
+      "officialId": "AP10",
+      "category": "private-key-jwt",
+      "title": "JWT assertion contains iat claim",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/client-assertion.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 11,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 11
+      }
+    },
+    {
+      "id": "AP11",
+      "officialId": "AP11",
+      "category": "private-key-jwt",
+      "title": "JWT assertion contains jti claim",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/client-assertion.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 11,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 11
+      }
+    },
+    {
+      "id": "CS-AC1",
+      "officialId": "AC1",
+      "category": "client-secret",
+      "title": "client_secret token request omits client_assertion_type and client_assertion",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-core-token-exchange.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 16,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 16
+      }
+    },
+    {
+      "id": "CS-AC2",
+      "officialId": "AC2",
+      "category": "client-secret",
+      "title": "client_secret token request includes code and grant_type",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-core-token-exchange.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 16,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 16
+      }
+    },
+    {
+      "id": "LP1",
+      "officialId": "LP1",
+      "category": "language-preference",
+      "title": "ui_locales specifies the user's preferred official language",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-core.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 17,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 17
+      }
+    },
+    {
+      "id": "LP2",
+      "officialId": "LP2",
+      "category": "language-preference",
+      "title": "CanadaLogin and RP content render in the same user language",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "screenshots",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "SSO1",
+      "officialId": "SSO1",
+      "category": "single-sign-on",
+      "title": "User is not prompted on the second RP during the preserved SSO path",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "screenshots",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "SSO2",
+      "officialId": "SSO2",
+      "category": "single-sign-on",
+      "title": "User is prompted on the second RP when reauthentication is required",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "screenshots",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "SF-AC1",
+      "officialId": "AC1",
+      "category": "sign-in-failure",
+      "title": "The RP handles sign-in errors with a user-visible error page or message",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-receive-route.test.ts",
+      "evidence": "route-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 7,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 7
+      }
+    },
+    {
+      "id": "SF-AC2",
+      "officialId": "AC2",
+      "category": "sign-in-failure",
+      "title": "The RP rejects authentication responses whose exp or nbf violate validation policy",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/id-token-verification.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 18,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 18
+      }
+    },
+    {
+      "id": "SF-AC3",
+      "officialId": "AC3",
+      "category": "sign-in-failure",
+      "title": "The RP handles token-stage failures with a user-visible error page or message",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-receive-route.test.ts",
+      "evidence": "route-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 7,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 7
+      }
+    },
+    {
+      "id": "LO1",
+      "officialId": "LO1",
+      "category": "sign-out",
+      "title": "RP-initiated logout variant 4a (id_token_hint) redirects to post_logout_redirect_uri after logout",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-core.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 17,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 17
+      }
+    },
+    {
+      "id": "LO2",
+      "officialId": "LO2",
+      "category": "sign-out",
+      "title": "RP-initiated logout variant 4b can land on CanadaLogin sign-out confirmation page",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "browser-trace",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "LO3",
+      "officialId": "LO3",
+      "category": "sign-out",
+      "title": "RP-initiated logout variant 4c redirects to post_logout_redirect_uri",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-logout-route.test.ts",
+      "evidence": "route-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 9,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 9
+      }
+    },
+    {
+      "id": "LO4",
+      "officialId": "LO4",
+      "category": "sign-out",
+      "title": "Second RP is logged out at step 5",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "multi-rp-screenshots",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "LO5",
+      "officialId": "LO5",
+      "category": "sign-out",
+      "title": "Second RP is logged out at step 7",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "multi-rp-screenshots",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "LO6",
+      "officialId": "LO6",
+      "category": "sign-out",
+      "title": "First RP is logged out at step 8",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "multi-rp-screenshots",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "BLO1",
+      "officialId": "BLO1",
+      "category": "back-channel-logout",
+      "title": "The RP receives a logout token when back-channel logout is triggered",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/back-channel-logout-route.test.ts",
+      "evidence": "integration-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 6,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 6
+      }
+    },
+    {
+      "id": "BLO2",
+      "officialId": "BLO2",
+      "category": "back-channel-logout",
+      "title": "A second RP receives a logout token when back-channel logout is triggered",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "multi-rp-logs",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "BLO3",
+      "officialId": "BLO3",
+      "category": "back-channel-logout",
+      "title": "Logout token contains iss matching CanadaLogin metadata",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/back-channel-logout.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 8,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 8
+      }
+    },
+    {
+      "id": "BLO4",
+      "officialId": "BLO4",
+      "category": "back-channel-logout",
+      "title": "Logout token contains aud matching the RP client_id",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/back-channel-logout.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 8,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 8
+      }
+    },
+    {
+      "id": "BLO5",
+      "officialId": "BLO5",
+      "category": "back-channel-logout",
+      "title": "Logout token contains a unique jti",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/back-channel-logout.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 8,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 8
+      }
+    },
+    {
+      "id": "BLO6",
+      "officialId": "BLO6",
+      "category": "back-channel-logout",
+      "title": "Logout token contains iat claim",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/back-channel-logout.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 8,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 8
+      }
+    },
+    {
+      "id": "BLO7",
+      "officialId": "BLO7",
+      "category": "back-channel-logout",
+      "title": "Logout token contains the backchannel-logout events claim",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/back-channel-logout.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 8,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 8
+      }
+    },
+    {
+      "id": "BLO8",
+      "officialId": "BLO8",
+      "category": "back-channel-logout",
+      "title": "Logout token does not contain nonce",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/back-channel-logout.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 8,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 8
+      }
+    },
+    {
+      "id": "BLO9",
+      "officialId": "BLO9",
+      "category": "back-channel-logout",
+      "title": "The RP returns HTTP 200 or 204 after successful logout handling",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/back-channel-logout-route.test.ts",
+      "evidence": "integration-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 6,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 6
+      }
+    },
+    {
+      "id": "BLO10",
+      "officialId": "BLO10",
+      "category": "back-channel-logout",
+      "title": "A second RP returns HTTP 200 or 204 after successful back-channel logout",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "multi-rp-logs",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "BLO11",
+      "officialId": "BLO11",
+      "category": "back-channel-logout",
+      "title": "Session-required back-channel logout token contains sid",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "registration-config-and-decoded-logout-token",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "BLO12",
+      "officialId": "BLO12",
+      "category": "back-channel-logout",
+      "title": "RP terminates the correct session(s) by sid or sub policy",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "logs-and-screenshots",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "FLO1",
+      "officialId": "FLO1",
+      "category": "front-channel-logout",
+      "title": "RP does not act as an open redirector during front-channel logout",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/front-channel-logout-route.test.ts",
+      "evidence": "route-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 3,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 3
+      }
+    },
+    {
+      "id": "FLO2",
+      "officialId": "FLO2",
+      "category": "front-channel-logout",
+      "title": "RP uses an unpredictable state value with at least 128 bits of entropy",
+      "automation": "deterministic",
+      "owner": "packages/web-app/src/lib/tests/sign-in-core.test.ts",
+      "evidence": "unit-test",
+      "status": "automated-pass",
+      "details": {
+        "suiteStatus": "passed",
+        "passedTests": 17,
+        "failedTests": 0,
+        "pendingTests": 0,
+        "totalTests": 17
+      }
+    },
+    {
+      "id": "FLO4",
+      "officialId": "FLO4",
+      "category": "front-channel-logout",
+      "title": "RP does not register multiple redirect URI domains",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "registration-screenshot",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "FLO5",
+      "officialId": "FLO5",
+      "category": "front-channel-logout",
+      "title": "Browser requests the RP front-channel logout URI",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "discovery-json-and-browser-trace",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "FLO6",
+      "officialId": "FLO6",
+      "category": "front-channel-logout",
+      "title": "Front-channel logout request contains sid or logout parameter",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "browser-trace-and-rp-logs",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    },
+    {
+      "id": "FLO7",
+      "officialId": "FLO7",
+      "category": "front-channel-logout",
+      "title": "Valid front-channel logout request invalidates the RP session cookie",
+      "automation": "manual",
+      "owner": "docs/cats-3.0.2-manual-checklist.md",
+      "evidence": "browser-trace-and-session-check",
+      "status": "manual-pending",
+      "details": {
+        "reason": "manual-evidence-required"
+      }
+    }
+  ]
+}

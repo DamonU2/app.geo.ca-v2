@@ -1,0 +1,22 @@
+{
+  "generatedAt": "2026-09-24T15:26:12.865Z",
+  "discoveryUrl": "https://auth.login-connexion.alpha.canada.ca/oauth2/.well-known/openid-configuration",
+  "checks": [
+    {
+      "id": "DR1",
+      "status": "pass",
+      "details": {
+        "missing": []
+      }
+    },
+    {
+      "id": "DR2",
+      "status": "pass",
+      "details": {
+        "end_session_endpoint": "https://auth.login-connexion.alpha.canada.ca/oauth2/rplogout",
+        "availabilityStatus": 200,
+        "redirectLocation": null
+      }
+    }
+  ]
+}

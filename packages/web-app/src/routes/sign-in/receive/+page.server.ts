@@ -26,18 +26,6 @@ function setAuthErrorCookie(cookies: Parameters<PageServerLoad>[0]['cookies']): 
   });
 }
 
-const AUTH_ERROR_COOKIE_NAME = 'auth_error';
-
-function setAuthErrorCookie(cookies: Parameters<PageServerLoad>[0]['cookies'], url: URL): void {
-  cookies.set(AUTH_ERROR_COOKIE_NAME, 'signin_failed', {
-    path: '/',
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: url.protocol === 'https:',
-    maxAge: 60,
-  });
-}
-
 /**
  * Handles the OIDC callback without a language prefix, stores auth cookies,
  * and redirects back to the original in-app location.

@@ -24,28 +24,19 @@ import {
   setPkceVerifierCookie,
 } from '$lib/utils/auth/sign-in-core.server';
 
-vi.mock('$lib/utils/auth/oidc.server', () => ({
-  isHttpsOrLocalhostUrl: (value: string) =>
-    value.startsWith('https://') || value.startsWith('http://localhost') || value.startsWith('http://127.0.0.1'),
-  isLocalhostUrl: (value: string) =>
-    value.startsWith('http://localhost') ||
-    value.startsWith('http://127.0.0.1') ||
-    value.startsWith('https://localhost') ||
-    value.startsWith('https://127.0.0.1'),
-  getOidcMinimalConfigOrFail: () => ({ clientId: 'client-id-123', customDomain: 'https://auth.example.test' }),
-  getOidcConfig: () => ({
-    clientId: 'client-id-123',
-    clientSecret: 'client-secret-123',
-    customDomain: 'https://auth.example.test',
-    tokenEndpoint: 'https://auth.example.test/oauth2/token',
-    jwtKid: 'test-kid',
-  }),
-  getOpenIdConfiguration: vi.fn().mockResolvedValue({
-    issuer: 'https://auth.example.test',
-    jwks_uri: 'https://auth.example.test/oauth2/jwks',
-    end_session_endpoint: 'https://auth.example.test/logout',
-  }),
+const { getOidcConfigMock, getOpenIdConfigurationMock } = vi.hoisted(() => ({
+  getOidcConfigMock: vi.fn(),
+  getOpenIdConfigurationMock: vi.fn(),
 }));
+
+vi.mock('$lib/utils/auth/oidc.server', async () => {
+  const actual = await vi.importActual<typeof import('$lib/utils/auth/oidc.server')>('$lib/utils/auth/oidc.server');
+  return {
+    ...actual,
+    getOidcConfig: getOidcConfigMock,
+    getOpenIdConfiguration: getOpenIdConfigurationMock,
+  };
+});
 
 type CookieHarness = {
   cookies: Cookies;
@@ -87,6 +78,18 @@ describe('sign-in-core helpers', () => {
   beforeEach(() => {
     vi.stubEnv('OIDC_CLIENT_ID', 'client-id-123');
     vi.stubEnv('OIDC_CUSTOM_DOMAIN', 'https://auth.example.test');
+    getOidcConfigMock.mockReturnValue({
+      clientId: 'client-id-123',
+      clientSecret: 'client-secret-123',
+      customDomain: 'https://auth.example.test',
+      tokenEndpoint: 'https://auth.example.test/oauth2/token',
+      jwtKid: 'test-kid',
+    });
+    getOpenIdConfigurationMock.mockResolvedValue({
+      issuer: 'https://auth.example.test',
+      jwks_uri: 'https://auth.example.test/oauth2/jwks',
+      end_session_endpoint: 'https://auth.example.test/logout',
+    });
   });
 
   afterEach(() => {
@@ -143,11 +146,11 @@ describe('sign-in-core helpers', () => {
     expect(params.get('nonce')).toBe('nonce-123');
     expect(params.get('code_challenge')).toBe('pkce-challenge');
     expect(params.get('code_challenge_method')).toBe('S256');
-    expect(params.get('ui_locales')).toBe('en');
+    expect(params.get('ui_locales')).toBe('en-CA');
     expect(params.get('scope')).toBe('openid email language');
   });
 
-  it('sets ui_locales to fr when the send route is French', () => {
+  it('sets ui_locales to fr-CA when the send route is French', () => {
     const signInUrl = getSignInUrl(
       new URL('https://app.example.test/fr-ca/sign-in/send'),
       '/en-ca/map-browser',
@@ -157,10 +160,10 @@ describe('sign-in-core helpers', () => {
 
     expect(signInUrl).toBeTruthy();
     const params = new URL(String(signInUrl)).searchParams;
-    expect(params.get('ui_locales')).toBe('fr');
+    expect(params.get('ui_locales')).toBe('fr-CA');
   });
 
-  it('uses the fixed post_logout_redirect_uri and assigns French ui_locales for French logout', async () => {
+  it('uses the fixed post_logout_redirect_uri and assigns French ui_locales for French logout (variant 4c: client_id)', async () => {
     const logoutUrl = await getOidcLogoutUrl(new URL('https://app.example.test/fr-ca/sign-in/oidc-logout'));
 
     expect(logoutUrl).toBe(

@@ -12,7 +12,12 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:cats": "vitest run src/lib/tests/sign-in-core.test.ts src/lib/tests/sign-in-core-token-exchange.test.ts src/lib/tests/id-token-verification.test.ts src/lib/tests/oidc-claims.test.ts src/lib/tests/sign-in-send-route.test.ts src/lib/tests/sign-in-receive-route.test.ts src/lib/tests/sign-in-post-auth.test.ts src/lib/tests/client-assertion.test.ts src/lib/tests/front-channel-logout-route.test.ts src/lib/tests/back-channel-logout.test.ts src/lib/tests/back-channel-logout-route.test.ts src/lib/tests/sign-in-logout-route.test.ts",
+    "test:cats:report": "vitest run src/lib/tests/sign-in-core.test.ts src/lib/tests/sign-in-core-token-exchange.test.ts src/lib/tests/id-token-verification.test.ts src/lib/tests/oidc-claims.test.ts src/lib/tests/sign-in-send-route.test.ts src/lib/tests/sign-in-receive-route.test.ts src/lib/tests/sign-in-post-auth.test.ts src/lib/tests/client-assertion.test.ts src/lib/tests/front-channel-logout-route.test.ts src/lib/tests/back-channel-logout.test.ts src/lib/tests/back-channel-logout-route.test.ts src/lib/tests/sign-in-logout-route.test.ts --reporter=json --outputFile=../../docs/generated/cats-vitest.json",
+    "test:cats:live": "node scripts/cats-live-smoke.mjs",
+    "test:cats:evidence": "node scripts/cats-evidence-report.mjs",
+    "test:cats:artifacts": "npm run test:cats:report && npm run test:cats:evidence"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
