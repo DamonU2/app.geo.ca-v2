@@ -14,6 +14,7 @@ import {
   consumePkceVerifierCookie,
   createOidcNonce,
   createPkceChallenge,
+  createPkceVerifier,
   getOidcLogoutUrl,
   getSignInUrl,
   isOidcConfigured,
@@ -24,7 +25,14 @@ import {
 } from '$lib/utils/auth/sign-in-core.server';
 
 vi.mock('$lib/utils/auth/oidc.server', () => ({
-  isHttpsOrLocalhostUrl: (value: string) => value.startsWith('https://') || value.startsWith('http://localhost'),
+  isHttpsOrLocalhostUrl: (value: string) =>
+    value.startsWith('https://') || value.startsWith('http://localhost') || value.startsWith('http://127.0.0.1'),
+  isLocalhostUrl: (value: string) =>
+    value.startsWith('http://localhost') ||
+    value.startsWith('http://127.0.0.1') ||
+    value.startsWith('https://localhost') ||
+    value.startsWith('https://127.0.0.1'),
+  getOidcMinimalConfigOrFail: () => ({ clientId: 'client-id-123', customDomain: 'https://auth.example.test' }),
   getOidcConfig: () => ({
     clientId: 'client-id-123',
     clientSecret: 'client-secret-123',
@@ -168,5 +176,94 @@ describe('sign-in-core helpers', () => {
     const logoutUrl = await getOidcLogoutUrl(new URL('https://app.example.test/en-ca/sign-in/oidc-logout'), cookies);
 
     expect(new URL(String(logoutUrl)).searchParams.get('id_token_hint')).toBe('signed-id-token');
+  });
+
+  it('reports OIDC as configured when client id and custom domain are set', () => {
+    expect(isOidcConfigured()).toBe(true);
+  });
+
+  it('creates unique PKCE verifiers and nonces', () => {
+    expect(createPkceVerifier()).not.toBe(createPkceVerifier());
+    expect(createOidcNonce()).not.toBe(createOidcNonce());
+  });
+
+  it('sets the PKCE verifier cookie with a 10-minute max age', () => {
+    const { cookies, setOptions } = createCookieHarness();
+
+    setPkceVerifierCookie(cookies, 'verifier-1');
+
+    expect(cookies.get(PKCE_VERIFIER_COOKIE_NAME)).toBe('verifier-1');
+    expect(setOptions.get(PKCE_VERIFIER_COOKIE_NAME)).toMatchObject({ path: '/', httpOnly: true, sameSite: 'lax', maxAge: 600 });
+  });
+
+  it('sets the OIDC nonce cookie with a 10-minute max age', () => {
+    const { cookies, setOptions } = createCookieHarness();
+
+    setOidcNonceCookie(cookies, 'nonce-1');
+
+    expect(cookies.get(OIDC_NONCE_COOKIE_NAME)).toBe('nonce-1');
+    expect(setOptions.get(OIDC_NONCE_COOKIE_NAME)).toMatchObject({ maxAge: 600 });
+  });
+
+  it('sets and consumes the paired OIDC state and return-to cookies', () => {
+    const { cookies, deletedNames, setOptions } = createCookieHarness();
+
+    setOidcStateCookies(cookies, 'state-token-1', '/en-ca/map-browser');
+
+    expect(cookies.get(OIDC_STATE_COOKIE_NAME)).toBe('state-token-1');
+    expect(cookies.get(OIDC_RETURN_TO_COOKIE_NAME)).toBe('/en-ca/map-browser');
+    expect(setOptions.get(OIDC_STATE_COOKIE_NAME)).toMatchObject({ maxAge: 600 });
+
+    const consumed = consumeOidcStateCookies(cookies);
+
+    expect(consumed).toEqual({ stateToken: 'state-token-1', returnTo: '/en-ca/map-browser' });
+    expect(deletedNames).toEqual(expect.arrayContaining([OIDC_STATE_COOKIE_NAME, OIDC_RETURN_TO_COOKIE_NAME]));
+  });
+
+  it('marks cookies secure only in production', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const prod = createCookieHarness();
+    setPkceVerifierCookie(prod.cookies, 'verifier-1');
+    expect(prod.setOptions.get(PKCE_VERIFIER_COOKIE_NAME)).toMatchObject({ secure: true });
+
+    vi.stubEnv('NODE_ENV', 'development');
+    const dev = createCookieHarness();
+    setPkceVerifierCookie(dev.cookies, 'verifier-1');
+    expect(dev.setOptions.get(PKCE_VERIFIER_COOKIE_NAME)).toMatchObject({ secure: false });
+  });
+
+  it('sets auth cookies and returns true when id_token and access_token are present', () => {
+    const { cookies, setOptions } = createCookieHarness();
+
+    const didSet = setAuthCookies(cookies, {
+      id_token: 'id-token-1',
+      access_token: 'access-token-1',
+      refresh_token: 'refresh-token-1',
+      expires_in: 1800,
+      token_type: 'Bearer',
+    });
+
+    expect(didSet).toBe(true);
+    expect(cookies.get('id_token')).toBe('id-token-1');
+    expect(cookies.get('access_token')).toBe('access-token-1');
+    expect(cookies.get('refresh_token')).toBe('refresh-token-1');
+    expect(setOptions.get('id_token')).toMatchObject({ maxAge: 1800 });
+    expect(setOptions.get('refresh_token')).toMatchObject({ maxAge: 60 * 60 * 24 * 30 });
+  });
+
+  it('does not set a refresh_token cookie when the provider omits it', () => {
+    const { cookies } = createCookieHarness();
+
+    setAuthCookies(cookies, { id_token: 'id-token-1', access_token: 'access-token-1' });
+
+    expect(cookies.get('refresh_token')).toBeUndefined();
+  });
+
+  it('returns false and sets no cookies when id_token or access_token is missing', () => {
+    const { cookies } = createCookieHarness();
+
+    expect(setAuthCookies(cookies, { access_token: 'access-token-1' })).toBe(false);
+    expect(cookies.get('id_token')).toBeUndefined();
+    expect(cookies.get('access_token')).toBeUndefined();
   });
 });

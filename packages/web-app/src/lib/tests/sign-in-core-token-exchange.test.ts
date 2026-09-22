@@ -14,6 +14,7 @@ vi.mock('$lib/utils/auth/client-assertion.server', () => ({
 
 vi.mock('$lib/utils/auth/oidc.server', () => ({
   isHttpsOrLocalhostUrl: (value: string) => value.startsWith('https://') || value.startsWith('http://localhost'),
+  isLocalhostUrl: (value: string) => value.startsWith('http://localhost') || value.startsWith('https://localhost'),
   getOidcConfig: getOidcConfigMock,
 }));
 
@@ -163,6 +164,10 @@ describe('exchangeCodeForTokens', () => {
     const result = await exchangeCodeForTokens('code-abc', new URL('https://app.example.test/sign-in/receive'), 'pkce-verifier-123');
 
     expect(result).toBeNull();
+    expect(console.error).toHaveBeenCalledWith(
+      '[auth/token-exchange] token_request_failed',
+      expect.objectContaining({ error: 'invalid_client', error_description: 'client authentication failed' })
+    );
   });
 
   it('returns null when token endpoint returns a non-2xx response with a non-JSON body', async () => {
@@ -215,5 +220,76 @@ describe('exchangeCodeForTokens', () => {
     expect(params.get('grant_type')).toBe('refresh_token');
     expect(params.get('refresh_token')).toBe('refresh-token-123');
     expect(params.get('client_secret')).toBe('client-secret-xyz');
+  });
+
+  it('returns null and logs when the refresh token is missing', async () => {
+    const result = await exchangeRefreshToken('');
+
+    expect(result).toBeNull();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith(
+      '[auth/token-refresh] missing_required_input',
+      expect.objectContaining({ hasRefreshToken: false })
+    );
+  });
+
+  it('fails closed outside localhost when OIDC_USE_PRIVATE_KEY_JWT is true and no private key is available', async () => {
+    vi.stubEnv('OIDC_USE_PRIVATE_KEY_JWT', 'true');
+
+    const result = await exchangeRefreshToken('refresh-token-123', null);
+
+    expect(result).toBeNull();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith(
+      '[auth/token-refresh] policy_blocked_fallback',
+      expect.objectContaining({ isLocalhost: false })
+    );
+  });
+
+  it('returns null and logs when neither a private key nor a client secret is configured', async () => {
+    getOidcConfigMock.mockReturnValue({
+      clientId: 'client-id-123',
+      clientSecret: '',
+      customDomain: 'https://auth.example.test',
+      tokenEndpoint: '',
+      jwtKid: '',
+    });
+
+    const result = await exchangeRefreshToken('refresh-token-123');
+
+    expect(result).toBeNull();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith('[auth/token-refresh] missing_client_credentials', expect.any(Object));
+  });
+
+  it('returns null and logs when the token endpoint returns a non-2xx response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: vi.fn().mockResolvedValue({ error: 'invalid_grant', error_description: 'refresh token expired' }),
+      })
+    );
+
+    const result = await exchangeRefreshToken('refresh-token-123');
+
+    expect(result).toBeNull();
+    expect(console.error).toHaveBeenCalledWith(
+      '[auth/token-refresh] token_request_failed',
+      expect.objectContaining({ status: 400, error: 'invalid_grant', error_description: 'refresh token expired' })
+    );
+  });
+
+  it('returns null and logs when the token endpoint request throws', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
+
+    const result = await exchangeRefreshToken('refresh-token-123');
+
+    expect(result).toBeNull();
+    expect(console.error).toHaveBeenCalledWith(
+      '[auth/token-refresh] token_request_exception',
+      expect.objectContaining({ error: 'network down' })
+    );
   });
 });

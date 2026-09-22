@@ -2,7 +2,14 @@
  * Test coverage: Unit tests for the individual OIDC claim validators used by ID token and back-channel logout verification.
  */
 import { describe, expect, it } from 'vitest';
-import { getAudienceValues, hasNumericIat, hasValidExp, hasValidNbf, issuerMatches, OIDC_CLOCK_SKEW_SECONDS } from '$lib/utils/auth/oidc-claims.server';
+import {
+  getAudienceValues,
+  hasNumericIat,
+  hasValidExp,
+  hasValidNbf,
+  issuerMatches,
+  OIDC_CLOCK_SKEW_SECONDS,
+} from '$lib/utils/auth/oidc-claims.server';
 
 describe('getAudienceValues', () => {
   it('wraps a single string audience in an array', () => {

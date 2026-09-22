@@ -79,6 +79,15 @@ npm run test
 - `session-cookie.test.ts`
   - Covers the HMAC-signed session cookie: creation, touch/refresh, tampered-signature rejection, user/session mismatch, and inactivity/maximum-session timeouts.
 
+- `session-route.test.ts`
+  - Covers the `/api/session` GET status endpoint and POST refresh endpoint, including unauthenticated, invalid-refresh, session-touch, cookie-persistence, and successful-refresh paths.
+
+- `cookie-policy.test.ts`
+  - Covers the environment-based Secure cookie policy for development and production.
+
+- `auth-cookies.test.ts`
+  - Verifies central cleanup deletes the session and all temporary authentication-flow cookies.
+
 - `guest-favourites.test.ts`
   - Covers `encodeGuestFavouritesCookieValue`/`decodeGuestFavouritesCookieValue`: encode/decode round-trip, whitespace/dedup normalization, and malformed-URI fallback.
 

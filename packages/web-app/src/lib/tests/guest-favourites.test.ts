@@ -2,7 +2,11 @@
  * Test coverage: Unit tests for encoding/decoding the guest favourites cookie value.
  */
 import { describe, expect, it } from 'vitest';
-import { decodeGuestFavouritesCookieValue, encodeGuestFavouritesCookieValue, GUEST_FAVOURITES_COOKIE_NAME } from '$lib/utils/guest-favourites';
+import {
+  decodeGuestFavouritesCookieValue,
+  encodeGuestFavouritesCookieValue,
+  GUEST_FAVOURITES_COOKIE_NAME,
+} from '$lib/utils/guest-favourites';
 
 describe('GUEST_FAVOURITES_COOKIE_NAME', () => {
   it('is a stable cookie name shared by client and server', () => {

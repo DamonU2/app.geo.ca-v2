@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { Cookies } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+import { isSecureCookieEnvironment } from '$lib/utils/auth/cookie-policy.server';
 
 export const SESSION_COOKIE_NAME = 'auth_session';
 export const SESSION_INACTIVITY_SECONDS = 60 * 60;
@@ -62,7 +63,7 @@ function writeCookie(cookies: Cookies, payload: SessionCookiePayload): void {
     path: SESSION_COOKIE_PATH,
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecureCookieEnvironment(),
     maxAge: SESSION_MAXIMUM_SECONDS,
   });
 }

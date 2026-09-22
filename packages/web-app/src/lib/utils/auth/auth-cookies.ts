@@ -13,4 +13,8 @@ export function clearAuthCookies(cookies: Cookies): void {
   cookies.delete('refresh_token', { path: '/' });
   cookies.delete('pkce_verifier', { path: '/' });
   cookies.delete('oidc_nonce', { path: '/' });
+  cookies.delete('oidc_state', { path: '/' });
+  cookies.delete('oidc_return_to', { path: '/' });
+  cookies.delete('auth_error', { path: '/' });
+  cookies.delete('post_logout_lang', { path: '/' });
 }

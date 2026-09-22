@@ -91,9 +91,9 @@ describe('GET /[lang]/sign-in/send', () => {
       expectRedirect(error, 303, 'https://auth.example.test/oauth2/authorize?x=1');
     }
 
-    expect(setPkceVerifierCookieMock).toHaveBeenCalledWith(cookies, event.url, 'pkce-verifier');
-    expect(setOidcNonceCookieMock).toHaveBeenCalledWith(cookies, event.url, 'oidc-nonce');
-    expect(setOidcStateCookiesMock).toHaveBeenCalledWith(cookies, event.url, 'oidc-state-token', '/fr-ca/map-browser');
+    expect(setPkceVerifierCookieMock).toHaveBeenCalledWith(cookies, 'pkce-verifier');
+    expect(setOidcNonceCookieMock).toHaveBeenCalledWith(cookies, 'oidc-nonce');
+    expect(setOidcStateCookiesMock).toHaveBeenCalledWith(cookies, 'oidc-state-token', '/fr-ca/map-browser');
     expect(getSignInUrlMock).toHaveBeenCalledWith(event.url, 'oidc-state-token', 'pkce-challenge', 'oidc-nonce');
   });
 });

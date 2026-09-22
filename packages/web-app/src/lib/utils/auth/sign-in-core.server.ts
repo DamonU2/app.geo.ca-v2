@@ -2,7 +2,14 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import type { Cookies } from '@sveltejs/kit';
 import { encodeBase64Url } from '$lib/utils/auth/base64url';
 import { createClientAssertionJwt } from '$lib/utils/auth/client-assertion.server';
-import { getOidcConfig, getOpenIdConfiguration, isHttpsOrLocalhostUrl } from '$lib/utils/auth/oidc.server';
+import { isSecureCookieEnvironment } from '$lib/utils/auth/cookie-policy.server';
+import {
+  getOidcConfig,
+  getOidcMinimalConfigOrFail,
+  getOpenIdConfiguration,
+  isHttpsOrLocalhostUrl,
+  isLocalhostUrl,
+} from '$lib/utils/auth/oidc.server';
 import { getAuthorizeScopeValue } from '$lib/utils/auth/scope-policy.server';
 import { getLangFromPath, isFrench } from '$lib/utils/language';
 
@@ -38,6 +45,18 @@ type OAuthTokenResponse = {
   token_type?: string;
 };
 
+async function getTokenErrorDetails(response: Response): Promise<Record<string, unknown>> {
+  try {
+    const errorBody = (await response.json()) as { error?: unknown; error_description?: unknown };
+    return {
+      error: errorBody.error,
+      error_description: errorBody.error_description,
+    };
+  } catch {
+    return {};
+  }
+}
+
 /**
  * Builds the locale-independent OIDC callback URL.
  *
@@ -55,7 +74,7 @@ function getRedirectUri(requestUrl: URL): string {
  * @returns OIDC locale code expected by the provider.
  */
 function getUiLocalesValue(requestUrl: URL): 'en' | 'fr' {
-  return requestUrl.pathname.startsWith('/fr-ca/') ? 'fr' : 'en';
+  return isFrench(getLangFromPath(requestUrl.pathname)) ? 'fr' : 'en';
 }
 
 /**
@@ -107,7 +126,6 @@ export function isOidcConfigured(): boolean {
 /**
  * Builds common cookie options for auth cookies.
  *
- * @param requestUrl - Current request URL.
  * @param maxAge - Optional cookie max age in seconds.
  * @returns Cookie option object for secure server-side cookies.
  */
@@ -117,7 +135,7 @@ function getCookieOptions(maxAge?: number): { path: string; httpOnly: true; same
     httpOnly: true,
     sameSite: 'lax' as const,
     // Matches session-cookie.server.ts so auth cookies and the session cookie share one secure-flag rule.
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecureCookieEnvironment(),
     ...(typeof maxAge === 'number' ? { maxAge } : {}),
   };
 }
@@ -137,11 +155,6 @@ export function getSignInUrl(requestUrl: URL, state: string, codeChallenge: stri
     return null;
   }
   const { clientId, customDomain } = oidcConfig;
-
-  if (!isHttpsOrLocalhostUrl(customDomain)) {
-    console.error('[auth/authorize] insecure_custom_domain_rejected', { endpointCategory: 'authorization', customDomain });
-    return null;
-  }
 
   if (!isHttpsOrLocalhostUrl(customDomain)) {
     console.error('[auth/authorize] insecure_custom_domain_rejected', { endpointCategory: 'authorization', customDomain });
@@ -194,20 +207,6 @@ export function setOidcNonceCookie(cookies: Cookies, nonce: string): void {
  */
 export function setOidcStateCookies(cookies: Cookies, stateToken: string, returnTo: string): void {
   const options = getCookieOptions(TEN_MINUTES_SECONDS);
-  cookies.set(OIDC_STATE_COOKIE_NAME, stateToken, options);
-  cookies.set(OIDC_RETURN_TO_COOKIE_NAME, returnTo, options);
-}
-
-/**
- * Stores the one-time OIDC state token and paired return path for callback validation.
- *
- * @param cookies - Cookie jar from the request context.
- * @param requestUrl - Current request URL.
- * @param stateToken - One-time random state token.
- * @param returnTo - Safe in-app return path.
- */
-export function setOidcStateCookies(cookies: Cookies, requestUrl: URL, stateToken: string, returnTo: string): void {
-  const options = getCookieOptions(requestUrl, TEN_MINUTES_SECONDS);
   cookies.set(OIDC_STATE_COOKIE_NAME, stateToken, options);
   cookies.set(OIDC_RETURN_TO_COOKIE_NAME, returnTo, options);
 }
@@ -274,6 +273,7 @@ export async function exchangeCodeForTokens(
 ): Promise<OAuthTokenResponse | null> {
   const { clientId, clientSecret, customDomain, tokenEndpoint, jwtKid } = getOidcConfig();
   const usePrivateKeyJwt = (process.env.OIDC_USE_PRIVATE_KEY_JWT ?? '').toLowerCase() === 'true';
+  const tokenUrl = tokenEndpoint || `${customDomain}/oauth2/token`;
   const isLocalhost = isLocalhostUrl(requestUrl.href);
   const telemetry = {
     correlationId: randomUUID(),
@@ -320,7 +320,6 @@ export async function exchangeCodeForTokens(
   }
 
   // Construct token endpoint URL and request body for exchanging code
-  const tokenUrl = tokenEndpoint || `${customDomain}/oauth2/token`;
   const redirectUri = getRedirectUri(requestUrl);
 
   if (!isHttpsOrLocalhostUrl(tokenUrl)) {
@@ -362,16 +361,7 @@ export async function exchangeCodeForTokens(
     });
 
     if (!response.ok) {
-      let errorDetails: Record<string, unknown> = {};
-      try {
-        const errorBody = await response.json();
-        errorDetails = {
-          error: errorBody.error,
-          error_description: errorBody.error_description,
-        };
-      } catch {
-        // Could not parse error response
-      }
+      const errorDetails = await getTokenErrorDetails(response);
       console.error('[auth/token-exchange] token_request_failed', {
         ...telemetry,
         status: response.status,
@@ -408,16 +398,40 @@ export async function exchangeRefreshToken(
   const { clientId, clientSecret, customDomain, tokenEndpoint, jwtKid } = getOidcConfig();
   const tokenUrl = tokenEndpoint || `${customDomain}/oauth2/token`;
   const usePrivateKeyJwt = (process.env.OIDC_USE_PRIVATE_KEY_JWT ?? '').toLowerCase() === 'true';
+  const telemetry = {
+    correlationId: randomUUID(),
+    endpointCategory: 'token_endpoint',
+    grantType: 'refresh_token',
+    authMethod: privateKeyPem ? 'private_key_jwt' : 'client_secret_post',
+  };
 
   if (!clientId || !customDomain || !refreshToken || !isHttpsOrLocalhostUrl(tokenUrl)) {
+    console.error('[auth/token-refresh] missing_required_input', {
+      ...telemetry,
+      hasClientId: Boolean(clientId),
+      hasCustomDomain: Boolean(customDomain),
+      hasRefreshToken: Boolean(refreshToken),
+      hasValidTokenUrl: isHttpsOrLocalhostUrl(tokenUrl),
+    });
     return null;
   }
 
-  const isLocalhost = new URL(tokenUrl).hostname === 'localhost' || new URL(tokenUrl).hostname === '127.0.0.1';
+  const isLocalhost = isLocalhostUrl(tokenUrl);
   if (usePrivateKeyJwt && !privateKeyPem && !isLocalhost) {
+    console.error('[auth/token-refresh] policy_blocked_fallback', {
+      ...telemetry,
+      requiresPrivateKeyJwt: true,
+      hasPrivateKeyPem: false,
+      isLocalhost,
+    });
     return null;
   }
   if (!privateKeyPem && !clientSecret) {
+    console.error('[auth/token-refresh] missing_client_credentials', {
+      ...telemetry,
+      hasPrivateKeyPem: Boolean(privateKeyPem),
+      hasClientSecret: Boolean(clientSecret),
+    });
     return null;
   }
 
@@ -440,8 +454,18 @@ export async function exchangeRefreshToken(
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams(bodyParams).toString(),
     });
-    return response.ok ? ((await response.json()) as OAuthTokenResponse) : null;
-  } catch {
+    if (!response.ok) {
+      const errorDetails = await getTokenErrorDetails(response);
+      console.error('[auth/token-refresh] token_request_failed', { ...telemetry, status: response.status, ...errorDetails });
+      return null;
+    }
+
+    return (await response.json()) as OAuthTokenResponse;
+  } catch (error) {
+    console.error('[auth/token-refresh] token_request_exception', {
+      ...telemetry,
+      error: error instanceof Error ? error.message : 'unknown_error',
+    });
     return null;
   }
 }
@@ -480,8 +504,8 @@ export function setAuthCookies(cookies: Cookies, tokenResponse: OAuthTokenRespon
  * @returns Provider logout URL or null when OIDC config is missing.
  */
 export async function getOidcLogoutUrl(requestUrl: URL, cookies?: Cookies): Promise<string | null> {
-  const { clientId, customDomain } = getOidcConfig();
-  if (!clientId || !customDomain) {
+  const oidcConfig = getOidcMinimalConfigOrFail();
+  if (!oidcConfig) {
     return null;
   }
   const { clientId, customDomain } = oidcConfig;
@@ -494,8 +518,7 @@ export async function getOidcLogoutUrl(requestUrl: URL, cookies?: Cookies): Prom
     return null;
   }
 
-  const langHint = requestUrl.pathname.split('/').find((segment) => segment === 'en-ca' || segment === 'fr-ca');
-  const uiLocales = langHint === 'fr-ca' ? 'fr-CA' : 'en-CA';
+  const uiLocales = isFrench(getLangFromPath(requestUrl.pathname)) ? 'fr-CA' : 'en-CA';
   // This fixed root callback must match a post_logout_redirect_uri registered with CanadaLogin.
   const postLogoutRedirectUri = `${requestUrl.origin}/sign-in/logout`;
 
