@@ -44,8 +44,8 @@ export const load: PageServerLoad = async ({ cookies, params, url }: Parameters<
     throw redirect(303, fallbackPath);
   }
 
-  setPkceVerifierCookie(cookies, url, pkceVerifier);
-  setOidcNonceCookie(cookies, url, oidcNonce);
-  setOidcStateCookies(cookies, url, oidcState, returnTo);
+  setPkceVerifierCookie(cookies, pkceVerifier);
+  setOidcNonceCookie(cookies, oidcNonce);
+  setOidcStateCookies(cookies, oidcState, returnTo);
   throw redirect(303, signInUrl);
 };

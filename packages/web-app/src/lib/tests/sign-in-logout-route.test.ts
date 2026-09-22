@@ -45,6 +45,7 @@ async function expectRedirect(
 describe('sign-out route redirects', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv('NODE_ENV', 'development');
     getOidcLogoutUrlMock.mockResolvedValue(null);
   });
 
@@ -123,7 +124,7 @@ describe('sign-out route redirects', () => {
     } as unknown as Parameters<typeof loadRootLogout>[0];
 
     await expectRedirect(() => loadRootLogout(event), { status: 303, location: '/fr-ca/map-browser' });
-    expect(cookies.delete).toHaveBeenCalledWith('post_logout_lang', { path: '/' });
+    expect(clearAuthCookiesMock).toHaveBeenCalledWith(cookies);
   });
 
   it('keeps returnTo when /[lang]/sign-in/oidc-logout falls back on localhost', async () => {
@@ -149,6 +150,7 @@ describe('sign-out route redirects', () => {
   });
 
   it('redirects to provider logout URL when available', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
     getOidcLogoutUrlMock.mockResolvedValue('https://auth.example.test/logout');
 
     const cookies = {

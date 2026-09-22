@@ -126,13 +126,29 @@
 {/if}
 
 {#if showSignOutConfirmation}
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="presentation">
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    role="presentation"
+    onclick={(event) => {
+      if (event.target === event.currentTarget) {
+        showSignOutConfirmation = false;
+      }
+    }}
+  >
     <dialog
       open
       class="static m-0 w-full max-w-lg rounded border border-custom-16 bg-white p-6 shadow-lg"
       aria-modal="true"
       aria-labelledby="sign-out-title"
     >
+      <button
+        class="float-right text-2xl leading-none"
+        type="button"
+        aria-label={pickByLanguage(lang, 'Close', 'Fermer')}
+        onclick={() => (showSignOutConfirmation = false)}
+      >
+        &times;
+      </button>
       <h2 id="sign-out-title" class="mb-3 text-xl font-bold">
         {pickByLanguage(lang, 'Are you sure you want to sign out?', 'Voulez-vous vraiment vous déconnecter?')}
       </h2>

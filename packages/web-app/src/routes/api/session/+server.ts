@@ -34,10 +34,9 @@ export const GET: RequestHandler = async ({ cookies }): Promise<Response> => {
  * Refreshes the authenticated session using the HTTP-only refresh token.
  *
  * @param cookies - Request cookies containing the authenticated session.
- * @param url - Request URL used for secure cookie options.
  * @returns New expiry or 401 when refresh is unavailable or rejected.
  */
-export const POST: RequestHandler = async ({ cookies, url }): Promise<Response> => {
+export const POST: RequestHandler = async ({ cookies }): Promise<Response> => {
   const refreshToken = cookies.get('refresh_token');
   if (!refreshToken) {
     return json({ signedIn: false }, { status: 401 });
@@ -56,7 +55,7 @@ export const POST: RequestHandler = async ({ cookies, url }): Promise<Response> 
       verifiedIdToken.sub ?? verifiedIdToken.username ?? '',
       typeof verifiedIdToken.sid === 'string' ? verifiedIdToken.sid : null
     ) ||
-    !setAuthCookies(cookies, url, tokenResponse)
+    !setAuthCookies(cookies, tokenResponse)
   ) {
     return json({ signedIn: false }, { status: 401 });
   }

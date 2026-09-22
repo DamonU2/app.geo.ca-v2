@@ -1,6 +1,8 @@
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
 import { getOidcLogoutUrl } from '$lib/utils/auth/sign-in-core.server';
+import { isSecureCookieEnvironment } from '$lib/utils/auth/cookie-policy.server';
+import { isLocalhostUrl } from '$lib/utils/auth/oidc.server';
 
 /**
  * Redirects to the provider logout endpoint when available,
@@ -13,7 +15,7 @@ import { getOidcLogoutUrl } from '$lib/utils/auth/sign-in-core.server';
  * @returns Redirect response to provider logout URL or local logout path.
  */
 export const load: PageServerLoad = async ({ url, params, cookies }: Parameters<PageServerLoad>[0]): Promise<void> => {
-  const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+  const isLocalhost = isLocalhostUrl(url.href);
   const returnTo = url.searchParams.get('returnTo');
   const localLogoutPath = returnTo
     ? `/${params.lang}/sign-in/logout?returnTo=${encodeURIComponent(returnTo)}`
@@ -25,7 +27,7 @@ export const load: PageServerLoad = async ({ url, params, cookies }: Parameters<
     path: '/',
     httpOnly: true,
     sameSite: 'lax',
-    secure: url.protocol === 'https:',
+    secure: isSecureCookieEnvironment(),
     maxAge: 600,
   });
 

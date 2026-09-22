@@ -49,11 +49,26 @@ describe('completeLocalLogout', () => {
   it('clears all auth cookies and resolves the language-scoped redirect path', () => {
     const { cookies, deletedNames } = createCookieHarness();
 
-    const redirectPath = completeLocalLogout(cookies, new URL('https://example.test/sign-in/logout?returnTo=%2Ffr-ca%2Ffavourites'), 'fr-ca');
+    const redirectPath = completeLocalLogout(
+      cookies,
+      new URL('https://example.test/sign-in/logout?returnTo=%2Ffr-ca%2Ffavourites'),
+      'fr-ca'
+    );
 
     expect(redirectPath).toBe('/fr-ca/favourites');
     expect(deletedNames).toEqual(
-      expect.arrayContaining(['auth_session', 'access_token', 'id_token', 'refresh_token', 'pkce_verifier', 'oidc_nonce'])
+      expect.arrayContaining([
+        'auth_session',
+        'access_token',
+        'id_token',
+        'refresh_token',
+        'pkce_verifier',
+        'oidc_nonce',
+        'oidc_state',
+        'oidc_return_to',
+        'auth_error',
+        'post_logout_lang',
+      ])
     );
   });
 
