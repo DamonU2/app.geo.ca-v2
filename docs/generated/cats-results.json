@@ -1,12 +1,12 @@
 {
   "version": "CATS 3.0.2",
   "profile": "CanadaLogin",
-  "generatedAt": "2026-09-24T15:26:13.495Z",
+  "generatedAt": "2026-10-01T22:48:46.442Z",
   "deterministicRun": {
     "success": true,
     "totalSuites": 29,
     "failedSuites": 0,
-    "totalTests": 121,
+    "totalTests": 128,
     "failedTests": 0
   },
   "liveSmokeRun": {
@@ -69,7 +69,7 @@
       "evidence": "registration-and-config",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -99,7 +99,7 @@
       "evidence": "registration-screenshot",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -112,7 +112,7 @@
       "evidence": "registration-screenshot-and-token-request-capture",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -125,7 +125,7 @@
       "evidence": "tls-scan",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -138,7 +138,7 @@
       "evidence": "registration-screenshot-and-jwks-or-certificate-proof",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -168,7 +168,7 @@
       "evidence": "registration-or-onboarding-record-and-request-capture",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -181,7 +181,7 @@
       "evidence": "registration-screenshot-and-request-capture",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -279,7 +279,7 @@
       "evidence": "screenshots",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -293,10 +293,10 @@
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
-        "passedTests": 16,
+        "passedTests": 18,
         "failedTests": 0,
         "pendingTests": 0,
-        "totalTests": 16
+        "totalTests": 18
       }
     },
     {
@@ -344,10 +344,10 @@
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
-        "passedTests": 16,
+        "passedTests": 18,
         "failedTests": 0,
         "pendingTests": 0,
-        "totalTests": 16
+        "totalTests": 18
       }
     },
     {
@@ -361,10 +361,10 @@
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
-        "passedTests": 18,
+        "passedTests": 20,
         "failedTests": 0,
         "pendingTests": 0,
-        "totalTests": 18
+        "totalTests": 20
       }
     },
     {
@@ -378,10 +378,10 @@
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
-        "passedTests": 18,
+        "passedTests": 20,
         "failedTests": 0,
         "pendingTests": 0,
-        "totalTests": 18
+        "totalTests": 20
       }
     },
     {
@@ -395,10 +395,10 @@
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
-        "passedTests": 16,
+        "passedTests": 18,
         "failedTests": 0,
         "pendingTests": 0,
-        "totalTests": 16
+        "totalTests": 18
       }
     },
     {
@@ -429,10 +429,10 @@
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
-        "passedTests": 16,
+        "passedTests": 18,
         "failedTests": 0,
         "pendingTests": 0,
-        "totalTests": 16
+        "totalTests": 18
       }
     },
     {
@@ -582,10 +582,10 @@
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
-        "passedTests": 16,
+        "passedTests": 18,
         "failedTests": 0,
         "pendingTests": 0,
-        "totalTests": 16
+        "totalTests": 18
       }
     },
     {
@@ -599,10 +599,10 @@
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
-        "passedTests": 16,
+        "passedTests": 18,
         "failedTests": 0,
         "pendingTests": 0,
-        "totalTests": 16
+        "totalTests": 18
       }
     },
     {
@@ -632,7 +632,7 @@
       "evidence": "screenshots",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -642,10 +642,10 @@
       "title": "User is not prompted on the second RP during the preserved SSO path",
       "automation": "manual",
       "owner": "docs/cats-3.0.2-manual-checklist.md",
-      "evidence": "screenshots",
+      "evidence": "not-required-cats-report",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -655,10 +655,10 @@
       "title": "User is prompted on the second RP when reauthentication is required",
       "automation": "manual",
       "owner": "docs/cats-3.0.2-manual-checklist.md",
-      "evidence": "screenshots",
+      "evidence": "not-required-cats-report",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -685,14 +685,14 @@
       "title": "The RP rejects authentication responses whose exp or nbf violate validation policy",
       "automation": "deterministic",
       "owner": "packages/web-app/src/lib/tests/id-token-verification.test.ts",
-      "evidence": "unit-test",
+      "evidence": "not-required-cats-report",
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
-        "passedTests": 18,
+        "passedTests": 20,
         "failedTests": 0,
         "pendingTests": 0,
-        "totalTests": 18
+        "totalTests": 20
       }
     },
     {
@@ -719,7 +719,7 @@
       "title": "RP-initiated logout variant 4a (id_token_hint) redirects to post_logout_redirect_uri after logout",
       "automation": "deterministic",
       "owner": "packages/web-app/src/lib/tests/sign-in-core.test.ts",
-      "evidence": "unit-test",
+      "evidence": "not-required-cats-report",
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
@@ -736,10 +736,10 @@
       "title": "RP-initiated logout variant 4b can land on CanadaLogin sign-out confirmation page",
       "automation": "manual",
       "owner": "docs/cats-3.0.2-manual-checklist.md",
-      "evidence": "browser-trace",
+      "evidence": "not-required-cats-report",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -749,7 +749,7 @@
       "title": "RP-initiated logout variant 4c redirects to post_logout_redirect_uri",
       "automation": "deterministic",
       "owner": "packages/web-app/src/lib/tests/sign-in-logout-route.test.ts",
-      "evidence": "route-test",
+      "evidence": "not-required-cats-report",
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
@@ -766,10 +766,10 @@
       "title": "Second RP is logged out at step 5",
       "automation": "manual",
       "owner": "docs/cats-3.0.2-manual-checklist.md",
-      "evidence": "multi-rp-screenshots",
+      "evidence": "not-required-cats-report",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -779,10 +779,10 @@
       "title": "Second RP is logged out at step 7",
       "automation": "manual",
       "owner": "docs/cats-3.0.2-manual-checklist.md",
-      "evidence": "multi-rp-screenshots",
+      "evidence": "not-required-cats-report",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -792,10 +792,10 @@
       "title": "First RP is logged out at step 8",
       "automation": "manual",
       "owner": "docs/cats-3.0.2-manual-checklist.md",
-      "evidence": "multi-rp-screenshots",
+      "evidence": "not-required-cats-report",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -805,7 +805,7 @@
       "title": "The RP receives a logout token when back-channel logout is triggered",
       "automation": "deterministic",
       "owner": "packages/web-app/src/lib/tests/back-channel-logout-route.test.ts",
-      "evidence": "integration-test",
+      "evidence": "not-required-cats-report",
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
@@ -822,10 +822,10 @@
       "title": "A second RP receives a logout token when back-channel logout is triggered",
       "automation": "manual",
       "owner": "docs/cats-3.0.2-manual-checklist.md",
-      "evidence": "multi-rp-logs",
+      "evidence": "not-required-cats-report",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -835,14 +835,14 @@
       "title": "Logout token contains iss matching CanadaLogin metadata",
       "automation": "deterministic",
       "owner": "packages/web-app/src/lib/tests/back-channel-logout.test.ts",
-      "evidence": "unit-test",
+      "evidence": "not-required-cats-report",
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
-        "passedTests": 8,
+        "passedTests": 11,
         "failedTests": 0,
         "pendingTests": 0,
-        "totalTests": 8
+        "totalTests": 11
       }
     },
     {
@@ -852,14 +852,14 @@
       "title": "Logout token contains aud matching the RP client_id",
       "automation": "deterministic",
       "owner": "packages/web-app/src/lib/tests/back-channel-logout.test.ts",
-      "evidence": "unit-test",
+      "evidence": "not-required-cats-report",
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
-        "passedTests": 8,
+        "passedTests": 11,
         "failedTests": 0,
         "pendingTests": 0,
-        "totalTests": 8
+        "totalTests": 11
       }
     },
     {
@@ -869,14 +869,14 @@
       "title": "Logout token contains a unique jti",
       "automation": "deterministic",
       "owner": "packages/web-app/src/lib/tests/back-channel-logout.test.ts",
-      "evidence": "unit-test",
+      "evidence": "not-required-cats-report",
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
-        "passedTests": 8,
+        "passedTests": 11,
         "failedTests": 0,
         "pendingTests": 0,
-        "totalTests": 8
+        "totalTests": 11
       }
     },
     {
@@ -886,14 +886,14 @@
       "title": "Logout token contains iat claim",
       "automation": "deterministic",
       "owner": "packages/web-app/src/lib/tests/back-channel-logout.test.ts",
-      "evidence": "unit-test",
+      "evidence": "not-required-cats-report",
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
-        "passedTests": 8,
+        "passedTests": 11,
         "failedTests": 0,
         "pendingTests": 0,
-        "totalTests": 8
+        "totalTests": 11
       }
     },
     {
@@ -903,14 +903,14 @@
       "title": "Logout token contains the backchannel-logout events claim",
       "automation": "deterministic",
       "owner": "packages/web-app/src/lib/tests/back-channel-logout.test.ts",
-      "evidence": "unit-test",
+      "evidence": "not-required-cats-report",
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
-        "passedTests": 8,
+        "passedTests": 11,
         "failedTests": 0,
         "pendingTests": 0,
-        "totalTests": 8
+        "totalTests": 11
       }
     },
     {
@@ -920,14 +920,14 @@
       "title": "Logout token does not contain nonce",
       "automation": "deterministic",
       "owner": "packages/web-app/src/lib/tests/back-channel-logout.test.ts",
-      "evidence": "unit-test",
+      "evidence": "not-required-cats-report",
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
-        "passedTests": 8,
+        "passedTests": 11,
         "failedTests": 0,
         "pendingTests": 0,
-        "totalTests": 8
+        "totalTests": 11
       }
     },
     {
@@ -937,7 +937,7 @@
       "title": "The RP returns HTTP 200 or 204 after successful logout handling",
       "automation": "deterministic",
       "owner": "packages/web-app/src/lib/tests/back-channel-logout-route.test.ts",
-      "evidence": "integration-test",
+      "evidence": "not-required-cats-report",
       "status": "automated-pass",
       "details": {
         "suiteStatus": "passed",
@@ -954,10 +954,10 @@
       "title": "A second RP returns HTTP 200 or 204 after successful back-channel logout",
       "automation": "manual",
       "owner": "docs/cats-3.0.2-manual-checklist.md",
-      "evidence": "multi-rp-logs",
+      "evidence": "not-required-cats-report",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -970,7 +970,7 @@
       "evidence": "registration-config-and-decoded-logout-token",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -983,7 +983,7 @@
       "evidence": "logs-and-screenshots",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -1030,7 +1030,7 @@
       "evidence": "registration-screenshot",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -1043,7 +1043,7 @@
       "evidence": "discovery-json-and-browser-trace",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -1056,7 +1056,7 @@
       "evidence": "browser-trace-and-rp-logs",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     },
     {
@@ -1069,7 +1069,7 @@
       "evidence": "browser-trace-and-session-check",
       "status": "manual-pending",
       "details": {
-        "reason": "manual-evidence-required"
+        "reason": "manual-execution-required"
       }
     }
   ]

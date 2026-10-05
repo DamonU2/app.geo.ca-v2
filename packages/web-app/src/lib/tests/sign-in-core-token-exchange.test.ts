@@ -123,6 +123,16 @@ describe('exchangeCodeForTokens', () => {
 
   it('emits redacted token exchange evidence when logging is enabled', async () => {
     vi.stubEnv('OIDC_AUTH_EVIDENCE_LOGGING', 'true');
+    const assertionPayload = {
+      iss: 'client-id-123',
+      sub: 'client-id-123',
+      aud: 'https://auth.example.test/oauth2/token',
+      exp: 1_900_000_300,
+      iat: 1_900_000_000,
+      jti: 'assertion-jti-sensitive',
+    };
+    const assertion = `header.${Buffer.from(JSON.stringify(assertionPayload)).toString('base64url')}.signature`;
+    createClientAssertionJwtMock.mockReturnValueOnce(assertion);
 
     await exchangeCodeForTokens(
       'code-abc',
@@ -144,6 +154,16 @@ describe('exchangeCodeForTokens', () => {
             hasCodeVerifier: true,
             hasClientAssertion: true,
             clientAssertionType: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+            clientAssertionClaims: expect.objectContaining({
+              algorithm: 'RS256',
+              issMatchesClientId: true,
+              subMatchesClientId: true,
+              aud: 'https://auth.example.test/oauth2/token',
+              exp: assertionPayload.exp,
+              iat: assertionPayload.iat,
+              hasJti: true,
+              jtiFingerprint: expect.any(String),
+            }),
             kid: null,
             x5tS256: 'certificate-thumbprint',
           }),
@@ -153,8 +173,11 @@ describe('exchangeCodeForTokens', () => {
           expect.objectContaining({
             status: 200,
             hasAccessToken: true,
+            accessTokenFingerprint: expect.any(String),
             hasIdToken: true,
+            idTokenFingerprint: expect.any(String),
             hasRefreshToken: false,
+            refreshTokenFingerprint: null,
             roundTripMs: expect.any(Number),
           }),
         ],
@@ -164,7 +187,8 @@ describe('exchangeCodeForTokens', () => {
     const serializedInfo = JSON.stringify(infoCalls);
     expect(serializedInfo).not.toContain('code-abc');
     expect(serializedInfo).not.toContain('pkce-verifier-123');
-    expect(serializedInfo).not.toContain('signed-assertion-jwt');
+    expect(serializedInfo).not.toContain(assertion);
+    expect(serializedInfo).not.toContain(assertionPayload.jti);
     expect(serializedInfo).not.toContain('id-token');
     expect(serializedInfo).not.toContain('access-token');
     expect(serializedInfo).not.toContain('client-secret-xyz');

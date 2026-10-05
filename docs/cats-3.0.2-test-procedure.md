@@ -132,19 +132,13 @@ Evidence to save:
 Assertions: LO2, BLO10, BLO11, BLO12
 
 1. Sign in to the RP, then manually construct and send a sign-out request to `end_session_endpoint` containing only `post_logout_redirect_uri` (no `id_token_hint`, no `client_id`) — this is CATS variant 4b. The RP's own Sign out action never produces this variant; it always sends variant 4a (`id_token_hint`) or 4c (`client_id`).
-2. Confirm CanadaLogin displays its sign-out confirmation page, click Sign out, and capture the browser redirect chain and confirmation page.
+2. Confirm CanadaLogin displays its sign-out confirmation page and click Sign out. Observe whether the browser returns to the registered post-logout URI. The CATS Test report lists LO evidence as N/A; no screenshot or redirect trace is required.
 3. Trigger a successful back-channel logout for an RP registered for it.
-4. Capture RP logs and HTTP trace proving a successful `200` or `204` acknowledgment after token validation.
-5. If session-required back-channel logout is configured, capture registration/config evidence and a decoded Logout Token containing `sid`.
+4. Observe whether the RP acknowledges successful handling with HTTP `200` or `204`. Evidence is N/A for BLO10 per the CATS Test report; logs and HTTP traces are not required.
+5. If session-required back-channel logout is configured, capture registration/config evidence and a decoded, redacted Logout Token payload showing `sid` for BLO11. Do not retain the raw token or signature.
 6. Create at least two sessions for the same user (for example two browsers or two devices), trigger back-channel logout for one session only, and verify only the session matching `sid` is invalidated when session-required is enabled. When `sid` is absent (non-session-required mode), verify the RP uses `sub` to terminate the user's session(s) according to its policy.
 
-Evidence to save:
-
-- The manually constructed variant 4b request URL (redacted of any session-identifying values not relevant to the test).
-- Logout browser trace and confirmation screenshot.
-- Server log excerpts tied to the HTTP response timestamp.
-- Decoded Logout Token with sensitive values redacted.
-- Session mapping/log evidence and screenshots showing expected session termination.
+Evidence: N/A for LO2 and BLO10 per the CATS Test report. For BLO11, provide registration/config evidence and a decoded, redacted token payload containing `sid` when session-required mode applies. For BLO12, provide session-targeting logs and browser screenshots showing which session(s) were invalidated; redact/hash identifiers.
 
 ### Block D: Front-channel logout browser flow (conditional)
 
@@ -171,14 +165,9 @@ Assertions: BLO2, LO4, LO5, LO6
 2. Trigger logout from RP-A and record RP-B state before logout, immediately after, and after refresh/rerender.
 3. Start fresh sessions, trigger logout from RP-B, and record RP-A using the same sequence.
 4. Repeat one propagation path with fresh sessions and compare results for consistency.
-5. Capture logs showing the second RP received and processed its Logout Token.
+5. Observe whether RP-A and RP-B process logout according to the registered mechanism. The CATS Test report lists LO4-LO6 and BLO2 evidence as N/A; logs and screenshots are optional.
 
-Evidence to save:
-
-- Before/after screenshots for both RPs.
-- RP-B/RP-A post-logout refresh screenshots where UI state lags backend invalidation.
-- Both RP server logs and any HTTP traces.
-- Repeatability comparison note.
+Evidence: N/A for LO4-LO6 and BLO2 per the CATS Test report. Record the outcomes; screenshots, logs, and traces are optional.
 
 ### Block F: Single sign-on behavior
 
@@ -192,19 +181,14 @@ CanadaLogin's SSO window is 1 hour. If a second CATS-compliant RP is not availab
 4. Wait for more than 60 minutes of inactivity (or otherwise trigger the configured reauthentication condition).
 5. Begin sign-in to RP-B again and record whether CanadaLogin prompts for credentials.
 
-Evidence to save:
-
-- RP-A completion screenshot.
-- RP-B initiation and completion screenshots.
-- Prompt/no-prompt screenshots for both paths.
-- Reauthentication policy or trigger evidence, and elapsed-time note if using the 60-minute inactivity trigger.
+Evidence: N/A for SSO1-SSO2 per the CATS Test report. Record whether CanadaLogin prompted for credentials in each scenario; screenshots and policy artifacts are optional.
 
 ## 6. Record manual outcomes
 
 For each manual assertion:
 
 1. Set the outcome to `pass`, `fail`, `blocked`, or `not applicable` in the sign-off record in [cats-3.0.2-manual-checklist.md](cats-3.0.2-manual-checklist.md). Put `automated`, `live`, or `manual` evidence-source labels in Notes.
-2. Record tester initials, UTC date, environment, artifact paths, and a short conclusion.
+2. Record tester initials, UTC date, environment, artifact paths where required (otherwise enter `N/A - not required`), and a short conclusion.
 3. For a failure, include the expected result, observed result, impact, and issue reference.
 4. For a blocked result, state the missing prerequisite or unavailable environment capability.
 
@@ -228,6 +212,6 @@ Review:
 
 1. Confirm every matrix assertion has a result: automated pass/fail, live pass/fail, manual pass/fail, blocked, or not applicable.
 2. Confirm all generated artifacts are from the same target environment and current build/version.
-3. Confirm every manual `pass` includes sufficient artifact links or paths.
+3. Confirm every manual `pass` includes artifact links or paths where the CATS Test report requires evidence; confirm N/A evidence rows are marked `N/A - not required`.
 4. Confirm all evidence has been redacted appropriately.
 5. Resolve or formally accept every `fail` and `blocked` result before certifying the report.

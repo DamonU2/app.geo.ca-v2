@@ -1,7 +1,7 @@
 /**
  * Test coverage: Integration-style route tests for the back-channel logout endpoint, including token validation outcomes and HTTP response behavior.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { markUserAuthRevokedMock, verifyBackChannelLogoutTokenMock } = vi.hoisted(() => ({
   markUserAuthRevokedMock: vi.fn(),
@@ -23,7 +23,15 @@ describe('POST /sign-in/back-channel-logout', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
   it('returns 400 when logout_token is missing', async () => {
+    vi.stubEnv('OIDC_AUTH_EVIDENCE_LOGGING', 'true');
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const request = new Request('https://example.test/sign-in/back-channel-logout', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -34,6 +42,24 @@ describe('POST /sign-in/back-channel-logout', () => {
 
     expect(response.status).toBe(400);
     expect(await response.text()).toBe('Missing logout_token');
+    expect(infoSpy).toHaveBeenCalledWith(
+      '[auth/back-channel-logout-evidence] request_received',
+      expect.objectContaining({
+        endpointCategory: 'back_channel_logout',
+        method: 'POST',
+        path: '/sign-in/back-channel-logout',
+        contentType: 'application/json',
+      })
+    );
+    const requestLog = vi.mocked(infoSpy).mock.calls[0]?.[1] as { correlationId?: string } | undefined;
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[auth/back-channel-logout-evidence] rejected',
+      expect.objectContaining({
+        correlationId: requestLog?.correlationId,
+        reason: 'missing_logout_token',
+        contentType: 'application/json',
+      })
+    );
   });
 
   it('returns 400 when verification fails', async () => {

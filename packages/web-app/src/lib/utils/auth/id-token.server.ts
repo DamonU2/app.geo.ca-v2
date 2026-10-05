@@ -1,5 +1,5 @@
 import type { TokenPayload } from '$lib/db/db-types';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { decodeBase64UrlJson } from '$lib/utils/auth/base64url';
 import { splitJwt } from '$lib/utils/auth/jwt';
 import { verifyJwtSignatureWithJwks } from '$lib/utils/auth/jwt-signature.server';
@@ -164,6 +164,24 @@ export async function verifyIdToken(idToken: string, expectedNonce?: string | nu
   const signatureResult = await verifyJwtSignatureWithJwks(header, parts, jwksCandidates);
   if (!signatureResult.ok) {
     return failFromSignatureResult(signatureResult);
+  }
+
+  if ((process.env.OIDC_AUTH_EVIDENCE_LOGGING ?? '').toLowerCase() === 'true') {
+    console.info('[auth/id-token-evidence] verified', {
+      ...telemetryBase,
+      tokenFingerprint: createHash('sha256').update(idToken).digest('base64url'),
+      alg: header.alg,
+      kid: header.kid,
+      issuer: payload.iss,
+      audiences: audience,
+      exp: payload.exp,
+      nbf: payload.nbf ?? null,
+      iat: payload.iat,
+      noncePresent: typeof payload.nonce === 'string',
+      nonceMatched: expectedNonce ? payload.nonce === expectedNonce : null,
+      sidPresent: typeof payload.sid === 'string' && payload.sid.length > 0,
+      sidFingerprint: typeof payload.sid === 'string' ? createHash('sha256').update(payload.sid).digest('base64url') : null,
+    });
   }
 
   return payload;

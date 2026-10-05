@@ -47,6 +47,7 @@ function signIdToken(
 describe('verifyIdToken', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.stubEnv('OIDC_AUTH_EVIDENCE_LOGGING', 'false');
     vi.stubEnv('OIDC_CLIENT_ID', clientId);
     vi.stubEnv('OIDC_CUSTOM_DOMAIN', issuer);
   });
@@ -61,6 +62,61 @@ describe('verifyIdToken', () => {
     const token = signIdToken(privateKeyPem, kid, clientId, Math.floor(Date.now() / 1000) + 300, nonce);
 
     await expect(verifyIdToken(token, nonce)).resolves.toMatchObject({ sub: 'user-123', aud: clientId, iss: issuer, nonce });
+  });
+
+  it('logs verified ID token claims without logging raw tokens or personal/session identifiers when enabled', async () => {
+    vi.stubEnv('OIDC_AUTH_EVIDENCE_LOGGING', 'true');
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const kid = 'id-token-key-evidence';
+    const { jwk, privateKeyPem } = createTestSigningKey(kid);
+    const sid = 'session-sensitive-123';
+    const nonce = 'nonce-sensitive-123';
+    const token = signIdToken(
+      privateKeyPem,
+      kid,
+      clientId,
+      Math.floor(Date.now() / 1000) + 300,
+      nonce,
+      { sid, email: 'person@example.test' }
+    );
+    stubOidcDiscoveryAndJwksFetch(issuer, jwksUri, jwk);
+
+    await expect(verifyIdToken(token, nonce)).resolves.toMatchObject({ sub: 'user-123', sid });
+
+    expect(infoSpy).toHaveBeenCalledWith(
+      '[auth/id-token-evidence] verified',
+      expect.objectContaining({
+        component: 'id_token_verification',
+        issuer,
+        audiences: [clientId],
+        alg: 'RS256',
+        kid,
+        noncePresent: true,
+        nonceMatched: true,
+        sidPresent: true,
+        tokenFingerprint: expect.any(String),
+        sidFingerprint: expect.any(String),
+      })
+    );
+
+    const serializedLogs = JSON.stringify(infoSpy.mock.calls);
+    expect(serializedLogs).not.toContain(token);
+    expect(serializedLogs).not.toContain('user-123');
+    expect(serializedLogs).not.toContain(nonce);
+    expect(serializedLogs).not.toContain(sid);
+    expect(serializedLogs).not.toContain('person@example.test');
+  });
+
+  it('does not log verified ID token claims when evidence logging is disabled', async () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const kid = 'id-token-key-no-evidence';
+    const { jwk, privateKeyPem } = createTestSigningKey(kid);
+    stubOidcDiscoveryAndJwksFetch(issuer, jwksUri, jwk);
+    const token = signIdToken(privateKeyPem, kid, clientId, Math.floor(Date.now() / 1000) + 300, 'nonce-123');
+
+    await expect(verifyIdToken(token, 'nonce-123')).resolves.toMatchObject({ sub: 'user-123' });
+
+    expect(infoSpy).not.toHaveBeenCalled();
   });
 
   it('rejects expired tokens', async () => {

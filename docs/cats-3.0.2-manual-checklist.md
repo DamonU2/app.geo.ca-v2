@@ -1,6 +1,6 @@
 # CATS 3.0.2 Manual Checklist
 
-Use this checklist with the CATS 3.0.2 Test guide and Test report. It covers the RP-facing conformance assertions that require human-observed evidence. Automated tests may support an assertion, but do not replace the required request, response, registration, browser, or server evidence.
+Use this checklist with the CATS 3.0.2 Test guide and Test report. It covers RP-facing conformance assertions, including manual observations. Automated tests may support an assertion, but do not replace live checks where the guide calls for them. Evidence is required only where the CATS Test report specifies it: evidence is N/A for AC2, SSO1-SSO2, LO1-LO6, and BLO1-BLO10; BLO11 and BLO12 require evidence when their session-required conditions apply.
 
 The guide's CanadaLogin discovery metadata, registration, and OP TLS posture are test inputs or OP responsibilities. This checklist verifies that the RP consumes them correctly, uses exact registered values, and uses secure transport. CanadaLogin's own compliance is out of scope.
 
@@ -8,7 +8,7 @@ The guide's CanadaLogin discovery metadata, registration, and OP TLS posture are
 
 - Manual assertions covered: DR1-DR9, AA1-AA15, AP1-AP11, sign-in-failure AC1-AC3, LP1-LP2, SSO1-SSO2, LO1-LO6, and BLO1-BLO12. Client-secret token assertions CS-AC1-CS-AC2 and FLO1-FLO7 are retained as conditional references and are `not applicable` for the supplied staging registration.
 - Each assertion must end with a clear outcome: pass, fail, or blocked.
-- Every pass/fail decision must include attached evidence artifacts.
+- Attach evidence for pass/fail results where the CATS Test report specifies an evidence artifact. AC2, SSO1-SSO2, LO1-LO6, and BLO1-BLO10 do not require attachments. BLO11 requires registration/configuration and decoded-token `sid` evidence when session-required mode applies; BLO12 requires evidence of which session(s) were invalidated.
 - Use the exact assertion IDs from the CATS guide. Do not reuse `AC1` from the sign-in failure table for the token authentication table without recording the section name.
 
 ## Staging registration profile
@@ -32,7 +32,7 @@ The public certificate/JWK from the form is registration evidence. Do not copy p
 
 ## Start here: tester runbook
 
-Use this section if you are running the application tests for the first time. The remaining sections explain the CATS assertion details and provide the evidence to save.
+Use this section if you are running the application tests for the first time. The remaining sections explain the CATS assertion details and identify evidence only where the CATS Test report requires it.
 
 ### 1. Confirm the application is ready
 
@@ -55,7 +55,7 @@ The sign-in button starts the RP flow. The RP sends the browser to CanadaLogin, 
 
 ### 2. Prepare browser evidence
 
-Use Chrome or Edge and open DevTools with `F12` before starting a flow.
+Use Chrome or Edge and open DevTools with `F12` before starting a flow. Capture artifacts only for assertions where the CATS Test report calls for evidence; evidence is N/A for AC2, SSO1-SSO2, LO1-LO6, and BLO1-BLO10. BLO11/BLO12 evidence is required when applicable.
 
 1. Select **Network**.
 2. Turn on **Preserve log** and **Disable cache** while DevTools is open.
@@ -69,18 +69,18 @@ For a sign-in request, the useful sequence is: RP page -> `authorize` request ->
 
 ### 3. Prepare screenshots and logs
 
-For every screenshot, include the browser address bar when the URL matters. Capture the page before and after the action, not only the final page. For server evidence, save the log lines covering the same timestamp as the browser request and search for the relevant endpoint category, such as `discovery`, `authorization`, `token-exchange`, `id-token`, or `back-channel-logout`.
+For screenshots required by an assertion, include the browser address bar when the URL matters and capture the relevant before/after state. Save server log lines only when the assertion requires them. AC2, SSO, LO, and BLO1-BLO10 evidence is N/A; BLO11/BLO12 evidence is required when applicable.
 
 Use one artifact folder per run, for example `CATS-3.0.2-evidence/staging/20260924/`. Name files with the assertion ID and step, such as `20260924-1430-AA2-authorization-request.har` or `20260924-1435-BLO10-response.png`.
 
 ### 4. Use the result rules
 
-- **Pass:** the observed behavior matches the Expected result and the required evidence is saved.
-- **Fail:** the behavior is observable but does not match; record the expected value, observed value, and evidence path.
+- **Pass:** the observed behavior matches the Expected result. Attach evidence where the CATS Test report requires it; evidence is N/A for AC2, SSO, LO, and BLO1-BLO10.
+- **Fail:** the behavior is observable but does not match; record the expected and observed result. Attach an evidence path only when the CATS Test report requires an artifact. BLO11/BLO12 evidence remains required when applicable, including for a failure.
 - **Blocked:** the behavior could not be tested because a required account, registration, endpoint, log, or second RP was unavailable.
 - **Not applicable:** the assertion is for an unregistered mechanism. For this staging profile, use this for CS-AC1-CS-AC2 and FLO1-FLO7.
 
-Do not mark a test pass only because an automated unit test passed. Unit tests prove implementation behavior; browser, registration, CanadaLogin, and deployment assertions require the corresponding live evidence.
+Do not mark a test pass only because an automated unit test passed. Unit tests prove implementation behavior; browser, registration, CanadaLogin, and deployment assertions require live observation. Attach artifacts only where the CATS Test report specifies them; AC2, SSO, LO, and BLO1-BLO10 evidence is N/A. BLO11/BLO12 evidence is required when applicable.
 
 ### 5. Run the blocks in order
 
@@ -150,7 +150,7 @@ The focused suite was run with `npm --prefix packages/web-app run test:cats` on 
 - Callback failure handling and local logout safety are covered by `sign-in-receive-route.test.ts`, `sign-in-post-auth.test.ts`, `sign-in-logout-route.test.ts`, and `front-channel-logout-route.test.ts`.
 - Back-channel token validation and acknowledgement status are covered by `back-channel-logout.test.ts` and `back-channel-logout-route.test.ts`.
 
-The suite does not establish live CanadaLogin behavior or deployment evidence. For the supplied staging profile, perform the manual checks for discovery and registration (`DR1-DR9`), live request transport and exact values (`AA1-AA3`, `AA8-AA9`), browser language and SSO (`LP1-LP2`, `SSO1-SSO2`), live sign-in failure behavior (AC1-AC3), RP-initiated logout variants (`LO1-LO6`), and back-channel propagation/session targeting (`BLO1-BLO12`). Mark client-secret token assertions (`CS-AC1-CS-AC2`, official CATS IDs AC1-AC2) and front-channel assertions (`FLO1-FLO7`) not applicable. Attach the test report or focused test output to the relevant sign-off rows instead of treating it as a substitute for manual checks.
+The suite does not establish live CanadaLogin behavior or deployment evidence. For the supplied staging profile, perform the manual checks for discovery and registration (`DR1-DR9`), live request transport and exact values (`AA1-AA3`, `AA8-AA9`), browser language and SSO (`LP1-LP2`, `SSO1-SSO2`), live sign-in failure behavior (AC1-AC3), RP-initiated logout variants (`LO1-LO6`), and back-channel propagation/session targeting (`BLO1-BLO12`). Mark client-secret token assertions (`CS-AC1-CS-AC2`, official CATS IDs AC1-AC2) and front-channel assertions (`FLO1-FLO7`) not applicable. Attach automated test output only to sign-off rows for which the report or matrix requests it; LO/BLO rows do not require attachments.
 
 ## Test preconditions
 
@@ -158,22 +158,22 @@ The suite does not establish live CanadaLogin behavior or deployment evidence. F
 2. Confirm RP build/version under test.
 3. Prepare two browser profiles (or one normal window + one private window) for multi-session checks.
 4. Enable browser network capture (HAR or DevTools export) when required below.
-5. Ensure log access is available for RP server logs and OP logout events.
-6. For LO4-LO6, BLO2, BLO10, and BLO12 (multi-RP sign-out): have access to a second OIDC RP integrated with CanadaLogin. The CanadaLogin test-environment RP simulator (rp.app.login-connexion.alpha.canada.ca) may be used as the second RP; it is not itself CATS-compliant but is sufficient for these checks. Cross-protocol logout is not supported, so the second RP must also be OIDC.
+5. Ensure access to RP server logs where a test procedure or the CATS Test report calls for logs. LO/BLO results do not require log artifacts under the report; logs may be consulted optionally to help understand an observed result.
+6. For LO4-LO6, BLO2, and BLO10 (cross-RP propagation/acknowledgement): have access to a second OIDC RP integrated with the same CanadaLogin environment. The CanadaLogin RP simulator at <https://rp.app.login-connexion.alpha.canada.ca/> may be used only if CanadaLogin confirms it is registered for that environment. BLO12 does not require a second RP; use two separate browser profiles for two sessions to this RP.
 7. For the supplied staging profile, test back-channel logout only. Do not execute FLO1-FLO7 unless a later CanadaLogin registration explicitly enables front-channel logout.
 8. A Canada.ca subdomain is required only when front-channel logout is registered. It is not required for the supplied staging profile, which uses back-channel logout.
 9. Complete Block A (discovery and registration) before Blocks C-F: those tests confirm `end_session_endpoint` responds as expected and is a required input for RP-initiated logout testing.
 10. Record the RP profile under test. For supplied staging, use confidential Authorization Code + `private_key_jwt` with offline key exchange. `client_secret_basic` is not implemented by this RP; `client_secret_post` is only a localhost development fallback. Public clients using PKCE S256 are not currently supported by CanadaLogin.
 11. For sign-in tests, capture both the outbound authorization request and the inbound callback, with `state`, `nonce`, `code`, and tokens redacted where necessary but still correlatable.
-12. For sign-out tests, record whether the RP is registered for back-channel or front-channel logout and whether session-required back-channel behavior is configured.
+12. For sign-out tests, note whether the RP is registered for back-channel or front-channel logout and whether session-required back-channel behavior is configured. No registration screenshot or log attachment is required for LO/BLO assertions by the CATS Test report.
 
 ## Evidence capture standard
 
-1. Include timestamp in every artifact filename: YYYYMMDD-HHMM-<assertion>-<step>.<ext>.
+1. For artifacts you choose or are required to capture, include a timestamp in the filename: YYYYMMDD-HHMM-<assertion>-<step>.<ext>. AC2, SSO, LO, and BLO1-BLO10 artifacts are not required. BLO11/BLO12 artifacts are required when applicable.
 2. Capture full URL bar in screenshots whenever endpoint correctness is part of the assertion.
 3. Capture response status code and key fields for network evidence.
 4. Redact secrets, tokens, and personal identifiers before storing artifacts.
-5. Record artifact links/paths in the sign-off table at the end of this file.
+5. Record artifact links/paths in the sign-off table when an artifact is required or optionally captured. Enter `N/A (not required)` for AC2, SSO1-SSO2, LO1-LO6, and BLO1-BLO10. BLO11/BLO12 require artifact references when applicable.
 
 ## Execution plan
 
@@ -264,7 +264,7 @@ Tester actions:
 
 Then open the RP’s server-side token exchange evidence or use the deployment log/proxy capture. The browser usually cannot show this token request because it is made server-to-server.
 
-For the deployed staging function, start with the AWS Lambda function's **Monitor > View CloudWatch logs** link, or the CloudWatch log group attached to the deployed SST function that handles `/sign-in/receive`. Search the relevant invocation window for `[auth/token-exchange]` and its `correlationId`. The current implementation logs failure events such as `missing_required_input`, `policy_blocked_fallback`, `insecure_token_endpoint_rejected`, `token_request_failed`, and `token_request_exception`; it does not log the successful request body or `client_assertion` fields. A successful exchange therefore requires an approved outbound proxy capture or temporary redacted diagnostic instrumentation. Never add raw token, code, verifier, secret, or private-key values to normal application logs.
+For the deployed staging function, start with the AWS Lambda function's **Monitor > View CloudWatch logs** link, or the CloudWatch log group attached to the deployed SST function that handles `/sign-in/receive`. Search the relevant invocation window for `[auth/token-exchange]` and its `correlationId`. By default, the implementation logs only failure events such as `missing_required_input`, `policy_blocked_fallback`, `insecure_token_endpoint_rejected`, `token_request_failed`, and `token_request_exception`; successful request evidence is emitted only when `OIDC_AUTH_EVIDENCE_LOGGING=true`. Even with the flag enabled, the request body and raw `client_assertion` are never logged. Never add raw token, code, verifier, secret, or private-key values to normal application logs.
 
 If CloudWatch contains only `INIT_START`, `START`, `END`, `REPORT`, and `[+layout.server] User state loaded` entries, it is not showing the token exchange. Those entries only prove that a Lambda invocation loaded the current session state; `signedIn: true` means an existing authenticated session was found. Confirm that the request actually reached `/sign-in/receive` and that you are viewing the log group/function for that deployed route. If no `[auth/token-exchange]` event or approved proxy capture exists after a fresh sign-in, record the token-request evidence as blocked rather than inferring the request fields from layout logs. Redact user UUIDs from saved evidence.
 
@@ -275,7 +275,7 @@ $env:OIDC_AUTH_EVIDENCE_LOGGING = "true"
 npx sst deploy --stage <approved-cats-stage>
 ```
 
-After deployment, complete one fresh sign-in and search the same Lambda log group for `[auth/token-exchange-evidence] request_prepared` and `[auth/token-exchange-evidence] success`. These events contain presence flags, auth method, `grant_type`, redirect URI, key metadata, fingerprints, status, and timing; they do not contain raw codes, verifiers, assertions, tokens, secrets, or private keys. Use the shared `correlationId` to pair the prepared request with the success event. After saving redacted evidence, disable the flag and redeploy:
+After deployment, complete one fresh sign-in and search the same Lambda log group for `[auth/token-exchange-evidence] request_prepared`, `[auth/token-exchange-evidence] success`, and `[auth/id-token-evidence] verified`. The exchange events contain presence flags, auth method, `grant_type`, redirect URI, key metadata, one-way fingerprints, status, and timing. The prepared-request event also contains a safe client-assertion summary: RS256, `iss`/`sub` match flags, token-endpoint `aud`, `exp`, `iat`, and a one-way `jti` fingerprint. The verified ID-token event contains the validated `iss`, `aud`, `exp`, `nbf`, `iat`, `kid`, nonce-match/presence flags, and sid-presence flag/fingerprint. They do not contain raw codes, verifiers, assertions, tokens, nonce or sid values, subject, user profile claims, secrets, or private keys. Use the token fingerprints to correlate the exchange success with verified-ID-token event; use `correlationId` within each event group. After saving redacted evidence, disable the flag and redeploy:
 
 ```powershell
 $env:OIDC_AUTH_EVIDENCE_LOGGING = "false"
@@ -312,25 +312,69 @@ Shared setup:
 
 - Keep RP server logs open.
 - Prepare one signed-in session and, for BLO12, a second session when needed.
+- The staging registration uses confidential Authorization Code + `private_key_jwt`, so sign-in failure testing is intentionally a controlled config-change exercise. The tester must change only the signing configuration or token-secret configuration for the test, then restore it immediately after capture; do not test against a production or unrelated environment.
 - Session targeting rule (verbatim from the CATS 3.0.2 test guide): for back-channel logout, the RP must terminate sessions identified by the Logout Token. When `sid` is present (session-required mode), map `sid` to the correct RP session instance(s) and terminate them. Otherwise, use `sub` as the fallback key according to RP policy (typically terminating all sessions for that subject).
 - For sign-in failure cases, use a controlled test client configuration with an invalid/missing signing key or shared secret, then restore the valid configuration before continuing. Do not expose secrets in evidence.
+- For all logout checks, use the same test user and the same browser session. If the flow changes state, close that browser profile and reopen a clean one before the next variant to avoid false positives from stale cookies or stale UX state.
 
 Tester actions:
 
 1. Finish the successful sign-in from Block B before testing logout, so the browser has a real RP session and CanadaLogin session.
-2. For the sign-in failure cases, coordinate with the deployment administrator. Change only the test configuration, capture the resulting safe error page and matching server log, then restore the valid configuration and confirm a normal sign-in works again.
-3. For LO1, use the RP’s normal **Sign out** control while the ID-token cookie is present. Capture the outbound request and verify `id_token_hint`, `client_id`, and the registered `post_logout_redirect_uri`.
-4. For LO2, use a request tool or browser address bar to construct a request containing only `post_logout_redirect_uri`. Do not reuse the RP’s normal Sign out URL because it includes `client_id` and may include `id_token_hint`.
-5. For LO3, construct a request containing `client_id` and `post_logout_redirect_uri` but no `id_token_hint`. Capture the CanadaLogin confirmation page and click its Sign out control.
-6. For each variant, return to a protected RP page after logout. A successful local logout should require a new sign-in.
-7. For BLO tests, keep the server log open while triggering logout. Locate the incoming `logout_token`, the validation result, the revocation/session key used, and the HTTP 204 response.
+2. For the sign-in failure cases (AC1-AC3), coordinate with the deployment administrator and make only one controlled change at a time:
+   - For AC1, use the live staging deployment environment and change only the configured signing-key reference in the deployment environment, not the repo source. In this repo, the relevant values are in the stage environment file, for example `.env.dulmi`:
+
+     ```dotenv
+     OIDC_PRIVATE_KEY_SECRET_ID=staging/oidc/private-key
+     OIDC_JWT_KID=staging-nrcan-geoca-signer
+     OIDC_USE_PRIVATE_KEY_JWT=true
+     ```
+
+   To trigger the failure, temporarily replace `OIDC_PRIVATE_KEY_SECRET_ID` with a wrong value or a secret name that does not exist, or temporarily replace the key material behind the configured secret. Do not expose the secret contents in screenshots or logs. Redeploy the same stage, then start a fresh sign-in in a clean browser profile that has never signed in to this RP. Save the resulting safe error page, browser URL, and matching server log. **Before restoring the valid key settings, perform AC3 using this same failed callback:** inspect the RP cookies and try to open a protected page as described below. Only after AC3 evidence is captured should you restore the original `OIDC_PRIVATE_KEY_SECRET_ID` and `OIDC_JWT_KID`, redeploy, and confirm a normal sign-in works.
+   - Repeat the AC1 variant once more by changing the secret reference or key material again, then restore the original valid values. If the environment is configured for `private_key_jwt`, do not test a client-secret variant in the staging registration; the configuration is intentionally set to private-key auth and the test is about controlled failure handling, not method switching.
+
+- **AC2 - blocked for the managed AWS Lambda deployment:** Lambda's system clock is AWS-managed and cannot be safely advanced or delayed by the tester. Changing the tester workstation's clock does not change the clock used by the RP to validate ID-token `exp`/`nbf` claims. Do not attempt to alter the Lambda host clock. Record AC2 as `blocked` with this environment limitation; the CATS Test report lists AC2 evidence as N/A, so no attachment is required. Unit tests in `id-token-verification.test.ts` and `oidc-claims.test.ts` provide optional supporting implementation coverage for expired/`nbf` claims beyond the configured 5-minute skew, but are not a live clock-skew pass. If an approved isolated test environment provides a supported way to control the RP clock, run the CATS procedure there, then restore the normal clock and confirm sign-in succeeds.
+- **AC3 - run immediately after each AC1 failure and before restoring the configuration.** Use the same clean browser profile and failed callback. The callback failure handler sets a short-lived `auth_error` cookie and redirects; it does not clear an already-existing session, so the profile must not have been signed in to this RP before the test. After the safe error page appears, inspect **Application > Cookies** for the RP origin: `auth_error` may be present, but `id_token`, `access_token`, `refresh_token`, and the RP session cookie must not have been created. Then open a protected RP page in a new tab and confirm it remains unauthenticated and redirects to the sign-in path. Capture the error page, cookie names only (never values), protected-page redirect, and matching server log. If the clean profile is authenticated after the failed callback, record AC3 as fail and attach the evidence. After capturing AC3, restore the valid values and redeploy before starting another failure variant.
+
+3. For LO1, use the RP’s normal **Sign out** control while signed in. Observe whether the flow logs the user out and returns the browser to the registered `post_logout_redirect_uri`.
+4. For LO2, use a request tool or browser address bar to construct a request containing only `post_logout_redirect_uri`. Do not reuse the RP’s normal Sign out URL because it includes `client_id` and may include `id_token_hint`. Open the request in a browser session and observe whether CanadaLogin displays its sign-out confirmation page instead of logging out silently. Click the confirmation button and note whether logout completes.
+5. For LO3, construct a request containing `client_id` and the registered `post_logout_redirect_uri`, but no `id_token_hint`. Observe whether CanadaLogin displays a confirmation page, then click its Sign out control and note whether logout completes.
+6. For each logout variant, observe whether the browser returns to the registered post-logout URI and whether a later protected-page request requires sign-in. Screenshots, HAR files, and logs are optional; the CATS Test report lists LO evidence as N/A.
+7. For this RP's BLO1/BLO3-BLO9 path, use RP-initiated logout from the **same application**. The CanadaLogin Integration Guide says an RP-initiated logout sends a back-channel notification to that RP; a second RP or separate CanadaLogin global-logout page is not required to exercise this RP's receiver. CanadaLogin sends the Logout Token server-to-server to `POST https://app-stage.geo.ca/sign-in/back-channel-logout`; it will not appear in browser DevTools. Observe whether this RP processes the notification and whether participating sessions are invalidated. Evidence is N/A for BLO1-BLO10, so these assertions do not require CloudWatch logs, a raw token, decoded claims, or a proxy capture.
+
+  When `OIDC_AUTH_EVIDENCE_LOGGING=true` is enabled for an approved CATS deployment, successful validation emits `[auth/back-channel-logout-evidence] verified`; a rejected token emits `[auth/back-channel-logout-evidence] rejected`. Both appear in the deployed web-app Lambda's CloudWatch logs. For a 400 response, inspect `reason`: `missing_logout_token` means the parsed request body had no `logout_token`; reasons such as `malformed_jwt`, `issuer_mismatch`, `audience_mismatch`, `invalid_exp`, `invalid_iat`, `missing_jti`, `nonce_present`, `missing_events`, `missing_backchannel_logout_event`, or `signature_verification_failed` identify the failed validation check. `missing_required_sub_or_jti` means verification returned but the handler lacked a required subject or token ID. These events include only safe metadata and a token fingerprint, never the raw JWT or subject/session values. Claim keys in the verified event use the CATS names: `iss`, `aud`, `jti`, `iat`, `events`, `nonce`, and `sid`; `jti` and `sid` are one-way SHA-256 fingerprints, and `nonce` is `null` because valid Logout Tokens must omit it. BLO1-BLO10 evidence remains optional/N/A. For BLO11, `sid` is non-null when the validated token contains a `sid`; retain the registration/configuration evidence too.
+
+  If CanadaLogin reports HTTP 400 but no rejection event appears, first confirm the latest code was deployed to the Lambda behind `app-stage.geo.ca`, that `OIDC_AUTH_EVIDENCE_LOGGING=true` is set in that deployed Lambda, and then search all log levels/streams for `[auth/back-channel-logout-evidence] request_received` and the rejection event (which is `WARN`, not `INFO`). `request_received` proves the POST reached this route and records only method, path, content type, and content length. To test routing without sending a real Logout Token or revoking a session, send one empty JSON probe:
+
+  ```powershell
+  try {
+    Invoke-WebRequest -Uri "https://app-stage.geo.ca/sign-in/back-channel-logout" -Method Post -ContentType "application/json" -Body "{}"
+  } catch {
+    $_.Exception.Response.StatusCode.value__
+  }
+  ```
+
+  Expected probe result: HTTP 400, a `request_received` event, and a rejection event with `reason: missing_logout_token`. If HTTP 400 is returned but no `request_received` event appears, investigate the deployed version, log group, CDN/origin routing, or whether an upstream gateway handled the response. If `request_received` appears but no rejection event, inspect for a request-body parsing exception. This probe is diagnostic only; do not count it as a CATS logout test.
+
+  **Staging edge block (VPN-restricted staging):** if the same probe, run from outside the VPN, returns `HTTP/1.1 400` with `Server: CloudFront`, `X-Cache: Error from cloudfront`, and a body of `Request blocked`, the request was rejected at the CloudFront/WAF edge and never reached the Lambda. The app never returns that body (its own 400 bodies are `Missing logout_token` and `Invalid logout_token`). CanadaLogin's back-channel POST comes from CanadaLogin's own egress IPs, so it is blocked the same way and appears in the Single-Logout Summary as `Error 400 when calling back-channel endpoint`, with no `request_received` log. To resolve it, obtain CanadaLogin's staging outbound IP ranges and ask the staging edge owner to allow them for `POST /sign-in/back-channel-logout` only, then repeat the RP-initiated logout. Until that allowlist is in place, record BLO1 and BLO3-BLO12 as `blocked` with this reason.
+
+  **Form-encoded probe (CSRF check):** CanadaLogin sends the Logout Token as `application/x-www-form-urlencoded` without an `Origin` header. A JSON probe does not exercise that path. The app exempts only `/sign-in/back-channel-logout` from its cross-site form check. If the Single-Logout Summary shows `Error 403 when calling back-channel endpoint` with no `request_received` log, confirm the deployed build includes that exemption by sending a form-encoded probe:
+
+  ```powershell
+  curl.exe -i -X POST -H "Content-Type: application/x-www-form-urlencoded" --data "logout_token=" "https://app-stage.geo.ca/sign-in/back-channel-logout"
+  ```
+
+  Expected: HTTP 400 `Missing logout_token` plus a `request_received` log. A 403 with the body `Cross-site POST form submissions are forbidden` means the deployed build predates the exemption.
+
+  - For BLO1/BLO3-BLO9, initiate logout from this RP and observe its own back-channel processing; no other RP or global logout UI is needed. Record the outcome without attaching artifacts; the CATS Test report lists their evidence as N/A. Lack of raw-token or CloudWatch access is not a reason to mark them blocked if the relevant behavior can otherwise be observed.
+  - BLO2 and BLO10 specifically concern a second RP; the CanadaLogin RP simulator at <https://rp.app.login-connexion.alpha.canada.ca/> can serve as RP-B if CanadaLogin confirms it is registered for this environment. If no second RP is registered in the staging CanadaLogin environment and no OP-initiated global logout control is available, mark only these second-RP assertions `blocked` and state that the required second RP/OP trigger was unavailable.
+  - **BLO11:** if the RP is configured for session-required back-channel logout, capture the registration/configuration showing that mode and evidence that the verified token contains `sid`. With evidence logging enabled, the verified event provides `sidPresent` and a one-way `sidFingerprint`; use an approved decoded, redacted token payload if the assessor requires the claim value itself. Never retain the raw JWT, signature, or personal identifiers. If session-required mode is not configured, mark BLO11 not applicable. If it is configured but no safe way exists to establish `sid` presence, mark it blocked and state why.
+  - **BLO12:** create two sessions for the same test user in separate browser profiles, both signed in to this RP. Trigger RP-initiated logout from one profile to generate the back-channel event for this RP. Capture the RP's session-store/log result showing which session key was invalidated plus browser outcomes showing the affected session(s). Redact or hash `sub`/`sid` values consistently; do not include raw identifiers. A second RP is not needed. If the registered logout mode/policy cannot be determined or the session-targeting result cannot be observed, mark BLO12 blocked and state why.
+8. If the test fails or the RP enters a broken state, restore the valid configuration immediately and re-run the same variant in a clean session. Do not mark a failure as pass because the browser later recovered on a stale session.
 
 Expected outputs:
 
-- Logout trace
-- RP logs
-- Decoded logout token with `sid` when applicable
-- Session-targeting evidence
+- Recorded outcomes for the sign-in failure cases, logout variants, and applicable back-channel logout checks
+- LO and BLO1-BLO10 evidence artifacts are N/A per the CATS Test report. BLO11/BLO12 evidence is required when applicable.
 
 ### Block D - Front-channel logout browser flow (conditional)
 
@@ -362,24 +406,20 @@ Estimated time:
 
 Shared setup:
 
-- Prepare two RP sessions under the same OP session (the CanadaLogin RP simulator may serve as the second RP; see test preconditions).
-- Keep before/after screenshots and RP logs for both RPs.
-- Apply the session targeting rule from Block C when interpreting which session(s) each RP invalidates.
+- Prepare two OIDC RPs registered in the same CanadaLogin environment and two signed-in sessions under the same OP session. A simulator is usable only if CanadaLogin confirms it is registered in staging.
+- Apply the session targeting rule from Block C when interpreting which session(s) each RP invalidates. Screenshots and logs are optional because the report lists LO/BLO evidence as N/A.
 
 Tester actions:
 
-1. Sign in to RP-A and RP-B in the same browser profile, using separate tabs and the same CanadaLogin user.
+1. Sign in to RP-A and RP-B (e.g. <https://rp.app.login-connexion.alpha.canada.ca/>) in the same browser profile, using separate tabs and the same CanadaLogin user. If no second RP is available, mark BLO2/LO4-LO6/BLO10 as blocked rather than substituting two tabs of this RP.
 2. Record which RP pages are protected and visibly signed in before logout.
 3. Trigger logout from RP-A, then immediately inspect RP-B without refreshing. Record whether the UI changed.
 4. Refresh RP-B and open a protected page. Record whether the server now requires sign-in.
-5. Start fresh sessions and repeat with RP-B as the initiating RP. Save both RP logs and browser screenshots; do not infer RP-B’s result from RP-A’s result.
+5. Start fresh sessions and repeat with RP-B as the initiating RP. Record RP-A’s observed outcome independently; do not infer it from RP-B’s result. Logs and screenshots are optional.
 
 Expected outputs:
 
-- Multi-RP screenshots
-- RP logs
-- Before/after session-state notes
-- Repeatability note
+- Recorded LO4-LO6 outcomes and any optional notes about session state or timing
 
 ### Block F - Single sign-on behavior
 
@@ -399,13 +439,11 @@ Tester actions:
 1. Sign in to RP-A and leave the CanadaLogin session in the same browser profile.
 2. Open RP-B in a new tab immediately. Record whether CanadaLogin displays a credential prompt or proceeds directly to authorization.
 3. For SSO2, wait for the documented one-hour inactivity condition or use an approved test policy that forces reauthentication. Record the start/end times.
-4. Start RP-B sign-in again and capture the CanadaLogin page showing whether credentials are requested.
+4. Start RP-B sign-in again and observe whether CanadaLogin requests credentials.
 
 Expected outputs:
 
-- Step screenshots
-- Prompt/no-prompt evidence
-- Short behavioral note
+- Recorded SSO1/SSO2 outcomes and optional notes about prompt behavior or timing. The CATS Test report lists SSO evidence as N/A; screenshots are not required.
 
 ### Recommended run order
 
@@ -793,10 +831,7 @@ Expected result:
 
 - RP-B sign-in completes without a fresh credential prompt when SSO is expected.
 
-Required evidence:
-
-- Step screenshots for RP-A success, RP-B initiation, and RP-B completion.
-- Optional HAR showing immediate authorize-to-callback progression.
+Evidence: N/A per the CATS Test report. Record whether RP-B prompted for credentials; screenshots and HAR files are optional.
 
 ### SSO2 - Reauthentication path should force prompt
 
@@ -808,20 +843,15 @@ Expected result:
 
 - OP prompts for authentication when reauth condition is active.
 
-Required evidence:
-
-- Screenshot of reauth trigger condition (or policy setting), and elapsed-time note if using the 60-minute inactivity trigger.
-- Screenshot of credential prompt during second sign-in.
+Evidence: N/A per the CATS Test report. Record whether CanadaLogin prompted for credentials and the elapsed-time/policy condition used; screenshots are optional.
 
 ### LO1 - RP-initiated logout with id_token_hint and post_logout_redirect_uri
 
-1. Sign in to the RP and capture the ID token hint value in redacted form.
+1. Sign in to the RP.
 2. Trigger RP-initiated logout with both `id_token_hint` and the registered `post_logout_redirect_uri`.
-3. Capture the request, CanadaLogin response, redirect, and protected-page reload.
+3. Observe whether logout completes and the browser returns to the registered post-logout URI.
 
-Expected result: The user is logged out and redirected to the registered post-logout URI.
-
-Required evidence: Redacted logout request, registration proof, browser trace, and protected-page reload screenshot.
+Expected result: The user is logged out and redirected to the registered post-logout URI. Evidence is N/A per the CATS Test report; artifacts are optional.
 
 ### LO2 - RP initiated logout triggers browser-visible logout flow
 
@@ -829,32 +859,23 @@ This is CATS request variant 4b: `post_logout_redirect_uri` only, with no `id_to
 
 1. Sign in to RP.
 2. Manually construct a sign-out request to the `end_session_endpoint` containing only `post_logout_redirect_uri` (omit `id_token_hint` and `client_id`).
-3. Send the request and confirm CanadaLogin displays its sign-out confirmation page instead of logging out silently.
+3. Send the request and observe whether CanadaLogin displays its sign-out confirmation page instead of logging out silently.
 4. Click the Sign out button on CanadaLogin's confirmation page.
-5. Capture browser navigation and final landing page.
-6. Verify RP session is cleared on next protected navigation attempt.
+5. Observe the final landing page and verify the RP session is cleared on the next protected navigation attempt.
 
 Expected result:
 
 - CanadaLogin requires an explicit Sign out click on its confirmation page for this variant.
 - After confirming, logout flow executes and session is invalidated.
-- User cannot access protected page without reauth.
-
-Required evidence:
-
-- The manually constructed request URL (redacted of any session-identifying values not relevant to the test).
-- Browser trace or HAR covering logout request chain, including the confirmation page.
-- Screenshot of post-logout landing and protected page re-check.
+- User cannot access protected page without reauth. Evidence is N/A per the CATS Test report; artifacts are optional.
 
 ### LO3 - RP-initiated logout with client_id and post_logout_redirect_uri
 
 1. Sign in to the RP.
 2. Send a logout request containing `client_id` and the registered `post_logout_redirect_uri`, without `id_token_hint`.
-3. Confirm CanadaLogin displays its sign-out confirmation page, click Sign out, and capture the final redirect.
+3. Observe whether CanadaLogin displays its sign-out confirmation page. Click Sign out and confirm the final redirect.
 
-Expected result: The user is logged out and redirected to the registered post-logout URI after explicit confirmation.
-
-Required evidence: Redacted request, confirmation-page screenshot, final redirect trace, and protected-page reload screenshot.
+Expected result: The user is logged out and redirected to the registered post-logout URI after explicit confirmation. Evidence is N/A per the CATS Test report; artifacts are optional.
 
 ### LO4 - Multi-RP logout behavior is correct for RP-A initiated logout
 
@@ -870,12 +891,7 @@ Expected result:
 - After refresh/rerender, UI (sign-out button, protected page access, etc.) reflects invalidated session.
 - Note: UI may lag backend invalidation; refresh is required to verify actual session state.
 
-Required evidence:
-
-- Screenshot of both RP-A and RP-B before RP-A logout.
-- Screenshot of RP-B immediately after RP-A logout (showing UI lag if applicable).
-- Screenshot of RP-B after refresh/rerender (showing final invalidated state).
-- Short note explicitly stating: (1) whether session was invalidated per policy, (2) whether UI updated immediately or required refresh.
+Evidence is N/A per the CATS Test report. Record whether RP-B is logged out according to the registered logout behavior; screenshots are optional.
 
 ### LO5 - Multi-RP logout behavior is correct for RP-B initiated logout
 
@@ -891,12 +907,7 @@ Expected result:
 - After refresh/rerender, UI (sign-out button, protected page access, etc.) reflects invalidated session.
 - Note: UI may lag backend invalidation; refresh is required to verify actual session state.
 
-Required evidence:
-
-- Screenshot of both RP-A and RP-B before RP-B logout.
-- Screenshot of RP-A immediately after RP-B logout (showing UI lag if applicable).
-- Screenshot of RP-A after refresh/rerender (showing final invalidated state).
-- Short note explicitly stating: (1) whether session was invalidated per policy, (2) whether UI updated immediately or required refresh.
+Evidence is N/A per the CATS Test report. Record whether RP-A is logged out according to the registered logout behavior; screenshots are optional.
 
 ### LO6 - Repeatability check for logout propagation
 
@@ -909,24 +920,21 @@ Expected result:
 - Logout propagation behavior is consistent across repeated runs.
 - Session invalidation timing and UI refresh behavior match first run.
 
-Required evidence:
-
-- Second-run screenshots showing initial state, post-logout state (pre-refresh), and post-refresh state.
-- Comparison note explicitly stating whether outcomes matched first run.
+Evidence is N/A per the CATS Test report. Record whether the repeated logout result matches the first run; screenshots are optional.
 
 ### BLO1 - Back-channel notification reaches the first registered RP
 
 1. Confirm the first and second RPs are registered for back-channel logout.
 2. Establish sessions in both RPs and trigger logout from each applicable flow.
-3. Capture the POST request and processing result at the first RP. Repeat the same procedure for the second RP under BLO2 below.
+3. Observe whether the first RP receives and processes the POST notification. Repeat for the second RP under BLO2 below.
 
 Expected result: Each registered RP receives and processes a Logout Token at the guide's required steps.
 
-Required evidence: Per-RP HTTP traces and server logs linked to the same logout event.
+Evidence is N/A per the CATS Test report. Record the observed result for each registered RP; request traces and logs are optional.
 
 ### BLO3-BLO8 - Back-channel Logout Token claims
 
-For each captured Logout Token, decode only the payload needed for the report and verify:
+When verified claim details are available through approved means, check the following claims:
 
 - `iss` matches the CanadaLogin discovery issuer (BLO3).
 - `aud` matches the receiving RP client ID (BLO4).
@@ -935,18 +943,13 @@ For each captured Logout Token, decode only the payload needed for the report an
 - `events` contains `http://schemas.openid.net/event/backchannel-logout` (BLO7).
 - `nonce` is absent (BLO8).
 
-Expected result: Every required claim is present and valid, and the prohibited `nonce` claim is absent.
-
-Required evidence: Redacted decoded payload, discovery JSON, RP client registration, and uniqueness comparison for `jti`.
+Expected result: Every required claim is present and valid, and the prohibited `nonce` claim is absent. Evidence is N/A per the CATS Test report; token capture is not required for sign-off.
 
 ### BLO9 - Back-channel acknowledgement status for the first RP
 
-1. Capture the HTTP response from each RP after successful Logout Token validation.
-2. Correlate the response with server logs showing validation and session revocation.
+1. Observe whether each RP returns HTTP 200 OK or HTTP 204 No Content after successful Logout Token processing.
 
-Expected result: The first registered RP returns HTTP 200 OK or HTTP 204 No Content after successful processing. Repeat for the second RP under BLO10 below.
-
-Required evidence: HTTP trace and matching RP log excerpt for each RP.
+Expected result: The first registered RP returns HTTP 200 OK or HTTP 204 No Content after successful processing. Repeat for the second RP under BLO10 below. Evidence is N/A per the CATS Test report.
 
 ### BLO2 - Back-channel logout propagates across participating RPs
 
@@ -958,47 +961,37 @@ Expected result:
 
 - Intended RPs invalidate session according to policy.
 
-Required evidence:
-
-- RP logs showing back-channel logout receipt and processing.
-- Browser verification screenshots per RP after signal.
+Evidence is N/A per the CATS Test report. Record whether the intended RP sessions are logged out; logs and screenshots are optional.
 
 ### BLO10 - Back-channel logout failure handling is visible and diagnosable
 
-1. Trigger a normal back-channel logout event for an RP that is registered for back-channel logout.
-2. Capture the RP server logs for the request window covering logout token receipt, validation, and session revocation handling.
-3. Capture the HTTP trace for the RP back-channel logout endpoint response.
-4. Confirm the RP returns HTTP 200 OK or HTTP 204 No Content after the logout token is validated and the logout handling succeeds.
+1. Trigger a normal back-channel logout event for an RP registered for back-channel logout.
+2. Observe whether the RP processes the notification and returns HTTP 200 OK or HTTP 204 No Content.
 
 Expected result:
 
 - The RP acknowledges successful back-channel logout handling with HTTP 200 or HTTP 204.
-- Server logs show the request was received and processed successfully.
-- HTTP trace and logs correspond to the same successful logout event.
+- The RP processes the request successfully and acknowledges it with HTTP 200 or HTTP 204.
 
-Required evidence:
-
-- Server log excerpts showing logout token validation/processing for the successful request.
-- HTTP trace or network capture showing the RP returned HTTP 200 or HTTP 204.
-- Short note linking the log timestamp and HTTP response to the same logout event.
+Evidence is N/A per the CATS Test report; logs and traces are optional.
 
 ### BLO11 - Session-required back-channel logout token contains sid
 
-1. Confirm the RP is registered or configured for session-required back-channel logout.
+1. Confirm whether the RP is registered or configured for session-required back-channel logout.
 2. Trigger a back-channel logout event for a session-managed login.
-3. Capture and decode the logout token payload delivered to the RP.
-4. Confirm the decoded payload contains a non-empty `sid` claim.
+3. Decode the verified Logout Token through an approved secure capture and check for a non-empty `sid` claim. Do not retain the raw token or signature.
 
 Expected result:
 
-- When session-required back-channel logout is configured, the delivered logout token contains `sid`.
-- Registration/config evidence and the decoded token payload are consistent with the same logout mode.
+- When session-required back-channel logout is configured, the delivered Logout Token contains `sid`.
+- Registration/configuration and decoded claim information correspond to the same test mode.
 
-Required evidence:
+Required evidence when session-required mode applies:
 
-- Registration screenshot or config extract showing session-required back-channel logout behavior.
-- Decoded logout token payload showing `sid`.
-- Short note linking the configuration evidence and captured logout token to the same test run.
+- Registration/configuration showing session-required back-channel logout is enabled.
+- Decoded, redacted Logout Token payload showing `sid`.
+
+If session-required mode is not configured, mark BLO11 not applicable. If it is configured but the verified claim cannot be obtained safely, mark BLO11 blocked and state why.
 
 ### BLO12 - sid/sub policy handling for session invalidation
 
@@ -1012,10 +1005,10 @@ Expected result:
 
 Required evidence:
 
-- Session mapping note before logout (session identifiers may be hashed).
-- RP session store/logs showing which session key was invalidated.
-- RP logs showing sid/sub interpretation.
-- Browser screenshots demonstrating one browser signed out while the other remains signed in (session-required mode), or all sessions signed out (non-session-required mode).
+- RP session-store/log evidence showing which session key was invalidated, with `sub`/`sid` redacted or consistently hashed.
+- Browser results showing the affected session is signed out and, when session-required mode applies, any unaffected session remains active.
+
+If the session-targeting result cannot be observed, mark BLO12 blocked and state which access or environment capability is missing. Do not retain raw subject or session identifiers.
 
 ### FLO1 - Front-channel logout does not create an open redirector (conditional)
 
@@ -1109,7 +1102,7 @@ Required evidence:
 
 ## Compact execution log
 
-Use this section while running the manual tests. Keep entries short and move final artifact paths into the sign-off record below.
+Use this section while running the manual tests. Keep entries short and move final artifact paths into the sign-off record below. In the “Evidence captured?” column, enter `N/A` for AC2, SSO1-SSO2, LO1-LO6, and BLO1-BLO10 because the CATS Test report specifies no evidence for those assertions; BLO11/BLO12 require evidence when applicable.
 
 | Assertion                  | Setup / precondition | Key observed result | Evidence captured? | Follow-up |
 | -------------------------- | -------------------- | ------------------- | ------------------ | --------- |
@@ -1127,7 +1120,7 @@ Use this section while running the manual tests. Keep entries short and move fin
 
 ## Sign-off record
 
-Fill one row per manual assertion run. Use `pass`, `fail`, `blocked`, or `not applicable` in the Outcome column. Put `automated`, `live`, or `manual` evidence-source labels in Notes rather than combining them with the outcome value.
+Fill one row per manual assertion run. Use `pass`, `fail`, `blocked`, or `not applicable` in the Outcome column. Put `automated`, `live`, or `manual` evidence-source labels in Notes rather than combining them with the outcome value. For AC2, SSO1-SSO2, LO1-LO6, and BLO1-BLO10, enter `N/A (not required)` under Artifact links/paths. BLO11/BLO12 require artifact references when applicable.
 
 | Assertion                  | Outcome (pass/fail/blocked) | Tester | Date (UTC) | Environment | Artifact links/paths | Notes |
 | -------------------------- | --------------------------- | ------ | ---------- | ----------- | -------------------- | ----- |

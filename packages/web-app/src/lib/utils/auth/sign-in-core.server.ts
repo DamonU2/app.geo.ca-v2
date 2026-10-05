@@ -262,6 +262,32 @@ function getEvidenceFingerprint(value: string | null | undefined): string | null
   return value ? createHash('sha256').update(value).digest('base64url') : null;
 }
 
+function getClientAssertionEvidence(clientAssertion: string | null, clientId: string): Record<string, unknown> | null {
+  const payloadPart = clientAssertion?.split('.')[1];
+  if (!payloadPart) {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(Buffer.from(payloadPart, 'base64url').toString('utf8')) as Record<string, unknown>;
+    const jti = typeof payload.jti === 'string' ? payload.jti : null;
+    return {
+      algorithm: 'RS256',
+      hasIss: typeof payload.iss === 'string',
+      hasSub: typeof payload.sub === 'string',
+      issMatchesClientId: payload.iss === clientId,
+      subMatchesClientId: payload.sub === clientId,
+      aud: typeof payload.aud === 'string' ? payload.aud : null,
+      exp: typeof payload.exp === 'number' ? payload.exp : null,
+      iat: typeof payload.iat === 'number' ? payload.iat : null,
+      hasJti: Boolean(jti),
+      jtiFingerprint: getEvidenceFingerprint(jti),
+    };
+  } catch {
+    return { payloadDecoded: false };
+  }
+}
+
 function logTokenExchangeEvidence(event: string, telemetry: Record<string, unknown>, details: Record<string, unknown>): void {
   if (isTokenExchangeEvidenceLoggingEnabled()) {
     console.info(`[auth/token-exchange-evidence] ${event}`, { ...telemetry, ...details });
@@ -380,6 +406,7 @@ export async function exchangeCodeForTokens(
     hasClientAssertion: Boolean(clientAssertion),
     clientAssertionFingerprint: getEvidenceFingerprint(clientAssertion),
     clientAssertionType: bodyParams.client_assertion_type ?? null,
+    clientAssertionClaims: getClientAssertionEvidence(clientAssertion, clientId),
     kid: jwtKid || null,
     x5tS256: x5tS256 || null,
     hasClientSecret: !privateKeyPem && Boolean(clientSecret),
@@ -420,8 +447,11 @@ export async function exchangeCodeForTokens(
       tokenType: tokenResponse.token_type ?? null,
       expiresIn: tokenResponse.expires_in ?? null,
       hasAccessToken: Boolean(tokenResponse.access_token),
+      accessTokenFingerprint: getEvidenceFingerprint(tokenResponse.access_token),
       hasIdToken: Boolean(tokenResponse.id_token),
+      idTokenFingerprint: getEvidenceFingerprint(tokenResponse.id_token),
       hasRefreshToken: Boolean(tokenResponse.refresh_token),
+      refreshTokenFingerprint: getEvidenceFingerprint(tokenResponse.refresh_token),
     });
     return tokenResponse;
   } catch (error) {
@@ -510,6 +540,7 @@ export async function exchangeRefreshToken(
     hasClientAssertion: Boolean(clientAssertion),
     clientAssertionFingerprint: getEvidenceFingerprint(clientAssertion),
     clientAssertionType: bodyParams.client_assertion_type ?? null,
+    clientAssertionClaims: getClientAssertionEvidence(clientAssertion, clientId),
     kid: jwtKid || null,
     x5tS256: x5tS256 || null,
     hasClientSecret: !privateKeyPem && Boolean(clientSecret),
@@ -542,8 +573,11 @@ export async function exchangeRefreshToken(
       tokenType: tokenResponse.token_type ?? null,
       expiresIn: tokenResponse.expires_in ?? null,
       hasAccessToken: Boolean(tokenResponse.access_token),
+      accessTokenFingerprint: getEvidenceFingerprint(tokenResponse.access_token),
       hasIdToken: Boolean(tokenResponse.id_token),
+      idTokenFingerprint: getEvidenceFingerprint(tokenResponse.id_token),
       hasRefreshToken: Boolean(tokenResponse.refresh_token),
+      refreshTokenFingerprint: getEvidenceFingerprint(tokenResponse.refresh_token),
     });
     return tokenResponse;
   } catch (error) {

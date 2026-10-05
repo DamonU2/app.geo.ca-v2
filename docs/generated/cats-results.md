@@ -1,6 +1,6 @@
 # CATS 3.0.2 Evidence Summary
 
-Generated at: 2026-09-24T15:26:13.495Z
+Generated at: 2026-10-01T22:48:46.442Z
 
 Deterministic run success: true
 Live smoke run present: yes
@@ -46,27 +46,27 @@ Live smoke run present: yes
 | CS-AC2 | deterministic | automated-pass | packages/web-app/src/lib/tests/sign-in-core-token-exchange.test.ts | unit-test |
 | LP1 | deterministic | automated-pass | packages/web-app/src/lib/tests/sign-in-core.test.ts | unit-test |
 | LP2 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | screenshots |
-| SSO1 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | screenshots |
-| SSO2 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | screenshots |
+| SSO1 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | not-required-cats-report |
+| SSO2 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | not-required-cats-report |
 | SF-AC1 | deterministic | automated-pass | packages/web-app/src/lib/tests/sign-in-receive-route.test.ts | route-test |
-| SF-AC2 | deterministic | automated-pass | packages/web-app/src/lib/tests/id-token-verification.test.ts | unit-test |
+| SF-AC2 | deterministic | automated-pass | packages/web-app/src/lib/tests/id-token-verification.test.ts | not-required-cats-report |
 | SF-AC3 | deterministic | automated-pass | packages/web-app/src/lib/tests/sign-in-receive-route.test.ts | route-test |
-| LO1 | deterministic | automated-pass | packages/web-app/src/lib/tests/sign-in-core.test.ts | unit-test |
-| LO2 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | browser-trace |
-| LO3 | deterministic | automated-pass | packages/web-app/src/lib/tests/sign-in-logout-route.test.ts | route-test |
-| LO4 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | multi-rp-screenshots |
-| LO5 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | multi-rp-screenshots |
-| LO6 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | multi-rp-screenshots |
-| BLO1 | deterministic | automated-pass | packages/web-app/src/lib/tests/back-channel-logout-route.test.ts | integration-test |
-| BLO2 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | multi-rp-logs |
-| BLO3 | deterministic | automated-pass | packages/web-app/src/lib/tests/back-channel-logout.test.ts | unit-test |
-| BLO4 | deterministic | automated-pass | packages/web-app/src/lib/tests/back-channel-logout.test.ts | unit-test |
-| BLO5 | deterministic | automated-pass | packages/web-app/src/lib/tests/back-channel-logout.test.ts | unit-test |
-| BLO6 | deterministic | automated-pass | packages/web-app/src/lib/tests/back-channel-logout.test.ts | unit-test |
-| BLO7 | deterministic | automated-pass | packages/web-app/src/lib/tests/back-channel-logout.test.ts | unit-test |
-| BLO8 | deterministic | automated-pass | packages/web-app/src/lib/tests/back-channel-logout.test.ts | unit-test |
-| BLO9 | deterministic | automated-pass | packages/web-app/src/lib/tests/back-channel-logout-route.test.ts | integration-test |
-| BLO10 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | multi-rp-logs |
+| LO1 | deterministic | automated-pass | packages/web-app/src/lib/tests/sign-in-core.test.ts | not-required-cats-report |
+| LO2 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | not-required-cats-report |
+| LO3 | deterministic | automated-pass | packages/web-app/src/lib/tests/sign-in-logout-route.test.ts | not-required-cats-report |
+| LO4 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | not-required-cats-report |
+| LO5 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | not-required-cats-report |
+| LO6 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | not-required-cats-report |
+| BLO1 | deterministic | automated-pass | packages/web-app/src/lib/tests/back-channel-logout-route.test.ts | not-required-cats-report |
+| BLO2 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | not-required-cats-report |
+| BLO3 | deterministic | automated-pass | packages/web-app/src/lib/tests/back-channel-logout.test.ts | not-required-cats-report |
+| BLO4 | deterministic | automated-pass | packages/web-app/src/lib/tests/back-channel-logout.test.ts | not-required-cats-report |
+| BLO5 | deterministic | automated-pass | packages/web-app/src/lib/tests/back-channel-logout.test.ts | not-required-cats-report |
+| BLO6 | deterministic | automated-pass | packages/web-app/src/lib/tests/back-channel-logout.test.ts | not-required-cats-report |
+| BLO7 | deterministic | automated-pass | packages/web-app/src/lib/tests/back-channel-logout.test.ts | not-required-cats-report |
+| BLO8 | deterministic | automated-pass | packages/web-app/src/lib/tests/back-channel-logout.test.ts | not-required-cats-report |
+| BLO9 | deterministic | automated-pass | packages/web-app/src/lib/tests/back-channel-logout-route.test.ts | not-required-cats-report |
+| BLO10 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | not-required-cats-report |
 | BLO11 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | registration-config-and-decoded-logout-token |
 | BLO12 | manual | manual-pending | docs/cats-3.0.2-manual-checklist.md | logs-and-screenshots |
 | FLO1 | deterministic | automated-pass | packages/web-app/src/lib/tests/front-channel-logout-route.test.ts | route-test |
@@ -82,5 +82,5 @@ Legend:
 - automated-not-run: No deterministic execution artifact was found for the mapped owner file.
 - live-pass/live-fail: Live smoke artifact contained a pass/fail result for that assertion.
 - live-not-run: Live smoke artifact was not available for that assertion.
-- manual-pending: Assertion requires manual execution and artifact capture.
+- manual-pending: Assertion requires manual execution; artifacts are captured only when specified by the CATS Test report.
 - implementation-gap: Assertion is tracked but not yet implemented or mapped to an executable/manual workflow.
