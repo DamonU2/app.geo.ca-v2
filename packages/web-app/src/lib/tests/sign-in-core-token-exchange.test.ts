@@ -148,6 +148,21 @@ describe('exchangeCodeForTokens', () => {
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
+  it('rejects a non-HTTPS token endpoint (DR8)', async () => {
+    getOidcConfigMock.mockReturnValue({
+      clientId: 'client-id-123',
+      clientSecret: 'client-secret-xyz',
+      customDomain: 'https://auth.example.test',
+      tokenEndpoint: 'http://tokens.example.test/custom/token',
+      jwtKid: '',
+    });
+
+    const result = await exchangeCodeForTokens('code-abc', new URL('https://app.example.test/sign-in/receive'), 'pkce-verifier-123');
+
+    expect(result).toBeNull();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
   it('returns null when token endpoint returns a non-2xx response', async () => {
     vi.stubGlobal(
       'fetch',
