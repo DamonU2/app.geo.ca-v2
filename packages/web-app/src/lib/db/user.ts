@@ -260,6 +260,21 @@ const markUserAuthRevoked = async (
 
   try {
     const hasSid = typeof sid === 'string' && sid.length > 0;
+    if (hasSid) {
+      // DynamoDB rejects overlapping paths in one expression, so the parent map is created first.
+      await docClient.send(
+        new UpdateCommand({
+          TableName: USER_TABLE_NAME,
+          Key: {
+            uuid: userKey,
+          },
+          UpdateExpression: 'SET #authRevokedSids = if_not_exists(#authRevokedSids, :emptyMap)',
+          ExpressionAttributeNames: { '#authRevokedSids': 'authRevokedSids' },
+          ExpressionAttributeValues: { ':emptyMap': {} },
+        })
+      );
+    }
+
     await docClient.send(
       new UpdateCommand({
         TableName: USER_TABLE_NAME,
@@ -267,7 +282,7 @@ const markUserAuthRevoked = async (
           uuid: userKey,
         },
         UpdateExpression: hasSid
-          ? 'SET #authRevokedSids = if_not_exists(#authRevokedSids, :emptyMap), #authRevokedSids.#sid = :authRevokedAt, lastBackChannelLogoutJti = :logoutTokenJti, lastBackChannelLogoutJtiSeenAt = :seenAt'
+          ? 'SET #authRevokedSids.#sid = :authRevokedAt, lastBackChannelLogoutJti = :logoutTokenJti, lastBackChannelLogoutJtiSeenAt = :seenAt'
           : 'SET authRevokedAt = :authRevokedAt, lastBackChannelLogoutJti = :logoutTokenJti, lastBackChannelLogoutJtiSeenAt = :seenAt',
         ConditionExpression: hasSid
           ? '(attribute_not_exists(lastBackChannelLogoutJti) OR lastBackChannelLogoutJti <> :logoutTokenJti OR attribute_not_exists(lastBackChannelLogoutJtiSeenAt) OR lastBackChannelLogoutJtiSeenAt < :replayWindowCutoff) AND (attribute_not_exists(#authRevokedSids.#sid) OR :authRevokedAt >= #authRevokedSids.#sid)'
@@ -280,7 +295,6 @@ const markUserAuthRevoked = async (
           : undefined,
         ExpressionAttributeValues: {
           ':authRevokedAt': revokedAt,
-          ':emptyMap': {},
           ':logoutTokenJti': logoutTokenJti,
           ':seenAt': nowSeconds,
           ':replayWindowCutoff': replayWindowCutoff,
@@ -299,8 +313,9 @@ const markUserAuthRevoked = async (
     }
 
     console.error('[auth/user] revoke_marker_store_failed', {
+      errorName: error instanceof Error ? error.name : null,
       error: error instanceof Error ? error.message : String(error),
-      userKey,
+      hasSid: typeof sid === 'string' && sid.length > 0,
     });
     return 'error';
   }

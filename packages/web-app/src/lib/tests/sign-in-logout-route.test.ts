@@ -154,6 +154,7 @@ describe('sign-out route redirects', () => {
     getOidcLogoutUrlMock.mockResolvedValue('https://auth.example.test/logout');
 
     const cookies = {
+      get: vi.fn().mockReturnValue(undefined),
       set: vi.fn(),
     };
 
@@ -172,5 +173,26 @@ describe('sign-out route redirects', () => {
       'en-ca',
       expect.objectContaining({ path: '/', httpOnly: true, sameSite: 'lax', secure: true, maxAge: 600 })
     );
+  });
+
+  it('passes the current id_token cookie as id_token_hint to request logout variant 4a', async () => {
+    getOidcLogoutUrlMock.mockResolvedValue('https://auth.example.test/logout');
+
+    const cookies = {
+      get: vi.fn().mockReturnValue('raw-id-token-value'),
+      set: vi.fn(),
+    };
+
+    const event = {
+      cookies,
+      params: { lang: 'en-ca' },
+      url: new URL('https://example.test/en-ca/sign-in/oidc-logout'),
+    } as unknown as Parameters<typeof loadOidcLogout>[0];
+
+    await expectRedirect(() => loadOidcLogout(event), {
+      status: 303,
+      location: 'https://auth.example.test/logout',
+    });
+    expect(getOidcLogoutUrlMock).toHaveBeenCalledWith(event.url, cookies);
   });
 });
