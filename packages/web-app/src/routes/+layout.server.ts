@@ -10,6 +10,7 @@ import frHeaderTranslations from '$lib/components/header/i18n/fr/translations.js
 import enShareTranslations from '$lib/components/share/i18n/en/translations.json';
 import frShareTranslations from '$lib/components/share/i18n/fr/translations.json';
 import { getUserData } from '$lib/db/user';
+import { getCookieDomainOptions } from '$lib/utils/auth/cookie-policy.server';
 import { isOidcConfigured } from '$lib/utils/auth/sign-in-core.server';
 import { getOidcManageUrl } from '$lib/utils/auth/oidc.server';
 import { getAppLanguage, isFrench, pickByLanguage } from '$lib/utils/language';
@@ -60,6 +61,7 @@ export const load: LayoutServerLoad = async ({ params, cookies, depends, url }) 
   if (userInfo.sessionExpired) {
     cookies.set('session_expired', '1', {
       path: '/',
+      ...getCookieDomainOptions(),
       httpOnly: true,
       sameSite: 'lax',
       secure: url.protocol === 'https:',
@@ -70,11 +72,11 @@ export const load: LayoutServerLoad = async ({ params, cookies, depends, url }) 
   // Consume the flash cookie set by a previous request so the banner only shows once.
   const sessionExpired = cookies.get('session_expired') === '1';
   if (sessionExpired) {
-    cookies.delete('session_expired', { path: '/' });
+    cookies.delete('session_expired', { path: '/', ...getCookieDomainOptions() });
   }
   const authError = cookies.get('auth_error') === 'signin_failed';
   if (authError) {
-    cookies.delete('auth_error', { path: '/' });
+    cookies.delete('auth_error', { path: '/', ...getCookieDomainOptions() });
   }
   const userDataUnavailable = userInfo.status === 'unavailable';
   const navitems = structuredClone(pickByLanguage(lang, enNavitems, frNavitems)) as NavItems;

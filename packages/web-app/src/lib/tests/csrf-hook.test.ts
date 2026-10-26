@@ -37,6 +37,17 @@ describe('hooks.server CSRF check', () => {
     expect(response.status).toBe(403);
   });
 
+  it('rejects a cross-site POST to the logout confirmation action', async () => {
+    const { response, resolve } = await runHandle('/en-ca/sign-in/oidc-logout?/confirm', {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', origin: 'https://geo.ca' },
+      body: '',
+    });
+
+    expect(resolve).not.toHaveBeenCalled();
+    expect(response.status).toBe(403);
+  });
+
   it('rejects a form POST without Origin to other routes', async () => {
     const { response, resolve } = await runHandle('/en-ca/profile', {
       method: 'POST',

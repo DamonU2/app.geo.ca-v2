@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import type { Cookies } from '@sveltejs/kit';
 import { encodeBase64Url } from '$lib/utils/auth/base64url';
 import { createClientAssertionJwt } from '$lib/utils/auth/client-assertion.server';
-import { isSecureCookieEnvironment } from '$lib/utils/auth/cookie-policy.server';
+import { getCookieDomainOptions, isSecureCookieEnvironment } from '$lib/utils/auth/cookie-policy.server';
 import {
   getOidcConfig,
   getOidcMinimalConfigOrFail,
@@ -132,6 +132,7 @@ export function isOidcConfigured(): boolean {
 function getCookieOptions(maxAge?: number): { path: string; httpOnly: true; sameSite: 'lax'; secure: boolean; maxAge?: number } {
   return {
     path: '/',
+    ...getCookieDomainOptions(),
     httpOnly: true,
     sameSite: 'lax' as const,
     // Matches session-cookie.server.ts so auth cookies and the session cookie share one secure-flag rule.
@@ -219,7 +220,7 @@ export function setOidcStateCookies(cookies: Cookies, stateToken: string, return
  */
 export function consumePkceVerifierCookie(cookies: Cookies): string | null {
   const verifier = cookies.get(PKCE_VERIFIER_COOKIE_NAME) ?? null;
-  cookies.delete(PKCE_VERIFIER_COOKIE_NAME, { path: '/' });
+  cookies.delete(PKCE_VERIFIER_COOKIE_NAME, { path: '/', ...getCookieDomainOptions() });
   return verifier;
 }
 
@@ -231,7 +232,7 @@ export function consumePkceVerifierCookie(cookies: Cookies): string | null {
  */
 export function consumeOidcNonceCookie(cookies: Cookies): string | null {
   const nonce = cookies.get(OIDC_NONCE_COOKIE_NAME) ?? null;
-  cookies.delete(OIDC_NONCE_COOKIE_NAME, { path: '/' });
+  cookies.delete(OIDC_NONCE_COOKIE_NAME, { path: '/', ...getCookieDomainOptions() });
   return nonce;
 }
 
@@ -244,8 +245,8 @@ export function consumeOidcNonceCookie(cookies: Cookies): string | null {
 export function consumeOidcStateCookies(cookies: Cookies): { stateToken: string | null; returnTo: string | null } {
   const stateToken = cookies.get(OIDC_STATE_COOKIE_NAME) ?? null;
   const returnTo = cookies.get(OIDC_RETURN_TO_COOKIE_NAME) ?? null;
-  cookies.delete(OIDC_STATE_COOKIE_NAME, { path: '/' });
-  cookies.delete(OIDC_RETURN_TO_COOKIE_NAME, { path: '/' });
+  cookies.delete(OIDC_STATE_COOKIE_NAME, { path: '/', ...getCookieDomainOptions() });
+  cookies.delete(OIDC_RETURN_TO_COOKIE_NAME, { path: '/', ...getCookieDomainOptions() });
   return { stateToken, returnTo };
 }
 

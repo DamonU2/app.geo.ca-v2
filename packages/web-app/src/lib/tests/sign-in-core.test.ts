@@ -51,6 +51,7 @@ type CookieHarness = {
   cookies: Cookies;
   deletedNames: string[];
   setOptions: Map<string, Record<string, unknown>>;
+  deleteOptions: Map<string, Record<string, unknown>>;
 };
 
 /**
@@ -63,6 +64,7 @@ function createCookieHarness(initialValues: Record<string, string> = {}): Cookie
   const values = new Map<string, string>(Object.entries(initialValues));
   const deletedNames: string[] = [];
   const setOptions = new Map<string, Record<string, unknown>>();
+  const deleteOptions = new Map<string, Record<string, unknown>>();
 
   const cookies = {
     get(name: string): string | undefined {
@@ -74,13 +76,16 @@ function createCookieHarness(initialValues: Record<string, string> = {}): Cookie
         setOptions.set(name, options);
       }
     },
-    delete(name: string): void {
+    delete(name: string, options?: Record<string, unknown>): void {
       deletedNames.push(name);
       values.delete(name);
+      if (options) {
+        deleteOptions.set(name, options);
+      }
     },
   } as unknown as Cookies;
 
-  return { cookies, deletedNames, setOptions };
+  return { cookies, deletedNames, setOptions, deleteOptions };
 }
 
 describe('sign-in-core helpers', () => {

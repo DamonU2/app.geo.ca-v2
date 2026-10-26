@@ -18,7 +18,7 @@ vi.mock('$lib/utils/auth/sign-in-core.server', () => ({
 
 import { load as loadLangLogout } from '../../routes/[lang]/sign-in/logout/+page.server';
 import { load as loadRootLogout } from '../../routes/sign-in/logout/+page.server';
-import { load as loadOidcLogout } from '../../routes/[lang]/sign-in/oidc-logout/+page.server';
+import { actions as oidcLogoutActions, load as loadOidcLogout } from '../../routes/[lang]/sign-in/oidc-logout/+page.server';
 
 /**
  * Asserts that a route loader throws a redirect matching expectations.
@@ -127,7 +127,7 @@ describe('sign-out route redirects', () => {
     expect(clearAuthCookiesMock).toHaveBeenCalledWith(cookies);
   });
 
-  it('keeps returnTo when /[lang]/sign-in/oidc-logout falls back on localhost', async () => {
+  it('renders the logout confirmation on GET without side effects', () => {
     const cookies = {
       set: vi.fn(),
     };
@@ -138,7 +138,38 @@ describe('sign-out route redirects', () => {
       url: new URL('http://localhost:8080/en-ca/sign-in/oidc-logout?returnTo=%2Fen-ca%2Ffavourites'),
     } as unknown as Parameters<typeof loadOidcLogout>[0];
 
-    await expectRedirect(() => loadOidcLogout(event), {
+    expect(loadOidcLogout(event)).toEqual({ lang: 'en-ca', returnTo: '/en-ca/favourites' });
+    expect(cookies.set).not.toHaveBeenCalled();
+    expect(getOidcLogoutUrlMock).not.toHaveBeenCalled();
+  });
+
+  it('does not expose an unsupported return target in the confirmation page', () => {
+    const event = {
+      params: { lang: 'en-ca' },
+      url: new URL('https://example.test/en-ca/sign-in/oidc-logout?returnTo=https%3A%2F%2Fevil.example'),
+    } as unknown as Parameters<typeof loadOidcLogout>[0];
+
+    expect(loadOidcLogout(event)).toEqual({ lang: 'en-ca', returnTo: null });
+  });
+
+  it('starts local logout only after the confirmation form is posted', async () => {
+    const cookies = {
+      set: vi.fn(),
+    };
+    const url = new URL('http://localhost:8080/en-ca/sign-in/oidc-logout');
+    const request = new Request(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: 'returnTo=%2Fen-ca%2Ffavourites',
+    });
+    const event = {
+      cookies,
+      params: { lang: 'en-ca' },
+      request,
+      url,
+    } as unknown as Parameters<NonNullable<typeof oidcLogoutActions.confirm>>[0];
+
+    await expectRedirect(() => oidcLogoutActions.confirm!(event), {
       status: 303,
       location: '/en-ca/sign-in/logout?returnTo=%2Fen-ca%2Ffavourites',
     });
@@ -149,7 +180,7 @@ describe('sign-out route redirects', () => {
     );
   });
 
-  it('redirects to provider logout URL when available', async () => {
+  it('starts provider logout only after the confirmation form is posted', async () => {
     vi.stubEnv('NODE_ENV', 'production');
     getOidcLogoutUrlMock.mockResolvedValue('https://auth.example.test/logout');
 
@@ -158,13 +189,20 @@ describe('sign-out route redirects', () => {
       set: vi.fn(),
     };
 
+    const url = new URL('https://example.test/en-ca/sign-in/oidc-logout');
+    const request = new Request(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: '',
+    });
     const event = {
       cookies,
       params: { lang: 'en-ca' },
-      url: new URL('https://example.test/en-ca/sign-in/oidc-logout'),
-    } as unknown as Parameters<typeof loadOidcLogout>[0];
+      request,
+      url,
+    } as unknown as Parameters<NonNullable<typeof oidcLogoutActions.confirm>>[0];
 
-    await expectRedirect(() => loadOidcLogout(event), {
+    await expectRedirect(() => oidcLogoutActions.confirm!(event), {
       status: 303,
       location: 'https://auth.example.test/logout',
     });
@@ -175,7 +213,7 @@ describe('sign-out route redirects', () => {
     );
   });
 
-  it('passes the current id_token cookie as id_token_hint to request logout variant 4a', async () => {
+  it('passes the current id_token cookie as id_token_hint after confirmation', async () => {
     getOidcLogoutUrlMock.mockResolvedValue('https://auth.example.test/logout');
 
     const cookies = {
@@ -183,13 +221,20 @@ describe('sign-out route redirects', () => {
       set: vi.fn(),
     };
 
+    const url = new URL('https://example.test/en-ca/sign-in/oidc-logout');
+    const request = new Request(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: '',
+    });
     const event = {
       cookies,
       params: { lang: 'en-ca' },
-      url: new URL('https://example.test/en-ca/sign-in/oidc-logout'),
-    } as unknown as Parameters<typeof loadOidcLogout>[0];
+      request,
+      url,
+    } as unknown as Parameters<NonNullable<typeof oidcLogoutActions.confirm>>[0];
 
-    await expectRedirect(() => loadOidcLogout(event), {
+    await expectRedirect(() => oidcLogoutActions.confirm!(event), {
       status: 303,
       location: 'https://auth.example.test/logout',
     });

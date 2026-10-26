@@ -9,7 +9,7 @@ import {
 } from '$lib/utils/auth/sign-in-core.server';
 import { getLangFromState, getPostAuthRedirect } from '$lib/utils/auth/sign-in-post-auth.server';
 import { mergeGuestFavourites } from '$lib/db/favourites';
-import { isSecureCookieEnvironment } from '$lib/utils/auth/cookie-policy.server';
+import { getCookieDomainOptions, isSecureCookieEnvironment } from '$lib/utils/auth/cookie-policy.server';
 import { verifyIdToken } from '$lib/utils/auth/id-token.server';
 import { getPrivateKeyMaterial } from '$lib/utils/auth/oidc.server';
 import { createSessionCookie } from '$lib/utils/auth/session-cookie.server';
@@ -19,6 +19,7 @@ const AUTH_ERROR_COOKIE_NAME = 'auth_error';
 function setAuthErrorCookie(cookies: Parameters<PageServerLoad>[0]['cookies']): void {
   cookies.set(AUTH_ERROR_COOKIE_NAME, 'signin_failed', {
     path: '/',
+    ...getCookieDomainOptions(),
     httpOnly: true,
     sameSite: 'lax',
     secure: isSecureCookieEnvironment(),

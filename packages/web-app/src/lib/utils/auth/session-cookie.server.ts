@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { Cookies } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { isSecureCookieEnvironment } from '$lib/utils/auth/cookie-policy.server';
+import { getCookieDomainOptions, isSecureCookieEnvironment } from '$lib/utils/auth/cookie-policy.server';
 
 export const SESSION_COOKIE_NAME = 'auth_session';
 export const SESSION_INACTIVITY_SECONDS = 60 * 60;
@@ -61,6 +61,7 @@ function writeCookie(cookies: Cookies, payload: SessionCookiePayload): void {
   const encodedPayload = encode(JSON.stringify(payload));
   cookies.set(SESSION_COOKIE_NAME, `${encodedPayload}.${sign(encodedPayload, secret)}`, {
     path: SESSION_COOKIE_PATH,
+    ...getCookieDomainOptions(),
     httpOnly: true,
     sameSite: 'lax',
     secure: isSecureCookieEnvironment(),
@@ -106,7 +107,7 @@ export function touchSessionCookie(cookies: Cookies, sub: string, sid: string | 
     nowSeconds - current.lastActivityAt > SESSION_INACTIVITY_SECONDS ||
     nowSeconds - current.sessionStartedAt > SESSION_MAXIMUM_SECONDS
   ) {
-    cookies.delete(SESSION_COOKIE_NAME, { path: SESSION_COOKIE_PATH });
+    cookies.delete(SESSION_COOKIE_NAME, { path: SESSION_COOKIE_PATH, ...getCookieDomainOptions() });
     return false;
   }
 
@@ -120,5 +121,5 @@ export function touchSessionCookie(cookies: Cookies, sub: string, sid: string | 
  * @param cookies - Request cookie jar containing the session cookie.
  */
 export function clearSessionCookie(cookies: Cookies): void {
-  cookies.delete(SESSION_COOKIE_NAME, { path: SESSION_COOKIE_PATH });
+  cookies.delete(SESSION_COOKIE_NAME, { path: SESSION_COOKIE_PATH, ...getCookieDomainOptions() });
 }

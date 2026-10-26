@@ -1,4 +1,5 @@
 import type { Cookies } from '@sveltejs/kit';
+import { getCookieDomainOptions } from '$lib/utils/auth/cookie-policy.server';
 import { clearSessionCookie } from '$lib/utils/auth/session-cookie.server';
 
 /**
@@ -8,13 +9,13 @@ import { clearSessionCookie } from '$lib/utils/auth/session-cookie.server';
  */
 export function clearAuthCookies(cookies: Cookies): void {
   clearSessionCookie(cookies);
-  cookies.delete('access_token', { path: '/' });
-  cookies.delete('id_token', { path: '/' });
-  cookies.delete('refresh_token', { path: '/' });
-  cookies.delete('pkce_verifier', { path: '/' });
-  cookies.delete('oidc_nonce', { path: '/' });
-  cookies.delete('oidc_state', { path: '/' });
-  cookies.delete('oidc_return_to', { path: '/' });
-  cookies.delete('auth_error', { path: '/' });
-  cookies.delete('post_logout_lang', { path: '/' });
+  cookies.delete('access_token', { path: '/', ...getCookieDomainOptions() });
+  cookies.delete('id_token', { path: '/', ...getCookieDomainOptions() });
+  cookies.delete('refresh_token', { path: '/', ...getCookieDomainOptions() });
+  cookies.delete('pkce_verifier', { path: '/', ...getCookieDomainOptions() });
+  cookies.delete('oidc_nonce', { path: '/', ...getCookieDomainOptions() });
+  cookies.delete('oidc_state', { path: '/', ...getCookieDomainOptions() });
+  cookies.delete('oidc_return_to', { path: '/', ...getCookieDomainOptions() });
+  cookies.delete('auth_error', { path: '/', ...getCookieDomainOptions() });
+  cookies.delete('post_logout_lang', { path: '/', ...getCookieDomainOptions() });
 }

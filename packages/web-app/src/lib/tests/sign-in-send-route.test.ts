@@ -60,7 +60,7 @@ describe('GET /[lang]/sign-in/send', () => {
     createPkceChallengeMock.mockReturnValue('pkce-challenge');
   });
 
-  it('redirects to language fallback when sign-in URL cannot be created', async () => {
+  it('redirects to localized favourites when sign-in URL cannot be created', async () => {
     getSignInUrlMock.mockReturnValue(null);
 
     const event = {
@@ -69,9 +69,23 @@ describe('GET /[lang]/sign-in/send', () => {
       url: new URL('https://example.test/en-ca/sign-in/send'),
     } as unknown as Parameters<typeof load>[0];
 
-    await expect(load(event)).rejects.toMatchObject({ status: 303, location: '/en-ca/map-browser' });
+    await expect(load(event)).rejects.toMatchObject({ status: 303, location: '/en-ca/favourites' });
     expect(setPkceVerifierCookieMock).not.toHaveBeenCalled();
     expect(setOidcNonceCookieMock).not.toHaveBeenCalled();
+  });
+
+  it('stores localized favourites as the default successful sign-in destination', async () => {
+    getSignInUrlMock.mockReturnValue('https://auth.example.test/oauth2/authorize?x=1');
+
+    const cookies = {} as never;
+    const event = {
+      cookies,
+      params: { lang: 'fr-ca' },
+      url: new URL('https://example.test/fr-ca/sign-in/send'),
+    } as unknown as Parameters<typeof load>[0];
+
+    await expect(load(event)).rejects.toMatchObject({ status: 303, location: 'https://auth.example.test/oauth2/authorize?x=1' });
+    expect(setOidcStateCookiesMock).toHaveBeenCalledWith(cookies, 'oidc-state-token', '/fr-ca/favourites');
   });
 
   it('sets one-time cookies and redirects to provider URL when configured', async () => {

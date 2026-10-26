@@ -2,7 +2,6 @@
   import { resolve } from '$app/paths';
   import { slide } from 'svelte/transition';
   import { page } from '$app/state';
-  import { onMount } from 'svelte';
   import { pickByLanguage } from '$lib/utils/language';
   import { FAVOURITES_STORAGE_KEY } from '$lib/utils/favourites-storage';
   import { encodeGuestFavouritesCookieValue, GUEST_FAVOURITES_COOKIE_NAME } from '$lib/utils/guest-favourites';
@@ -30,23 +29,11 @@
   });
 
   let showLeavingNotice = $state(false);
-  let showSignOutConfirmation = $state(false);
   const signOutHref = $derived(
     shouldReturnToFavourites
       ? resolve(`/${lang}/sign-in/oidc-logout?returnTo=${encodeURIComponent(`/${lang}/favourites`)}`)
       : resolve(`/${lang}/sign-in/oidc-logout`)
   );
-
-  onMount(() => {
-    const handleEscape = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') {
-        showSignOutConfirmation = false;
-      }
-    };
-
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  });
 
   /**
    * Temporarily stores guest favourites before redirecting to sign-in,
@@ -63,7 +50,7 @@
   }
 
   /**
-   * Starts sign-in and preserves the current URL in state for return navigation.
+   * Starts sign-in; the launcher defaults successful sign-in to localized favourites.
    */
   function handleSignInClick(): void {
     if (showLeavingNotice) {
@@ -72,17 +59,11 @@
 
     showLeavingNotice = true;
     cacheGuestFavouritesForMerge();
-    const state = encodeURIComponent(page.url.href);
 
     // Keep behavior aligned with other leaving notices before redirect.
     setTimeout(() => {
-      window.location.href = `/${lang}/sign-in/send?state=${state}`;
+      window.location.href = `/${lang}/sign-in/launch`;
     }, 300);
-  }
-
-  function handleSignOutClick(event: MouseEvent): void {
-    event.preventDefault();
-    showSignOutConfirmation = true;
   }
 </script>
 
@@ -101,7 +82,6 @@
           transition:slide
           data-sveltekit-reload
           href={signOutHref}
-          onclick={handleSignOutClick}
           class={['button-signin', light ? 'button-action-light' : 'button-action-dark']}
         >
           {signOutText}
@@ -123,49 +103,4 @@
 
 {#if showLeavingNotice}
   <LeavingNotice />
-{/if}
-
-{#if showSignOutConfirmation}
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-    role="presentation"
-    onclick={(event) => {
-      if (event.target === event.currentTarget) {
-        showSignOutConfirmation = false;
-      }
-    }}
-  >
-    <dialog
-      open
-      class="static m-0 w-full max-w-lg rounded border border-custom-16 bg-white p-6 shadow-lg"
-      aria-modal="true"
-      aria-labelledby="sign-out-title"
-    >
-      <button
-        class="float-right text-2xl leading-none"
-        type="button"
-        aria-label={pickByLanguage(lang, 'Close', 'Fermer')}
-        onclick={() => (showSignOutConfirmation = false)}
-      >
-        &times;
-      </button>
-      <h2 id="sign-out-title" class="mb-3 text-xl font-bold">
-        {pickByLanguage(lang, 'Are you sure you want to sign out?', 'Voulez-vous vraiment vous déconnecter?')}
-      </h2>
-      <p class="mb-4">
-        {pickByLanguage(
-          lang,
-          'Make sure you have saved all your work before you sign out.',
-          'Assurez-vous d’avoir sauvegardé tout votre travail avant de vous déconnecter.'
-        )}
-      </p>
-      <div class="flex flex-wrap gap-3">
-        <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-        <a href={signOutHref} class="button-action-dark rounded px-4 py-2">{signOutText}</a>
-        <button class="button-action-light rounded px-4 py-2" onclick={() => (showSignOutConfirmation = false)}>
-          {pickByLanguage(lang, 'Cancel', 'Annuler')}
-        </button>
-      </div>
-    </dialog>
-  </div>
 {/if}

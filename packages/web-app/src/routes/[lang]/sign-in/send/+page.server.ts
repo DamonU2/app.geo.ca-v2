@@ -30,7 +30,7 @@ export const load: PageServerLoad = async ({ cookies, params, url }: Parameters<
     });
   }
 
-  const fallbackPath = `/${params.lang}/map-browser`;
+  const fallbackPath = `/${params.lang}/favourites`;
   const returnTo = url.searchParams.get('state') ?? fallbackPath;
   const pkceVerifier = createPkceVerifier();
   const oidcNonce = createOidcNonce();

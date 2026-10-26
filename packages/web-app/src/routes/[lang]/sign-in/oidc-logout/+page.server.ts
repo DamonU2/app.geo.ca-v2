@@ -1,44 +1,52 @@
-import type { PageServerLoad } from './$types';
+import type { Actions, PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
 import { getOidcLogoutUrl } from '$lib/utils/auth/sign-in-core.server';
-import { isSecureCookieEnvironment } from '$lib/utils/auth/cookie-policy.server';
+import { getCookieDomainOptions, isSecureCookieEnvironment } from '$lib/utils/auth/cookie-policy.server';
 import { isLocalhostUrl } from '$lib/utils/auth/oidc.server';
+import { getAppLanguage } from '$lib/utils/language';
 
 /**
- * Redirects to the provider logout endpoint when available,
- * otherwise falls back to local sign-out.
- *
- * In local development (`localhost`/`127.0.0.1`), provider logout is skipped
- * to avoid back-channel logout failures against non-public callback URLs.
+ * Renders the confirmation page without changing the user's authentication state.
  *
  * @param event - SvelteKit load event containing URL and language params.
- * @returns Redirect response to provider logout URL or local logout path.
+ * @returns Confirmation data and a safe local return path.
  */
-export const load: PageServerLoad = async ({ url, params, cookies }: Parameters<PageServerLoad>[0]): Promise<void> => {
-  const isLocalhost = isLocalhostUrl(url.href);
-  const returnTo = url.searchParams.get('returnTo');
-  const localLogoutPath = returnTo
-    ? `/${params.lang}/sign-in/logout?returnTo=${encodeURIComponent(returnTo)}`
-    : `/${params.lang}/sign-in/logout`;
+export const load: PageServerLoad = ({ url, params }) => {
+  const lang = getAppLanguage(params.lang);
+  return {
+    lang,
+    returnTo: url.searchParams.get('returnTo') === `/${lang}/favourites` ? `/${lang}/favourites` : null,
+  };
+};
 
-  // The provider returns to the registered root callback, so bridge the localized route's
-  // language through a short-lived cookie instead of adding arbitrary redirect URLs.
-  cookies.set('post_logout_lang', params.lang, {
-    path: '/',
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: isSecureCookieEnvironment(),
-    maxAge: 600,
-  });
+export const actions: Actions = {
+  confirm: async ({ cookies, params, request, url }) => {
+    const formData = await request.formData();
+    const requestedReturnTo = formData.get('returnTo');
+    const returnTo = requestedReturnTo === `/${params.lang}/favourites` ? requestedReturnTo : null;
+    const localLogoutPath = returnTo
+      ? `/${params.lang}/sign-in/logout?returnTo=${encodeURIComponent(returnTo)}`
+      : `/${params.lang}/sign-in/logout`;
 
-  if (isLocalhost) {
-    throw redirect(303, localLogoutPath);
-  }
+    // Set the callback locale only after the user confirms logout.
+    cookies.set('post_logout_lang', params.lang, {
+      path: '/',
+      ...getCookieDomainOptions(),
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isSecureCookieEnvironment(),
+      maxAge: 600,
+    });
 
-  const oidcLogoutUrl = await getOidcLogoutUrl(url, cookies);
-  if (!oidcLogoutUrl) {
-    throw redirect(303, localLogoutPath);
-  }
+    if (isLocalhostUrl(url.href)) {
+      throw redirect(303, localLogoutPath);
+    }
 
-  throw redirect(303, oidcLogoutUrl);
+    const oidcLogoutUrl = await getOidcLogoutUrl(url, cookies);
+    if (!oidcLogoutUrl) {
+      throw redirect(303, localLogoutPath);
+    }
+
+    throw redirect(303, oidcLogoutUrl);
+  },
 };
