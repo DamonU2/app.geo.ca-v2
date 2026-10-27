@@ -119,6 +119,7 @@ export default $config({
         OIDC_PRIVATE_KEY_SECRET_ID: env.oidcPrivateKeySecretId,
         OIDC_REQUESTED_SCOPES: env.oidcRequestedScopes,
         SESSION_COOKIE_SECRET: env.sessionCookieSecret,
+        // TODO: Use a staging-only parent domain after the staging app hostname moves off *.geo.ca.
         AUTH_COOKIE_DOMAIN: isProduction || isStaging ? "geo.ca" : "",
         OIDC_MANAGE_BASE_URL: env.oidcManageBaseUrl,
         OIDC_USE_PRIVATE_KEY_JWT: String(usePrivateKeyJwt),

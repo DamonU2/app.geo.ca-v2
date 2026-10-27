@@ -83,7 +83,6 @@
  * - tone: button-tone-*
  * - semantic variants: button-action-*, button-utility-*, button-search-*, button-menu, button-signin
  * - modifiers: button-width-mobile-full, button-inline-desktop, button-action-remove, button-icon, button-favourite
- * - non-button visual shells: surface-action-*
  */
 .button-tone-dark,
 .button-menu,
@@ -106,8 +105,7 @@
 }
 
 .button-action-light,
-.button-utility-light,
-.surface-action-light {
+.button-utility-light {
   @apply bg-custom-1;
   @apply border-custom-16;
   @apply text-custom-16;
@@ -135,16 +133,14 @@
 .button-action-dark,
 .button-search-dark,
 .button-utility-dark,
-.button-utility-light,
-.surface-action-light {
+.button-utility-light {
   @apply font-noto-sans;
   @apply font-semibold;
   @apply text-[16px];
 }
 
 .button-action-light,
-.button-action-dark,
-.surface-action-light {
+.button-action-dark {
   @apply rounded;
   @apply px-6;
   @apply py-2;

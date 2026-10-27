@@ -6,6 +6,12 @@ import { getAwsRegion } from '$lib/utils/aws-region';
 // Configuration constants
 const BUCKET_NAME = process.env.VITE_BUCKET_NAME || process.env.BUCKET_NAME;
 
+/**
+ * Returns the configured bucket name or reports a missing configuration.
+ *
+ * @returns Name of the S3 bucket containing records.
+ * @throws {Error} If neither supported bucket environment variable is set.
+ */
 function getBucketName(): string {
   if (!BUCKET_NAME) {
     throw new Error('Environment variable BUCKET_NAME is not set');

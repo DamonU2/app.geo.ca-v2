@@ -3,8 +3,11 @@ import type { Cookies } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { getCookieDomainOptions, isSecureCookieEnvironment } from '$lib/utils/auth/cookie-policy.server';
 
+/** Name of the signed, server-owned authentication session cookie. */
 export const SESSION_COOKIE_NAME = 'auth_session';
+/** Maximum permitted idle time before an authentication session expires, in seconds. */
 export const SESSION_INACTIVITY_SECONDS = 60 * 60;
+/** Maximum lifetime of an authentication session, regardless of activity, in seconds. */
 export const SESSION_MAXIMUM_SECONDS = 12 * 60 * 60;
 
 const SESSION_COOKIE_PATH = '/';
@@ -16,18 +19,43 @@ type SessionCookiePayload = {
   lastActivityAt: number;
 };
 
+/**
+ * Reads the secret used to sign session-cookie payloads.
+ *
+ * @returns Configured signing secret, or null when none is available.
+ */
 function getSessionSecret(): string | null {
   return env.SESSION_COOKIE_SECRET ?? process.env.SESSION_COOKIE_SECRET ?? null;
 }
 
+/**
+ * Encodes a string as unpadded base64url.
+ *
+ * @param value - Text to encode.
+ * @returns Base64url-encoded text.
+ */
 function encode(value: string): string {
   return Buffer.from(value, 'utf8').toString('base64url');
 }
 
+/**
+ * Computes the HMAC signature for an encoded session payload.
+ *
+ * @param payload - Encoded payload to sign.
+ * @param secret - Session-cookie signing secret.
+ * @returns Base64url-encoded SHA-256 HMAC.
+ */
 function sign(payload: string, secret: string): string {
   return createHmac('sha256', secret).update(payload).digest('base64url');
 }
 
+/**
+ * Verifies and parses a signed session-cookie value.
+ *
+ * @param value - Cookie value containing the encoded payload and signature.
+ * @param secret - Session-cookie signing secret.
+ * @returns Valid session payload, or null when the signature or payload is invalid.
+ */
 function readPayload(value: string, secret: string): SessionCookiePayload | null {
   const [encodedPayload, encodedSignature] = value.split('.');
   if (!encodedPayload || !encodedSignature) return null;
@@ -54,6 +82,12 @@ function readPayload(value: string, secret: string): SessionCookiePayload | null
   }
 }
 
+/**
+ * Writes a signed session payload using the shared authentication-cookie policy.
+ *
+ * @param cookies - Request cookie jar in which to set the cookie.
+ * @param payload - Session state to sign and store.
+ */
 function writeCookie(cookies: Cookies, payload: SessionCookiePayload): void {
   const secret = getSessionSecret();
   if (!secret) return;
@@ -93,7 +127,7 @@ export function createSessionCookie(cookies: Cookies, sub: string, sid: string |
  * @param sub - Verified subject identifier from the current ID token.
  * @param sid - Optional verified CanadaLogin session identifier.
  * @param nowSeconds - Server timestamp in epoch seconds.
- * @returns True when the session is valid and within both guide limits.
+ * @returns True when the session is valid and within both inactivity and lifetime limits.
  */
 export function touchSessionCookie(cookies: Cookies, sub: string, sid: string | null, nowSeconds = Math.floor(Date.now() / 1000)): boolean {
   const secret = getSessionSecret();

@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { getToken } from '$lib/utils/auth/parse-jwt';
 import { getAwsRegion } from '$lib/utils/aws-region';
 import type { UserInfo, UserData, TokenResponse } from './db-types';
@@ -187,9 +187,9 @@ const getUserData = async (cookies: Cookies): Promise<UserInfo> => {
 };
 
 /**
- * Stores user data in the database.
+ * Updates user-managed profile data without replacing authentication revocation markers.
  *
- * @param data - The user data to store.
+ * @param data - User-managed favourites and map configuration fields to update.
  * @param cookies - The cookies object containing user session data.
  * @returns A promise that resolves to the result of the operation.
  */
@@ -202,13 +202,34 @@ const putUserData = async (data: Partial<UserData>, cookies: Cookies): Promise<R
     return { ok: false };
   }
 
-  data.uuid = userKey;
+  const expressionParts: string[] = [];
+  const expressionAttributeNames: Record<string, string> = {};
+  const expressionAttributeValues: Record<string, unknown> = {};
+
+  if (data.favourites !== undefined) {
+    expressionParts.push('#favourites = :favourites');
+    expressionAttributeNames['#favourites'] = 'favourites';
+    expressionAttributeValues[':favourites'] = data.favourites;
+  }
+
+  if (data.mapConfigs !== undefined) {
+    expressionParts.push('#mapConfigs = :mapConfigs');
+    expressionAttributeNames['#mapConfigs'] = 'mapConfigs';
+    expressionAttributeValues[':mapConfigs'] = data.mapConfigs;
+  }
+
+  if (expressionParts.length === 0) {
+    return { ok: false };
+  }
 
   try {
     await docClient.send(
-      new PutCommand({
+      new UpdateCommand({
         TableName: USER_TABLE_NAME,
-        Item: data,
+        Key: { uuid: userKey },
+        UpdateExpression: `SET ${expressionParts.join(', ')}`,
+        ExpressionAttributeNames: expressionAttributeNames,
+        ExpressionAttributeValues: expressionAttributeValues,
       })
     );
     return { ok: true };

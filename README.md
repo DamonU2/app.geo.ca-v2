@@ -162,8 +162,10 @@ If you store this JSON directly in Secrets Manager, keep embedded newlines escap
   OIDC_JWT_KID=<your-jwt-key-id>
   OIDC_PRIVATE_KEY_SECRET_ID=<stage>/oidc/private-key
   OIDC_USE_PRIVATE_KEY_JWT=true
+  SESSION_COOKIE_SECRET=<unique-random-secret-for-this-stage>
   ```
 
+  - `SESSION_COOKIE_SECRET` is required for staging and production. Generate a unique value for each stage (for example, `openssl rand -base64 32`) and provide it through the stage environment; never commit the value.
   - `OIDC_CLIENT_SECRET` is optional when `private_key_jwt` is enabled and key material is configured.
   - `OIDC_TOKEN_ENDPOINT` is optional; defaults to `<OIDC_CUSTOM_DOMAIN>/oauth2/token`. Set this when your provider requires a different token endpoint path (e.g., `/v1.0/endpoint/default/token`).
   - `OIDC_JWT_KID` (Key ID) is optional; when provided, it's included in the JWT header to help the provider identify the signing key (e.g., `staging-nrcan-geoca-signer`).
@@ -175,7 +177,7 @@ If you store this JSON directly in Secrets Manager, keep embedded newlines escap
 5. **Deploy**:
 
 ```bash
-npx sst deploy --stage prod
+npx sst deploy --stage production
 ```
 
 The Lambda execution role receives automatic permission to read the secret from Secrets Manager.

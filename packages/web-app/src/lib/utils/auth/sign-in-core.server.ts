@@ -45,6 +45,12 @@ type OAuthTokenResponse = {
   token_type?: string;
 };
 
+/**
+ * Extracts standard OAuth error fields from a token endpoint response.
+ *
+ * @param response - Unsuccessful token endpoint response.
+ * @returns Parsed error fields, or an empty object when the body is not valid JSON.
+ */
 async function getTokenErrorDetails(response: Response): Promise<Record<string, unknown>> {
   try {
     const errorBody = (await response.json()) as { error?: unknown; error_description?: unknown };

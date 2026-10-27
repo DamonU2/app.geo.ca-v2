@@ -69,6 +69,12 @@ interface SemanticSearchParams {
 
 type SearchMode = 'classic' | 'semantic';
 
+/**
+ * Loads localized search results, user favourites, and page metadata.
+ *
+ * @param event - SvelteKit load event containing search parameters and request context.
+ * @returns Search result data required by the map-browser page.
+ */
 export const load: PageServerLoad = async ({ request, fetch, params, url, cookies }) => {
   const lang = getAppLanguage(params.lang);
   const searchMode: SearchMode = url.searchParams.get('searchMethod') === 'classic' || !SEMANTIC_SEARCH_URL ? 'classic' : 'semantic';
@@ -352,6 +358,9 @@ function getMax(searchParams: URLSearchParams): number {
   return ret;
 }
 
+/**
+ * Exposes the map-browser favourite add and remove form actions.
+ */
 export const actions = {
   addToFavourites: addToFavourites,
   removeFromFavourites: removeFromFavourites,

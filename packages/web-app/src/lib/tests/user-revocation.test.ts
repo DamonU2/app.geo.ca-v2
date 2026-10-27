@@ -3,8 +3,9 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { docSendMock } = vi.hoisted(() => ({
+const { docSendMock, getTokenMock } = vi.hoisted(() => ({
   docSendMock: vi.fn(),
+  getTokenMock: vi.fn(),
 }));
 
 vi.mock('@aws-sdk/client-dynamodb', () => ({
@@ -25,7 +26,6 @@ vi.mock('@aws-sdk/lib-dynamodb', () => {
       from: vi.fn(() => ({ send: docSendMock })),
     },
     GetCommand: class {},
-    PutCommand: class {},
     UpdateCommand,
   };
 });
@@ -35,7 +35,7 @@ vi.mock('$lib/utils/aws-region', () => ({
 }));
 
 vi.mock('$lib/utils/auth/parse-jwt', () => ({
-  getToken: vi.fn(),
+  getToken: getTokenMock,
 }));
 
 vi.mock('$lib/utils/auth/auth-cookies', () => ({
@@ -46,7 +46,34 @@ vi.mock('$env/static/private', () => ({
   USER_TABLE_NAME: 'users-table',
 }));
 
-import { markUserAuthRevoked } from '$lib/db/user';
+import type { Cookies } from '@sveltejs/kit';
+import { getToken } from '$lib/utils/auth/parse-jwt';
+import { markUserAuthRevoked, putUserData } from '$lib/db/user';
+
+describe('putUserData', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('updates profile fields without replacing authentication revocation attributes', async () => {
+    vi.mocked(getToken).mockResolvedValue({ ok: true, value: { sub: 'user-123' } });
+    docSendMock.mockResolvedValueOnce({});
+
+    await expect(putUserData({ uuid: 'user-123', favourites: ['record-1'], mapConfigs: [] }, {} as Cookies)).resolves.toEqual({ ok: true });
+
+    const command = docSendMock.mock.calls[0]?.[0] as { input?: Record<string, unknown> };
+    expect(command.input?.UpdateExpression).toBe('SET #favourites = :favourites, #mapConfigs = :mapConfigs');
+    expect(command.input?.Key).toEqual({ uuid: 'user-123' });
+    expect(command.input?.ExpressionAttributeNames).toEqual({
+      '#favourites': 'favourites',
+      '#mapConfigs': 'mapConfigs',
+    });
+    expect(command.input?.ExpressionAttributeValues).toEqual({
+      ':favourites': ['record-1'],
+      ':mapConfigs': [],
+    });
+  });
+});
 
 describe('markUserAuthRevoked', () => {
   beforeEach(() => {

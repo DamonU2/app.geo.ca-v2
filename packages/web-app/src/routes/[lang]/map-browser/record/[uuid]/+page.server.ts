@@ -31,6 +31,12 @@ type AnalyticsSummary = {
   all?: string;
 };
 
+/**
+ * Loads a record and its related metadata for the localized record page.
+ *
+ * @param event - SvelteKit load event containing the record UUID and request context.
+ * @returns Record details, related items, and localized page metadata.
+ */
 export const load: PageServerLoad = async ({ request, fetch, params, url, cookies }) => {
   const appLang = getAppLanguage(params.lang);
   const lang = appLang === 'en-ca' ? 'en' : 'fr';

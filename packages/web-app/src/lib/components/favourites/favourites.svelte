@@ -379,10 +379,8 @@
           {resourceListEmpty}
         </p>
 
-        <a class="block m-auto w-fit mt-5" href={resolve(`/${lang}/map-browser`)}>
-          <div class="surface-action-light surface-shadow w-fit">
-            {findAResource}
-          </div>
+        <a class="button-action-dark button-cta-link-dark block m-auto mt-5" href={resolve(`/${lang}/map-browser`)}>
+          {findAResource}
         </a>
       </div>
     {/if}

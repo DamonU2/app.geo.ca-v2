@@ -1,3 +1,4 @@
+/** Browser storage key used for the user's locally saved favourite IDs. */
 export const FAVOURITES_STORAGE_KEY = 'FavouritesResources';
 
 /**

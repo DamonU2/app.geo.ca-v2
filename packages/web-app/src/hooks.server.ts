@@ -7,6 +7,13 @@ const CSRF_EXEMPT_PATHS = new Set(['/sign-in/back-channel-logout']);
 const FORM_CONTENT_TYPES = ['application/x-www-form-urlencoded', 'multipart/form-data', 'text/plain'];
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+/**
+ * Detects unsafe browser form submissions that do not originate from this site.
+ *
+ * @param request - Incoming request to inspect.
+ * @param url - Parsed request URL used to determine the expected origin and path.
+ * @returns True when the request is a cross-site form submission that should be rejected.
+ */
 function isForbiddenCrossSiteFormRequest(request: Request, url: URL): boolean {
   if (!UNSAFE_METHODS.has(request.method) || CSRF_EXEMPT_PATHS.has(url.pathname)) {
     return false;
@@ -20,6 +27,13 @@ function isForbiddenCrossSiteFormRequest(request: Request, url: URL): boolean {
   return request.headers.get('origin') !== url.origin;
 }
 
+/**
+ * Applies request protections and legacy URL redirects before resolving a route.
+ *
+ * @param event - SvelteKit request event.
+ * @param resolve - SvelteKit route resolver.
+ * @returns The resolved response, or a redirect/forbidden response.
+ */
 export const handle: Handle = async ({ event, resolve }) => {
   const url = new URL(event.request.url);
 

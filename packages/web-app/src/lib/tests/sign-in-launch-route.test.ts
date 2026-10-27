@@ -18,10 +18,7 @@ describe('GET /[lang]/sign-in/launch', () => {
 
   it('preserves a same-origin localized return state', () => {
     expect(
-      loadLaunch(
-        'en-ca',
-        'https://app.geo.ca/en-ca/sign-in/launch?state=https%3A%2F%2Fapp.geo.ca%2Fen-ca%2Ffavourites%3Ftab%3Dmaps'
-      )
+      loadLaunch('en-ca', 'https://app.geo.ca/en-ca/sign-in/launch?state=https%3A%2F%2Fapp.geo.ca%2Fen-ca%2Ffavourites%3Ftab%3Dmaps')
     ).toEqual({
       lang: 'en-ca',
       signInUrl: '/en-ca/sign-in/send?state=https%3A%2F%2Fapp.geo.ca%2Fen-ca%2Ffavourites%3Ftab%3Dmaps',
@@ -29,9 +26,7 @@ describe('GET /[lang]/sign-in/launch', () => {
   });
 
   it('rejects a return state on another origin', () => {
-    expect(
-      loadLaunch('en-ca', 'https://app.geo.ca/en-ca/sign-in/launch?state=https%3A%2F%2Fevil.example%2F')
-    ).toEqual({
+    expect(loadLaunch('en-ca', 'https://app.geo.ca/en-ca/sign-in/launch?state=https%3A%2F%2Fevil.example%2F')).toEqual({
       lang: 'en-ca',
       signInUrl: '/en-ca/sign-in/send?state=https%3A%2F%2Fapp.geo.ca%2Fen-ca%2Ffavourites',
     });

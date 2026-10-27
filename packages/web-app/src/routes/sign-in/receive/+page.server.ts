@@ -16,6 +16,11 @@ import { createSessionCookie } from '$lib/utils/auth/session-cookie.server';
 
 const AUTH_ERROR_COOKIE_NAME = 'auth_error';
 
+/**
+ * Sets a short-lived marker so the localized page can display a sign-in failure.
+ *
+ * @param cookies - Request cookie jar used to store the marker.
+ */
 function setAuthErrorCookie(cookies: Parameters<PageServerLoad>[0]['cookies']): void {
   cookies.set(AUTH_ERROR_COOKIE_NAME, 'signin_failed', {
     path: '/',
@@ -43,6 +48,13 @@ export const load: PageServerLoad = async ({ cookies, url }: Parameters<PageServ
   const lang = getLangFromState(returnTo ?? callbackState);
   const fallbackPath = `/${lang}/map-browser`;
 
+  /**
+   * Marks the failed callback and redirects to the localized sign-in fallback.
+   *
+   * @param reason - Failure reason used for non-production diagnostics.
+   * @param details - Optional safe diagnostic context.
+   * @throws Redirects to the localized map-browser page.
+   */
   function failAuth(reason: string, details?: Record<string, unknown>): never {
     setAuthErrorCookie(cookies);
     if (isNonProd) {

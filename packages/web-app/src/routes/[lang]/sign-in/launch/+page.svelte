@@ -18,6 +18,8 @@
     <p role="status" aria-live="polite" class="mb-4">
       {pickByLanguage(data.lang, 'Redirecting to sign in...', 'Redirection vers la connexion...')}
     </p>
+    <!-- The server constructs this localized route, including its preserved sign-in state. -->
+    <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
     <a href={data.signInUrl} class="button-action-dark rounded px-4 py-2">
       {pickByLanguage(data.lang, 'Continue', 'Continuer')}
     </a>

@@ -12,6 +12,12 @@ import frSortOptionsSemantic from '$lib/components/search-results/i18n/fr/sort-o
 import { formatNumber } from '$lib/utils/format-number';
 import { getAppLanguage, pickByLanguage } from '$lib/utils/language';
 
+/**
+ * Prepares localized labels, filters, and pagination text for search results.
+ *
+ * @param event - Client load event containing server data and current URL.
+ * @returns Search data enriched with localized presentation values.
+ */
 export const load: PageLoad = ({ params, data, url }) => {
   const searchMode = data.searchMode ? (data.searchMode as 'classic' | 'semantic') : 'semantic';
   const lang = getAppLanguage(params.lang);

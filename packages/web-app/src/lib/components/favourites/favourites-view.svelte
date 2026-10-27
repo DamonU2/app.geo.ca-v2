@@ -270,11 +270,7 @@
 >
   {#if !loading}
     {#if selectedMapConfig || selectedIds.length > 0}
-      <MycartMap
-        layerIds={selectedIds}
-        mapConfig={selectedMapConfig?.config ?? null}
-        bind:this={mapComponent}
-      />
+      <MycartMap layerIds={selectedIds} mapConfig={selectedMapConfig?.config ?? null} bind:this={mapComponent} />
     {:else if userDataUnavailable && viewSource === 'maps'}
       <div class="status-alert-error font-custom-style-body-1" role="status" aria-live="polite">
         {savedDataUnavailable}
@@ -298,14 +294,20 @@
       {/if}
       <div class="flex flex-wrap gap-3 mt-5 mb-5">
         {#if signedIn}
-          <button class="button-inline-desktop button-action-dark surface-shadow button-width-mobile-full" onclick={handleGoToDatasetsClick}>
+          <button
+            class="button-inline-desktop button-action-dark surface-shadow button-width-mobile-full"
+            onclick={handleGoToDatasetsClick}
+          >
             {goToDatasetsLabel}
           </button>
           <button class="button-inline-desktop button-action-dark surface-shadow button-width-mobile-full" onclick={handleGoToMapsClick}>
             {goToMapsLabel}
           </button>
         {:else}
-          <button class="button-inline-desktop button-action-dark surface-shadow button-width-mobile-full" onclick={handleReturnToListClick}>
+          <button
+            class="button-inline-desktop button-action-dark surface-shadow button-width-mobile-full"
+            onclick={handleReturnToListClick}
+          >
             {returnToList}
           </button>
         {/if}
@@ -316,7 +318,10 @@
           </button>
         {/if}
         {#if selectedMapConfig || selectedIds.length > 0}
-          <button class="button-inline-desktop button-action-light surface-shadow button-width-mobile-full" onclick={handleEnterPresentationMode}>
+          <button
+            class="button-inline-desktop button-action-light surface-shadow button-width-mobile-full"
+            onclick={handleEnterPresentationMode}
+          >
             {presentationModeLabel}
           </button>
         {/if}

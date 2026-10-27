@@ -24,6 +24,9 @@
   const lang = page.data.lang?.slice(0, 2) ?? 'en';
 
   // The browser never receives the refresh token; the server reads the HTTP-only cookie.
+  /**
+   * Refreshes the server-managed session or sends the user to logout if it has expired.
+   */
   async function staySignedIn(): Promise<void> {
     if (sessionRefreshPending) return;
     sessionRefreshPending = true;
@@ -41,6 +44,11 @@
     }
   }
 
+  /**
+   * Treats Escape as confirmation to keep the current session active.
+   *
+   * @param event - Keyboard event from the session warning.
+   */
   function handleSessionWarningKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -48,6 +56,11 @@
     }
   }
 
+  /**
+   * Treats a click outside the warning dialog as confirmation to stay signed in.
+   *
+   * @param event - Click event on the warning backdrop.
+   */
   function handleSessionWarningBackdropClick(event: MouseEvent): void {
     if (event.target === event.currentTarget) {
       void staySignedIn();

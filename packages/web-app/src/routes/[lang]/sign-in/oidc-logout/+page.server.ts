@@ -19,6 +19,9 @@ export const load: PageServerLoad = ({ url, params }) => {
   };
 };
 
+/**
+ * Defines the logout form actions; the confirm action begins logout only after user consent.
+ */
 export const actions: Actions = {
   confirm: async ({ cookies, params, request, url }) => {
     const formData = await request.formData();

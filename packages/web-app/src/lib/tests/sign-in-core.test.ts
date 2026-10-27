@@ -191,7 +191,6 @@ describe('sign-in-core helpers', () => {
   });
 
   it('creates unique PKCE verifiers and nonces', () => {
-    ``;
     expect(createPkceVerifier()).not.toBe(createPkceVerifier());
     expect(createOidcNonce()).not.toBe(createOidcNonce());
   });

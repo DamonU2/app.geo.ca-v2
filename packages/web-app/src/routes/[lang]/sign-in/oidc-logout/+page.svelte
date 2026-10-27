@@ -5,7 +5,6 @@
   let { data } = $props();
 
   const title = $derived(pickByLanguage(data.lang, 'Are you sure you want to sign out?', 'Voulez-vous vraiment vous déconnecter?'));
-  const fallbackUrl = $derived(resolve(`/${data.lang}/map-browser`));
 
   function handleCancel(event: MouseEvent): void {
     if (window.history.length > 1) {
@@ -38,7 +37,7 @@
           {pickByLanguage(data.lang, 'Sign out', 'Se déconnecter')}
         </button>
       </form>
-      <a href={fallbackUrl} onclick={handleCancel} class="button-action-light rounded px-4 py-2">
+      <a href={resolve(`/${data.lang}/map-browser`)} onclick={handleCancel} class="button-action-light rounded px-4 py-2">
         {pickByLanguage(data.lang, 'Cancel', 'Annuler')}
       </a>
     </div>

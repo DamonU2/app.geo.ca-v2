@@ -1,5 +1,8 @@
 import { ensureTrailingSlashless } from '$lib/utils/auth/oidc.server';
 
+/**
+ * Permitted clock difference when validating time-based OIDC claims, in seconds.
+ */
 export const OIDC_CLOCK_SKEW_SECONDS = 5 * 60;
 
 /**
