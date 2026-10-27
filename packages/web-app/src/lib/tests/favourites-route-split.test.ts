@@ -111,6 +111,19 @@ describe('favourites split route loads', () => {
     expect(data.userData.uuid).toBeNull();
   });
 
+  it('keeps guest dataset maps accessible in presentation mode', async () => {
+    loadFavouritesPageDataMock.mockResolvedValue(createPageData(null));
+    const event = createEvent('https://example.test/en-ca/favourites/view?ids=a,b&presentation=1');
+
+    const data = (await loadView(event as unknown as Parameters<typeof loadView>[0])) as {
+      lang: string;
+      userData: { uuid: string | null };
+    };
+
+    expect(data.lang).toBe('en-ca');
+    expect(data.userData.uuid).toBeNull();
+  });
+
   it('redirects guest users from /favourites/view to /favourites when ids are missing', async () => {
     loadFavouritesPageDataMock.mockResolvedValue(createPageData(null));
     const event = createEvent('https://example.test/en-ca/favourites/view');
@@ -167,5 +180,19 @@ describe('favourites split route loads', () => {
     expect(data.userData.uuid).toBe('user-123');
     expect(data.tTitle2).toMatchObject({ text: 'Favourites', href: 'https://example.test/en-ca/favourites' });
     expect(data.tTitle3).toMatchObject({ text: 'Map', href: 'https://example.test/en-ca/favourites/view?mapId=abc' });
+  });
+
+  it('keeps the saved-map data path in presentation mode', async () => {
+    loadFavouritesPageDataMock.mockResolvedValue(createPageData('user-123'));
+    const event = createEvent('https://example.test/en-ca/favourites/view?mapId=abc&source=maps&presentation=1');
+
+    const data = (await loadView(event as unknown as Parameters<typeof loadView>[0])) as {
+      lang: string;
+      userData: { uuid: string | null };
+    };
+
+    expect(data.lang).toBe('en-ca');
+    expect(data.userData.uuid).toBe('user-123');
+    expect(loadFavouritesPageDataMock).toHaveBeenCalledWith(expect.objectContaining({ lang: 'en-ca' }));
   });
 });

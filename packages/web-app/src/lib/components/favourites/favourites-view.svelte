@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/state';
-  import { goto } from '$app/navigation';
+  import { goto, pushState } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { sanitizeMapConfigForStorage } from '$lib/utils/map-config-sanitizer';
   import MycartMap from '$lib/components/map/favourites-map.svelte';
@@ -37,6 +37,12 @@
   const saveMapSuccess = translations.saveMapSuccess;
   const savedMapsTooLarge = translations.savedMapsTooLarge;
   const mapLimitReached = translations.mapLimitReached;
+  const presentationModeLabel = translations.presentationMode;
+  const presentationNoticeTitle = translations.presentationNoticeTitle;
+  const presentationNotice = translations.presentationNotice;
+  const dismissPresentationNotice = translations.dismissPresentationNotice;
+  // Shallow history updates page.state; the URL fallback supports direct links and refreshes.
+  const presentationMode = $derived(page.state.presentationMode ?? page.url.searchParams.get('presentation') === '1');
 
   // State
   let selectedIds: string[] = $state([]);
@@ -47,6 +53,22 @@
   let loading: boolean = $state(true);
   let mapComponent: MycartMap | undefined = $state();
   let savedMaps: MapConfigFavourite[] = $state([]);
+  // Dismissal overrides this value until the mode changes, so Forward shows the notice again.
+  let showPresentationNotice = $derived(presentationMode);
+  let mapContainer: HTMLDivElement;
+  let presentationSize: { width: number; height: number } | null = $state(null);
+
+  $effect(() => {
+    if (!presentationMode) {
+      return;
+    }
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  });
 
   /**
    * Generates a map name that does not collide with existing saved maps.
@@ -104,6 +126,38 @@
    */
   function handleGoToDatasetsClick(): void {
     goto(resolve(`/${lang}/favourites/datasets`));
+  }
+
+  /**
+   * Dismisses the presentation notice on Escape without leaving presentation mode.
+   *
+   * @param event - Keyboard event from the notice dialog.
+   */
+  function handlePresentationNoticeKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      showPresentationNotice = false;
+    }
+  }
+
+  /**
+   * Enters presentation mode through shallow history, keeping the live map mounted.
+   *
+   * Retains its measured size when available, otherwise uses the presentation CSS fallback.
+   * Does nothing when already presenting; browser Back restores the normal view.
+   */
+  function handleEnterPresentationMode(): void {
+    if (presentationMode) return;
+
+    // GeoView renders its footer below the map area; exclude it from the retained map height.
+    const target = mapContainer.querySelector('#map-favourites-resources')?.getBoundingClientRect();
+    const mapArea = mapContainer.querySelector('#map-map-favourites-resources')?.getBoundingClientRect();
+    if (target) {
+      presentationSize = { width: target.width, height: mapArea ? mapArea.height : target.height };
+    }
+
+    const nextUrl = new URL(page.url);
+    nextUrl.searchParams.set('presentation', '1');
+    pushState(resolve(`/${lang}/favourites/view${nextUrl.search}${nextUrl.hash}`), { ...page.state, presentationMode: true });
   }
 
   /**
@@ -202,55 +256,124 @@
   });
 </script>
 
-<h1 class="page-title-favourites font-custom-style-h1">
-  {selectedMapConfig ? selectedMapConfig.name : mapTitle}
-</h1>
+{#if !presentationMode}
+  <h1 class="page-title-favourites font-custom-style-h1">
+    {selectedMapConfig ? selectedMapConfig.name : mapTitle}
+  </h1>
+{/if}
 
-<div class="page-section-favourites">
+<div
+  bind:this={mapContainer}
+  class={presentationMode ? 'presentation-map-shell' : 'page-section-favourites'}
+  style:--presentation-width={presentationSize ? `${presentationSize.width}px` : undefined}
+  style:--presentation-height={presentationSize ? `${presentationSize.height}px` : undefined}
+>
   {#if !loading}
     {#if selectedMapConfig || selectedIds.length > 0}
-      <MycartMap layerIds={selectedIds} mapConfig={selectedMapConfig ? selectedMapConfig.config : null} bind:this={mapComponent} />
+      <MycartMap
+        layerIds={selectedIds}
+        mapConfig={selectedMapConfig?.config ?? null}
+        bind:this={mapComponent}
+      />
     {:else if userDataUnavailable && viewSource === 'maps'}
       <div class="status-alert-error font-custom-style-body-1" role="status" aria-live="polite">
         {savedDataUnavailable}
       </div>
     {/if}
-    {#if statusType && statusMessage}
-      <div
-        class={`mt-5 status-alert-base font-custom-style-body-1 ${statusType === 'success' ? 'status-alert-success' : 'status-alert-danger'}`}
-        role="status"
-        aria-live="polite"
-      >
-        {statusMessage}
+    {#if !presentationMode}
+      {#if statusType && statusMessage}
+        <div
+          class={`mt-5 status-alert-base font-custom-style-body-1 ${statusType === 'success' ? 'status-alert-success' : 'status-alert-danger'}`}
+          role="status"
+          aria-live="polite"
+        >
+          {statusMessage}
+        </div>
+      {/if}
+      {#if signedIn && (selectedMapConfig || selectedIds.length > 0)}
+        <p class="font-custom-style-body-1 mx-0 pt-5 mb-2">
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+          {@html saveMapHelp}
+        </p>
+      {/if}
+      <div class="flex flex-wrap gap-3 mt-5 mb-5">
+        {#if signedIn}
+          <button class="button-inline-desktop button-action-dark surface-shadow button-width-mobile-full" onclick={handleGoToDatasetsClick}>
+            {goToDatasetsLabel}
+          </button>
+          <button class="button-inline-desktop button-action-dark surface-shadow button-width-mobile-full" onclick={handleGoToMapsClick}>
+            {goToMapsLabel}
+          </button>
+        {:else}
+          <button class="button-inline-desktop button-action-dark surface-shadow button-width-mobile-full" onclick={handleReturnToListClick}>
+            {returnToList}
+          </button>
+        {/if}
+
+        {#if signedIn && (selectedMapConfig || selectedIds.length > 0)}
+          <button class="button-inline-desktop button-action-light surface-shadow button-width-mobile-full" onclick={handleSaveMapClick}>
+            {saveMapLabel}
+          </button>
+        {/if}
+        {#if selectedMapConfig || selectedIds.length > 0}
+          <button class="button-inline-desktop button-action-light surface-shadow button-width-mobile-full" onclick={handleEnterPresentationMode}>
+            {presentationModeLabel}
+          </button>
+        {/if}
       </div>
     {/if}
-    {#if signedIn && (selectedMapConfig || selectedIds.length > 0)}
-      <p class="font-custom-style-body-1 mx-0 pt-5 mb-2">
-        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-        {@html saveMapHelp}
-      </p>
-    {/if}
-    <div class="flex flex-wrap gap-3 mt-5 mb-5">
-      {#if signedIn}
-        <button class="button-inline-desktop button-action-dark surface-shadow button-width-mobile-full" onclick={handleGoToDatasetsClick}>
-          {goToDatasetsLabel}
-        </button>
-        <button class="button-inline-desktop button-action-dark surface-shadow button-width-mobile-full" onclick={handleGoToMapsClick}>
-          {goToMapsLabel}
-        </button>
-      {:else}
-        <button class="button-inline-desktop button-action-dark surface-shadow button-width-mobile-full" onclick={handleReturnToListClick}>
-          {returnToList}
-        </button>
-      {/if}
-
-      {#if signedIn && (selectedMapConfig || selectedIds.length > 0)}
-        <button class="button-inline-desktop button-action-light surface-shadow button-width-mobile-full" onclick={handleSaveMapClick}>
-          {saveMapLabel}
-        </button>
-      {/if}
-    </div>
   {:else}
-    <div class="animate-pulse bg-custom-6 w-full h-[32rem]"></div>
+    <div class={presentationMode ? 'animate-pulse bg-custom-6 h-full w-full' : 'animate-pulse bg-custom-6 w-full h-[32rem]'}></div>
   {/if}
 </div>
+
+{#if presentationMode && showPresentationNotice}
+  <div class="fixed inset-0 z-11100 flex items-center justify-center bg-black/40 p-4" role="presentation">
+    <dialog
+      open
+      class="static m-0 w-full max-w-md rounded border border-custom-16 bg-white p-6 shadow-lg"
+      aria-modal="true"
+      aria-labelledby="presentation-notice-title"
+      aria-describedby="presentation-notice-description"
+      onkeydown={handlePresentationNoticeKeydown}
+    >
+      <h2 id="presentation-notice-title" class="mb-3 text-xl font-bold">{presentationNoticeTitle}</h2>
+      <p id="presentation-notice-description" class="mb-5">{presentationNotice}</p>
+      <button class="button-action-dark rounded px-4 py-2" onclick={() => (showPresentationNotice = false)}>
+        {dismissPresentationNotice}
+      </button>
+    </dialog>
+  </div>
+{/if}
+
+<style>
+  .presentation-map-shell {
+    position: fixed;
+    inset: 0;
+    z-index: 10020;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    box-sizing: border-box;
+    padding: 24px;
+    background: white;
+  }
+
+  .presentation-map-shell :global(#map-favourites-resources) {
+    width: min(100%, var(--presentation-width, 1240px));
+    height: var(--presentation-height, auto) !important;
+    max-height: none;
+    aspect-ratio: 16 / 9;
+    margin-inline: auto;
+    border: 0 !important;
+    box-sizing: border-box;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .presentation-map-shell :global(#shell-map-favourites-resources) {
+    border: 1px solid gray;
+    box-sizing: border-box;
+  }
+</style>

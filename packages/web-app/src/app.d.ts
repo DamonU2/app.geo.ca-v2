@@ -85,6 +85,10 @@ type AnalyticResponse = {
 
 declare global {
   namespace App {
+    interface PageState {
+      presentationMode?: boolean;
+    }
+
     interface Error {
       message: string;
       status?: number;
