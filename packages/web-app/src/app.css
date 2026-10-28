@@ -320,7 +320,7 @@
 
 .button-signin {
   @apply rounded-lg;
-  @apply p-2.5;
+  @apply inline-flex h-[38px] items-center justify-center px-2.5 py-0;
 }
 
 /* Search shell primitives */

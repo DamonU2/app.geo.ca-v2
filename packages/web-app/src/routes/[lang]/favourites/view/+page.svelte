@@ -3,8 +3,7 @@
   import LoadingMask from '$lib/components/loading-mask/loading-mask.svelte';
   import FavouritesView from '$lib/components/favourites/favourites-view.svelte';
 
-  const lang = page.data.lang;
-  const title = lang === 'fr-ca' ? 'app.geo.ca - Favoris' : 'app.geo.ca - Favourites';
+  const title = `app.geo.ca - ${page.data.tTitle2?.text}`;
 
   const canonicalUrl = page.data.canonicalUrl;
   const alternateUrl = page.data.alternateUrl;

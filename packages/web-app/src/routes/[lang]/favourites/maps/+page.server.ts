@@ -23,7 +23,7 @@ export const load: PageServerLoad = async ({ fetch, params, url, cookies }) => {
   return {
     lang,
     ...pageData,
-    tTitle2: buildPageTitle(favouritesUrl, lang, 'Favourites', 'Favoris'),
+    tTitle2: { ...pageData.tTitle2, href: favouritesUrl.href },
     tTitle3: buildPageTitle(url, lang, 'Maps', 'Cartes'),
   };
 };

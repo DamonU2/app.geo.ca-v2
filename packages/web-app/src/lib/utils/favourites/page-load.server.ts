@@ -61,7 +61,9 @@ export async function loadFavouritesPageData({ fetch, url, cookies, lang }: Favo
 
   return {
     tTitle1: buildCatalogTitle(url, lang),
-    tTitle2: buildPageTitle(url, lang, 'Favourites', 'Favoris'),
+    tTitle2: userInfo?.Item.uuid
+      ? buildPageTitle(url, lang, 'My GEO.ca', 'Mon GEO.ca')
+      : buildPageTitle(url, lang, 'Favourites', 'Favoris'),
     results: sanitizedResults,
     userData: userInfo?.Item || { uuid: null, favourites: [], mapConfigs: [] },
     userDataStatus: userInfo?.status ?? 'anonymous',

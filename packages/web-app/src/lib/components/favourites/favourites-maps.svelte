@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import Card from '$lib/components/card/card.svelte';
+  import ActionDialog from '$lib/components/dialog/action-dialog.svelte';
   import DownloadIcon from '$lib/components/icons/download.svelte';
   import GarbageCan from '$lib/components/icons/garbage-can.svelte';
   import MapIcon from '$lib/components/icons/map.svelte';
@@ -45,6 +46,7 @@
   const datasetsLinkLabel = translations.datasetsLinkLabel;
 
   // State
+  let actionDialog: ActionDialog;
   let savedMaps: MapConfigFavourite[] = $state(page.data?.userData?.mapConfigs ? [...page.data.userData.mapConfigs] : []);
   let statusType: 'success' | 'error' | null = $state(null);
   let statusMessage: string = $state('');
@@ -156,7 +158,7 @@
       'Êtes-vous sûr de vouloir supprimer cette carte enregistrée?'
     );
 
-    if (!confirm(permissionText)) {
+    if (!(await actionDialog.confirm(permissionText))) {
       return;
     }
 
@@ -238,6 +240,8 @@
   }
 </script>
 
+<ActionDialog bind:this={actionDialog} />
+
 <h1 class="page-title-favourites font-custom-style-h1">{mapsTabLabel}</h1>
 
 <div class="page-section-favourites">
@@ -270,7 +274,7 @@
     {#if savedMaps.length > 0}
       <Card>
         <div>
-          <div class="divide-y divide-custom-17">
+          <div class="divide-y divide-custom-17 border-b border-custom-17">
             {#each savedMaps as mapItem (mapItem.id)}
               <div class="py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>

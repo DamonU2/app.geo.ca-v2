@@ -7,6 +7,7 @@
   import { updateLocalStorage } from '$lib/utils/event-dispatchers/local-storage-changed';
   import { FAVOURITES_STORAGE_KEY, getStoredFavourites, resolveInitialFavourites } from '$lib/utils/favourites-storage';
   import Card from '$lib/components/card/card.svelte';
+  import ActionDialog from '$lib/components/dialog/action-dialog.svelte';
   import NoMap from '$lib/components/icons/no-map.svelte';
   import SortableTable from '$lib/components/sortable-table/sortable-table.svelte';
   import FavouritesListSkeleton from '$lib/components/loading-mask/favourites-list-skeleton.svelte';
@@ -28,7 +29,7 @@
   const userDataUnavailable = page.data.userDataStatus === 'unavailable';
 
   // Translations
-  const favouritesTitle = translations.title;
+  const favouritesTitle = signedIn ? pickByLanguage(lang, 'My GEO.ca', 'Mon GEO.ca') : translations.title;
   const datasetsDescription = translations.datasetsDescription || translations.description;
   const loginInfo = translations.loginInfo;
   const landingDescription = translations.landingDescription;
@@ -51,6 +52,7 @@
   const titleKey = `title_${langShort}` as 'title_en' | 'title_fr';
 
   // State
+  let actionDialog: ActionDialog;
   let sortableTable: SortableTable | undefined = $state();
   let selectedIds: string[] = $state([]);
   let numSelected: number = $derived(selectedIds.length);
@@ -89,7 +91,7 @@
       ? `Êtes-vous sûr de vouloir supprimer la ressource suivante? \n\n${resourceName} (${id})`
       : `Are you sure you want to delete the following resource? \n\n${resourceName} (${id})`;
 
-    if (confirm(permissionText) === true) {
+    if (await actionDialog.confirm(permissionText)) {
       // If the user confirms, proceed with deletion. For signed-in users, also update the server-side favourites.
       if (signedIn) {
         const response = await fetch(`/${lang}/api/favourites`, {
@@ -130,7 +132,7 @@
       ? `Êtes-vous certain de vouloir supprimer ${favouriteRecordList.length} ressources?`
       : `Are you sure you want to delete ${favouriteRecordList.length} resources?`;
 
-    if (confirm(permissionText) === true) {
+    if (await actionDialog.confirm(permissionText)) {
       // If the user confirms, proceed with deletion. For signed-in users, also update the server-side favourites.
       if (signedIn) {
         const response = await fetch(`/${lang}/api/favourites`, {
@@ -217,6 +219,8 @@
 
   const isLanding = $derived(signedIn);
 </script>
+
+<ActionDialog bind:this={actionDialog} />
 
 <h1 class="page-title-favourites font-custom-style-h1">
   {favouritesTitle}

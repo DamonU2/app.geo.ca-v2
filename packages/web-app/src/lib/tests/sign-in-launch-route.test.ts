@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { load } from '../../routes/[lang]/sign-in/launch/+page.server';
+import { getLanguageSwitchUrl } from '$lib/utils/language';
 
 function loadLaunch(lang: string, url: string) {
   return load({
@@ -9,6 +10,20 @@ function loadLaunch(lang: string, url: string) {
 }
 
 describe('GET /[lang]/sign-in/launch', () => {
+  it.each([
+    ['en-ca', 'fr-ca'],
+    ['fr-ca', 'en-ca'],
+  ] as const)('keeps the return page after switching from %s to %s', (from, to) => {
+    const url = new URL(`https://app.geo.ca/${from}/sign-in/launch`);
+    url.searchParams.set('state', `https://app.geo.ca/${from}/map-browser?keyword=water`);
+    const switched = getLanguageSwitchUrl(url, to);
+
+    expect(loadLaunch(to, switched)).toEqual({
+      lang: to,
+      signInUrl: `/${to}/sign-in/send?state=${encodeURIComponent(`https://app.geo.ca/${to}/map-browser?keyword=water`)}`,
+    });
+  });
+
   it('defaults to localized favourites', () => {
     expect(loadLaunch('fr-ca', 'https://app.geo.ca/fr-ca/sign-in/launch')).toEqual({
       lang: 'fr-ca',

@@ -1,5 +1,5 @@
 /**
- * Test coverage: Route tests for favourites API map configuration mutations, including create/delete behavior and persistence calls.
+ * Test coverage: Route tests for favourites API map configuration mutations and persistence calls.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MapConfigFavourite } from '$lib/db/db-types';
@@ -80,6 +80,7 @@ describe('PATCH /[lang]/api/favourites map config mutations', () => {
     expect(payload.ok).toBe(true);
     expect(payload.mapConfigs).toHaveLength(2);
     expect(payload.mapConfigs[1].name).toBe('My Map 2');
+    expect(payload).toHaveProperty('mapConfigId', payload.mapConfigs[1].id);
     expect(mockedPutUserData).toHaveBeenCalledTimes(1);
   });
 
@@ -274,6 +275,150 @@ describe('PATCH /[lang]/api/favourites map config mutations', () => {
     expect(payload.ok).toBe(false);
     expect(payload.reason).toBe('invalid-config');
     expect(mockedPutUserData).not.toHaveBeenCalled();
+  });
+});
+
+describe('PATCH /[lang]/api/favourites updateMapConfig', () => {
+  const originalMap: MapConfigFavourite = {
+    id: 'map-1',
+    name: 'Original',
+    config: { map: { interaction: 'dynamic' } },
+    createdAt: '2026-01-01T00:00:00.000Z',
+  };
+  const otherMap: MapConfigFavourite = { ...originalMap, id: 'map-2', name: 'Other' };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedGetUserData.mockResolvedValue({
+      status: 'ok',
+      Item: { uuid: 'user-1', favourites: ['dataset-a'], mapConfigs: [originalMap, otherMap] },
+    });
+    mockedPutUserData.mockResolvedValue({ ok: true });
+  });
+
+  async function updateMap(payload: Record<string, unknown> = {}): Promise<Response> {
+    return PATCH({
+      cookies: {} as never,
+      request: createPatchRequest({
+        action: 'updateMapConfig',
+        id: 'map-1',
+        config: { map: { viewSettings: { initialView: { zoomAndCenter: [5, [-100, 68]] } } } },
+        ...payload,
+      }),
+    } as never);
+  }
+
+  it('overwrites only the matching config, preserving metadata, other maps and datasets', async () => {
+    const config = { map: { interaction: 'static' }, theme: 'geo.ca', unexpectedTopLevel: true };
+    const response = await updateMap({ name: 'Must not rename', config });
+
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as { ok: boolean; mapConfigs: MapConfigFavourite[] };
+    const expectedMaps = [{ ...originalMap, config: { map: { interaction: 'static' }, theme: 'geo.ca' } }, otherMap];
+    expect(payload).toEqual({ ok: true, mapConfigs: expectedMaps, mapConfigId: originalMap.id });
+    expect(mockedPutUserData).toHaveBeenCalledExactlyOnceWith({ uuid: 'user-1', favourites: ['dataset-a'], mapConfigs: expectedMaps }, {});
+    expect(originalMap.config).toEqual({ map: { interaction: 'dynamic' } });
+  });
+
+  it('allows overwriting at the 25-map limit without adding a map', async () => {
+    const maps = Array.from({ length: 25 }, (_, index) => ({ ...originalMap, id: `map-${index + 1}` }));
+    mockedGetUserData.mockResolvedValue({
+      status: 'ok',
+      Item: { uuid: 'user-1', favourites: [], mapConfigs: maps },
+    });
+
+    const response = await updateMap();
+
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as { mapConfigs: MapConfigFavourite[] };
+    expect(payload.mapConfigs).toHaveLength(25);
+    expect(payload.mapConfigs[0].config).toEqual({
+      map: { viewSettings: { initialView: { zoomAndCenter: [5, [-100, 68]] } } },
+    });
+    expect(payload.mapConfigs.slice(1)).toEqual(maps.slice(1));
+  });
+
+  it.each([undefined, '', '  ', 12])('rejects invalid ID %s without writing', async (id) => {
+    const response = await updateMap({ id });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ ok: false, reason: 'invalid-id' });
+    expect(mockedPutUserData).not.toHaveBeenCalled();
+  });
+
+  it('rejects IDs absent from this user profile instead of creating a replacement', async () => {
+    const response = await updateMap({ id: 'deleted-or-other-users-map' });
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ ok: false, reason: 'not-found', mapConfigs: [originalMap, otherMap] });
+    expect(mockedPutUserData).not.toHaveBeenCalled();
+  });
+
+  it.each([null, [], { viewSettings: {} }, JSON.parse('{"map":{},"components":{"__proto__":{"polluted":true}}}')])(
+    'rejects invalid or unsafe configurations without writing: %j',
+    async (config) => {
+      const response = await updateMap({ config });
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({ ok: false, reason: 'invalid-config' });
+      expect(mockedPutUserData).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each([
+    { status: 'anonymous', uuid: null, httpStatus: 401 },
+    { status: 'unavailable', uuid: 'user-1', httpStatus: 503 },
+  ] as const)('rejects $status user data without writing', async ({ status, uuid, httpStatus }) => {
+    mockedGetUserData.mockResolvedValue({ status, Item: { uuid, favourites: [], mapConfigs: [] } });
+
+    const response = await updateMap();
+
+    expect(response.status).toBe(httpStatus);
+    expect(await response.json()).toMatchObject({ ok: false });
+    expect(mockedPutUserData).not.toHaveBeenCalled();
+  });
+
+  it.each([300000, 300001])('enforces the exact UTF-8 item-size boundary (%i bytes)', async (size) => {
+    const config = { map: {}, globalSettings: { padding: '' } };
+    const expectedItem = {
+      uuid: 'user-1',
+      favourites: ['dataset-a'],
+      mapConfigs: [{ ...originalMap, config }, otherMap],
+    };
+    const baseSize = new TextEncoder().encode(JSON.stringify(expectedItem)).byteLength;
+    config.globalSettings.padding = 'x'.repeat(size - baseSize);
+
+    const response = await updateMap({ config });
+
+    expect(response.status).toBe(size === 300000 ? 200 : 400);
+    if (size === 300000) {
+      expect(mockedPutUserData).toHaveBeenCalledTimes(1);
+    } else {
+      expect(await response.json()).toMatchObject({ ok: false, reason: 'item-too-large' });
+      expect(mockedPutUserData).not.toHaveBeenCalled();
+    }
+  });
+
+  it('measures non-ASCII configuration content in bytes rather than characters', async () => {
+    const response = await updateMap({ config: { map: {}, globalSettings: { padding: '\u00e9'.repeat(150000) } } });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ ok: false, reason: 'item-too-large' });
+    expect(mockedPutUserData).not.toHaveBeenCalled();
+  });
+
+  it('reports persistence failure without returning the unsaved config as saved', async () => {
+    mockedPutUserData.mockResolvedValue({ ok: false });
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const response = await updateMap();
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual({ ok: false, reason: 'persist-failed', mapConfigs: [originalMap, otherMap] });
+      expect(log).toHaveBeenCalledWith('Failed to persist map config.', { action: 'updateMapConfig', mapCount: 2 });
+    } finally {
+      log.mockRestore();
+    }
   });
 });
 

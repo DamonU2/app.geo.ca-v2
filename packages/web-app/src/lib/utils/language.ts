@@ -60,6 +60,38 @@ export function pickByLanguage<T>(lang: AppLanguage, enValue: T, frValue: T): T 
 }
 
 /**
+ * Changes a localized URL's language while preserving its query and fragment.
+ */
+export function getLanguageSwitchUrl(currentUrl: URL, lang: AppLanguage): string {
+  const url = new URL(currentUrl);
+  url.pathname = url.pathname.replace(/\/(?:en-ca|fr-ca)(?=\/|$)/, `/${lang}`);
+
+  if (url.pathname === `/${lang}/sign-in/oidc-logout`) {
+    const returnTo = url.searchParams.get('returnTo');
+    if (returnTo === '/en-ca/favourites' || returnTo === '/fr-ca/favourites') {
+      url.searchParams.set('returnTo', `/${lang}/favourites`);
+    }
+  }
+
+  if (url.pathname === `/${lang}/sign-in/launch`) {
+    const state = url.searchParams.get('state');
+    if (state) {
+      try {
+        const destination = new URL(state, url.origin);
+        if (destination.origin === url.origin && /^\/(?:en-ca|fr-ca)\//.test(destination.pathname)) {
+          destination.pathname = destination.pathname.replace(/^\/(?:en-ca|fr-ca)\//, `/${lang}/`);
+          url.searchParams.set('state', destination.href);
+        }
+      } catch {
+        // Leave malformed state for the sign-in loader's existing validation.
+      }
+    }
+  }
+
+  return url.href;
+}
+
+/**
  * Extracts the app language from a path, relative state value, or absolute URL string.
  *
  * Looks for an `/en-ca/` or `/fr-ca/` path segment; falls back to English Canadian

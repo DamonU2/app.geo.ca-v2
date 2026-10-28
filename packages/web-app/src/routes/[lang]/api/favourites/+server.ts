@@ -200,7 +200,7 @@ export const PUT: RequestHandler = async ({ cookies }): Promise<Response> => {
 /**
  * Mutates saved map configs for the signed-in user.
  *
- * Supports create and delete actions for saved map configurations.
+ * Supports create, update and delete actions for saved map configurations.
  *
  * @param cookies - SvelteKit cookie jar from the request context.
  * @param request - Incoming request containing the JSON payload.
@@ -212,8 +212,12 @@ export const PATCH: RequestHandler = async ({ cookies, request }): Promise<Respo
     return json({ ok: false, mapConfigs: [] }, { status: 401 });
   }
 
+  if (userData.status === 'unavailable') {
+    return json({ ok: false, reason: 'unavailable' }, { status: 503 });
+  }
+
   const payload = (await request.json()) as {
-    action?: 'createMapConfig' | 'deleteMapConfig';
+    action?: 'createMapConfig' | 'updateMapConfig' | 'deleteMapConfig';
     id?: string;
     name?: string;
     config?: unknown;
@@ -221,8 +225,16 @@ export const PATCH: RequestHandler = async ({ cookies, request }): Promise<Respo
 
   const mapConfigs = userData.Item.mapConfigs ?? [];
 
-  if (payload.action === 'createMapConfig') {
-    if (mapConfigs.length >= MAX_SAVED_MAPS) {
+  if (payload.action === 'createMapConfig' || payload.action === 'updateMapConfig') {
+    const updating = payload.action === 'updateMapConfig';
+    const id = sanitizeId(payload.id);
+    if (updating && !id) {
+      return json({ ok: false, mapConfigs, reason: 'invalid-id' }, { status: 400 });
+    }
+    if (updating && !mapConfigs.some((mapItem) => mapItem.id === id)) {
+      return json({ ok: false, mapConfigs, reason: 'not-found' }, { status: 404 });
+    }
+    if (!updating && mapConfigs.length >= MAX_SAVED_MAPS) {
       return json({ ok: false, mapConfigs, reason: 'limit' }, { status: 400 });
     }
 
@@ -231,36 +243,31 @@ export const PATCH: RequestHandler = async ({ cookies, request }): Promise<Respo
       return json({ ok: false, mapConfigs, reason: 'invalid-config' }, { status: 400 });
     }
 
-    const requestedName = sanitizeName(payload.name);
-    const baseName = requestedName || 'My Map';
-    const finalName = createUniqueMapName(baseName, mapConfigs);
-    const createdAt = new Date().toISOString();
-
-    const mapConfig: MapConfigFavourite = {
-      id: crypto.randomUUID(),
-      name: finalName,
-      config: sanitizedConfig,
-      createdAt,
-    };
-
-    // Check if adding this map would exceed DynamoDB item size limit.
-    userData.Item.mapConfigs = [...mapConfigs, mapConfig];
-    userData.Item.favourites = userData.Item.favourites ?? [];
-    const estimatedSize = JSON.stringify(userData.Item).length;
+    const nextMapConfigs: MapConfigFavourite[] = updating
+      ? mapConfigs.map((mapItem) => (mapItem.id === id ? { ...mapItem, config: sanitizedConfig } : mapItem))
+      : [
+          ...mapConfigs,
+          {
+            id: crypto.randomUUID(),
+            name: createUniqueMapName(sanitizeName(payload.name) || 'My Map', mapConfigs),
+            config: sanitizedConfig,
+            createdAt: new Date().toISOString(),
+          },
+        ];
+    const nextUserData = { ...userData.Item, mapConfigs: nextMapConfigs, favourites: userData.Item.favourites ?? [] };
+    const estimatedSize = new TextEncoder().encode(JSON.stringify(nextUserData)).byteLength;
 
     if (estimatedSize > MAX_ITEM_SIZE_BYTES) {
-      // Restore original state before returning error.
-      userData.Item.mapConfigs = mapConfigs;
       return json({ ok: false, mapConfigs, reason: 'item-too-large' }, { status: 400 });
     }
 
-    const result = await putUserData(userData.Item, cookies);
+    const result = await putUserData(nextUserData, cookies);
     if (!result.ok) {
-      console.error('Failed to persist map config. Current map count:', mapConfigs.length + 1);
+      console.error('Failed to persist map config.', { action: payload.action, mapCount: nextMapConfigs.length });
       return json({ ok: false, mapConfigs, reason: 'persist-failed' }, { status: 500 });
     }
 
-    return json({ ok: result.ok, mapConfigs: userData.Item.mapConfigs });
+    return json({ ok: true, mapConfigs: nextMapConfigs, mapConfigId: updating ? id : nextMapConfigs[mapConfigs.length].id });
   }
 
   if (payload.action === 'deleteMapConfig') {

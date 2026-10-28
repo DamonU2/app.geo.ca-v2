@@ -73,6 +73,8 @@ interface MapConfigFavourite {
 - **Data**: User lookup via `page-load.server.ts`
 - **Purpose**: Dashboard for signed-in users; displays cards to navigate to datasets and maps sections
 - **Conditional**: Only visible when user is signed in
+- **Header navigation**: Signed-in users see a single "My GEO.ca" / "Mon GEO.ca" link to this landing page in desktop and mobile navigation, without a dropdown or counter. Guests retain the existing "Favourites" / "Favoris" link and counter.
+- **Titles and breadcrumbs**: Signed-in users see "My GEO.ca" / "Mon GEO.ca" in the landing heading, browser titles, and parent breadcrumbs throughout the favourites pages. Guests retain "Favourites" / "Favoris".
 
 ### `[lang]/favourites/datasets`
 
@@ -96,7 +98,9 @@ interface MapConfigFavourite {
   - `ids` query param: Array of dataset record IDs to view together
   - `mapId` query param: Single saved map config ID to view
 - **Purpose**: Shared map viewer for displaying selected items
-- **Features**: Save as new map config, return to dataset/maps list
+- **Features**: Save as new map config, overwrite a loaded saved map config, return to dataset/maps list
+- **Language switching**: Keeps the current view route, dataset IDs or saved-map ID, source, and presentation-mode query parameters.
+- **Navigation**: Desktop and mobile language links preserve each page's query parameters and fragment. On sign-out confirmation, the favourites return target follows the selected language; the sign-in launcher likewise localizes valid same-origin return destinations.
 
 ## API Endpoints
 
@@ -120,11 +124,14 @@ interface MapConfigFavourite {
 {}
 ```
 
-**PATCH**: Create or delete map configs
+**PATCH**: Create, update or delete map configs
 
 ```json
 // Create
 { "action": "createMapConfig", "name": "<name>", "config": {...} }
+
+// Overwrite an existing map belonging to the signed-in user
+{ "action": "updateMapConfig", "id": "<uuid>", "config": {...} }
 
 // Delete
 { "action": "deleteMapConfig", "id": "<uuid>" }
@@ -143,7 +150,7 @@ interface MapConfigFavourite {
 ### Save a Map Configuration
 
 1. User arranges map (layers, zoom, pan, style)
-2. Click "Save map" on view page
+2. Click "Save as..." on view page and enter a name
 3. PATCH `/[lang]/api/favourites` with map config + name
 4. Server:
    - Sanitizes config (removes large style data)
@@ -151,6 +158,26 @@ interface MapConfigFavourite {
    - Auto-renames if duplicate name exists
    - Stores in `UserData.mapConfigs`
 5. Confirmed config appears in maps list
+
+### Overwrite a Saved Map Configuration
+
+1. Open a saved map from the maps list and adjust its live state.
+2. Click "Save" to overwrite the loaded configuration without a name prompt.
+3. PATCH `/[lang]/api/favourites` with `updateMapConfig`, the loaded ID, and the current map config.
+4. Server validates and sanitizes the config, enforces the 300 KB UTF-8 item-size limit, and replaces only the matching config. Its ID, name, and creation date are preserved, as are other maps and favourite datasets. Updates are allowed at the 25-map limit.
+5. Missing configs return `404` (`not-found`); unavailable storage returns `503` (`unavailable`), and failed persistence returns `500` (`persist-failed`). Updates never create a replacement map.
+
+Successful create/update responses include `mapConfigId` identifying the saved entry alongside `mapConfigs`.
+
+Both save buttons are disabled while a save is pending. If live map state cannot be captured, the viewer reports an error instead of saving the originally loaded state. "Save as..." creates a separate copy and makes it the active overwrite target: the viewer shows its saved name and the "Save" button, and replaces the current URL with the new `mapId` and `source=maps` so refreshing reopens it. Saving does not remount the live map or change presentation mode.
+
+### Dialogs
+
+The map-name prompt and all dataset/map deletion confirmations use the shared `ActionDialog` component rather than browser-native prompts. Cancel or Escape dismisses them without saving or deleting. Prompts support Enter to submit and preserve the existing default-name behavior. Dialog controls are available in English and French.
+
+`AppDialog` supplies the centered white panel, rounded border, shadow, and darkened backdrop used by presentation mode, session warnings, search filters, and the leaving-site notice. It uses the browser's modal top layer so dialogs stay above maps, trap keyboard focus, and restore focus on close. Search filters retain a wider, scrollable layout.
+
+Session expiry and rejected session renewal bypass the manual sign-out confirmation. They replace the current history entry with the localized local-logout route, clear app authentication cookies, and return to the map browser with the session-expired notice. The explicit "Sign out" action still asks for confirmation and follows the provider logout flow. Automatic expiry ends the app session; it does not initiate provider-wide logout.
 
 ### Guest → Sign-In Merge
 

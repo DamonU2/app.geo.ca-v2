@@ -4,7 +4,7 @@
   import { goto } from '$app/navigation';
   import { updateTempCategoryOfInterest } from '$lib/components/search-results/store';
   import { toggleScroll } from '$lib/components/component-utils/toggleScroll';
-  import { clickOutside } from '$lib/components/component-utils/clickOutside';
+  import AppDialog from '$lib/components/dialog/app-dialog.svelte';
   import Close from '$lib/components/icons/close.svelte';
   import CategoryOfInterest from '$lib/components/search-results/filters/category-of-interest.svelte';
   import Organizations from '$lib/components/search-results/filters/organizations.svelte';
@@ -149,15 +149,6 @@
     // Using resolve('/?...') navigates to the site root and drops the search page context.
     // eslint-disable-next-line svelte/no-navigation-without-resolve
     await goto(`${page.url.pathname}?${query.toString()}`, { replaceState: true, keepFocus: true });
-  }
-
-  /**
-   * Handles click outside event to close the dropdown.
-   */
-  function handleClickOutside(): void {
-    if (active) {
-      closeModal();
-    }
   }
 
   /************* utility methods ***************/
@@ -398,25 +389,12 @@
   }
 </script>
 
-<!-- Note: we need the z-index to be 10020 so that it is above the header and the map loading mask (geoview has this set at 9999) -->
-<div
-  role="dialog"
-  aria-modal="true"
-  tabindex="0"
-  class={['fixed flex justify-center z-10020 inset-0 bg-custom-7/75 overflow-hidden', !active && 'hidden']}
-  onkeydown={(event) => {
-    if (event.key === 'Escape') closeModal();
-  }}
->
-  <form
-    class="flex flex-col bg-custom-1 border border-custom-21 w-full md:w-2/3 max-h-[calc(100vh-2.5rem)] md:max-h-[calc(100vh-1rem)] md:mt-2 md:mb-2 m-5 md:m-0"
-    onsubmit={handleSubmit}
-    use:clickOutside={handleClickOutside}
-  >
+<AppDialog open={active} wide padded={false} labelledby="filter-modal-title" closeOnBackdrop onclose={closeModal}>
+  <form class="flex flex-col max-h-[calc(100dvh-2rem)]" onsubmit={handleSubmit}>
     <div class="relative flex-1 overflow-y-auto min-h-0 md:grid md:grid-cols-6 hide-scroll">
       <div class="col-span-5 flex flex-col gap-5 px-5 pb-5 pt-8 font-custom-style-body-1">
         <div>
-          <h1 class="font-custom-style-h1-2">{filterByText}</h1>
+          <h2 id="filter-modal-title" class="mb-3 text-xl font-bold">{filterByText}</h2>
           <p>{filterDescriptionText}</p>
         </div>
         <div class="flex flex-col gap-y-5">
@@ -433,6 +411,7 @@
       <div class="absolute md:static top-2 right-4 col-span-1 px-5 pt-8 justify-self-end">
         <button
           type="button"
+          aria-label={page.data.lang?.startsWith('fr') ? 'Fermer' : 'Close'}
           class="button-tone-light button-icon flex justify-center items-center rounded-[50%]
           h-9 w-9 md:h-[3.0625rem] md:w-[3.0625rem]"
           onclick={handleCloseButtonClick}
@@ -458,7 +437,7 @@
       </button>
     </div>
   </form>
-</div>
+</AppDialog>
 
 <style lang="postcss">
   @reference "../../../app.css";

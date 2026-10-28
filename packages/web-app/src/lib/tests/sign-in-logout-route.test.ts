@@ -19,6 +19,7 @@ vi.mock('$lib/utils/auth/sign-in-core.server', () => ({
 import { load as loadLangLogout } from '../../routes/[lang]/sign-in/logout/+page.server';
 import { load as loadRootLogout } from '../../routes/sign-in/logout/+page.server';
 import { actions as oidcLogoutActions, load as loadOidcLogout } from '../../routes/[lang]/sign-in/oidc-logout/+page.server';
+import { getLanguageSwitchUrl } from '$lib/utils/language';
 
 /**
  * Asserts that a route loader throws a redirect matching expectations.
@@ -49,6 +50,19 @@ describe('sign-out route redirects', () => {
     getOidcLogoutUrlMock.mockResolvedValue(null);
   });
 
+  it.each([
+    ['en-ca', 'fr-ca'],
+    ['fr-ca', 'en-ca'],
+  ] as const)('keeps the favourites return target switching logout from %s to %s', (from, to) => {
+    const url = new URL(`https://example.test/${from}/sign-in/oidc-logout?returnTo=%2F${from}%2Ffavourites`);
+    const event = {
+      params: { lang: to },
+      url: new URL(getLanguageSwitchUrl(url, to)),
+    } as unknown as Parameters<typeof loadOidcLogout>[0];
+
+    expect(loadOidcLogout(event)).toEqual({ lang: to, returnTo: `/${to}/favourites` });
+  });
+
   it('redirects /[lang]/sign-in/logout to language favourites when returnTo is favourites', async () => {
     const event = {
       cookies: {} as never,
@@ -58,6 +72,48 @@ describe('sign-out route redirects', () => {
 
     await expectRedirect(() => loadLangLogout(event), { status: 303, location: '/en-ca/favourites' });
     expect(clearAuthCookiesMock).toHaveBeenCalled();
+  });
+
+  it.each(['en-ca', 'fr-ca'])('ends an expired %s session without confirmation and sets the expiry notice', async (lang) => {
+    const cookies = { set: vi.fn() };
+    const event = {
+      cookies,
+      params: { lang },
+      url: new URL(`https://example.test/${lang}/sign-in/logout?reason=session-expired`),
+    } as unknown as Parameters<typeof loadLangLogout>[0];
+
+    await expectRedirect(() => loadLangLogout(event), { status: 303, location: `/${lang}/map-browser` });
+    expect(clearAuthCookiesMock).toHaveBeenCalledWith(cookies);
+    expect(cookies.set).toHaveBeenCalledWith(
+      'session_expired',
+      '1',
+      expect.objectContaining({ path: '/', httpOnly: true, sameSite: 'lax', secure: true, maxAge: 60 })
+    );
+    expect(getOidcLogoutUrlMock).not.toHaveBeenCalled();
+  });
+
+  it('uses a non-secure expiry flash cookie on local HTTP development', async () => {
+    const cookies = { set: vi.fn() };
+    const event = {
+      cookies,
+      params: { lang: 'en-ca' },
+      url: new URL('http://localhost:8080/en-ca/sign-in/logout?reason=session-expired'),
+    } as unknown as Parameters<typeof loadLangLogout>[0];
+
+    await expectRedirect(() => loadLangLogout(event), { status: 303, location: '/en-ca/map-browser' });
+    expect(cookies.set).toHaveBeenCalledWith('session_expired', '1', expect.objectContaining({ secure: false }));
+  });
+
+  it('does not show an expiry notice for a normal local sign-out', async () => {
+    const cookies = { set: vi.fn() };
+    const event = {
+      cookies,
+      params: { lang: 'en-ca' },
+      url: new URL('https://example.test/en-ca/sign-in/logout'),
+    } as unknown as Parameters<typeof loadLangLogout>[0];
+
+    await expectRedirect(() => loadLangLogout(event), { status: 303, location: '/en-ca/map-browser' });
+    expect(cookies.set).not.toHaveBeenCalled();
   });
 
   it('falls back to /map-browser when /[lang]/sign-in/logout receives unsupported returnTo', async () => {

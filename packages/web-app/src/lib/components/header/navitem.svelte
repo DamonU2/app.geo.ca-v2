@@ -5,7 +5,7 @@
   import { toggleScroll } from '$lib/components/component-utils/toggleScroll';
   import { LOCALSTORAGE_UPDATED } from '$lib/utils/event-dispatchers/local-storage-changed';
   import type { AppLanguage } from '$lib/utils/language';
-  import { isFrench, pickByLanguage } from '$lib/utils/language';
+  import { getLanguageSwitchUrl, pickByLanguage } from '$lib/utils/language';
   import Navdropdown from '$lib/components/header/navdropdown.svelte';
   import Chevronup from '$lib/components/icons/chevronup.svelte';
   import Chevrondown from '$lib/components/icons/chevrondown.svelte';
@@ -106,10 +106,8 @@
    * @param lang - The language to toggle to.
    * @returns The new URL.
    */
-  function toggleLanguage(lang: string): string {
-    let currentUrl = `${page.url.origin}${page.url.pathname}`;
-    let url = isFrench(lang as AppLanguage) ? currentUrl.replace('en-ca', 'fr-ca') : currentUrl.replace('fr-ca', 'en-ca');
-    return url;
+  function toggleLanguage(lang: AppLanguage): string {
+    return getLanguageSwitchUrl(page.url, lang);
   }
 
   onMount((): (() => void) => {

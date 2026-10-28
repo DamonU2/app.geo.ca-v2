@@ -1,10 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/state';
-  import { goto, pushState } from '$app/navigation';
+  import { goto, pushState, replaceState } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { sanitizeMapConfigForStorage } from '$lib/utils/map-config-sanitizer';
   import MycartMap from '$lib/components/map/favourites-map.svelte';
+  import ActionDialog from '$lib/components/dialog/action-dialog.svelte';
+  import AppDialog from '$lib/components/dialog/app-dialog.svelte';
   import enTranslations from '$lib/components/favourites/i18n/en/translations.json';
   import type { MapConfigFavourite } from '$lib/db/db-types';
   import type { AppLanguage } from '$lib/utils/language';
@@ -25,13 +27,15 @@
   const userDataUnavailable = page.data.userDataStatus === 'unavailable';
 
   // Translations
-  const mapTitle = translations.mapTitle;
   const returnToList = translations.returnToList;
   const goToDatasetsLabel = translations.datasetsLinkLabel;
   const goToMapsLabel = translations.mapsLinkLabel;
   const savedDataUnavailable = translations.savedDataUnavailable;
   const saveMapLabel = translations.saveMap;
+  const saveMapAsLabel = translations.saveMapAs;
   const saveMapHelp = translations.saveMapHelp;
+  const overwriteMapHelp = translations.overwriteMapHelp;
+  const savedMapNotFound = translations.savedMapNotFound;
   const saveMapPrompt = translations.saveMapPrompt;
   const saveMapFailed = translations.saveMapFailed;
   const saveMapSuccess = translations.saveMapSuccess;
@@ -45,6 +49,7 @@
   const presentationMode = $derived(page.state.presentationMode ?? page.url.searchParams.get('presentation') === '1');
 
   // State
+  let actionDialog: ActionDialog;
   let selectedIds: string[] = $state([]);
   let selectedMapConfig: MapConfigFavourite | null = $state(null);
   let viewSource: 'datasets' | 'maps' = $state('datasets');
@@ -53,6 +58,7 @@
   let loading: boolean = $state(true);
   let mapComponent: MycartMap | undefined = $state();
   let savedMaps: MapConfigFavourite[] = $state([]);
+  let saving = $state(false);
   // Dismissal overrides this value until the mode changes, so Forward shows the notice again.
   let showPresentationNotice = $derived(presentationMode);
   let mapContainer: HTMLDivElement;
@@ -129,17 +135,6 @@
   }
 
   /**
-   * Dismisses the presentation notice on Escape without leaving presentation mode.
-   *
-   * @param event - Keyboard event from the notice dialog.
-   */
-  function handlePresentationNoticeKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
-      showPresentationNotice = false;
-    }
-  }
-
-  /**
    * Enters presentation mode through shallow history, keeping the live map mounted.
    *
    * Retains its measured size when available, otherwise uses the presentation CSS fallback.
@@ -161,57 +156,91 @@
   }
 
   /**
-   * Saves the current map state as a named saved-map configuration.
+   * Saves the live map state as a new configuration or overwrites the loaded one.
    *
    * Captures live map state, sanitizes payload size, then persists via the favourites API.
    */
-  async function handleSaveMapClick(): Promise<void> {
-    if (!signedIn) {
+  async function handleSaveMapClick(mode: 'create' | 'update'): Promise<void> {
+    if (!signedIn || saving || (mode === 'update' && !selectedMapConfig)) {
       return;
     }
 
-    const defaultName = createUniqueMapName('My Map');
-    const requestedName = prompt(saveMapPrompt, defaultName);
-    if (requestedName === null) {
-      return;
-    }
-
-    const mapStateConfig = mapComponent?.getMapConfigFromCurrentState() ?? selectedMapConfig?.config ?? null;
-    if (!mapStateConfig) {
-      setStatus('error', saveMapFailed);
-      return;
-    }
-
-    // Sanitize the config to remove large style data before storing
-    const sanitizedConfig = sanitizeMapConfigForStorage(mapStateConfig);
-
+    saving = true;
     try {
+      const defaultName = createUniqueMapName('My Map');
+      let name = defaultName;
+      if (mode === 'create') {
+        const requestedName = await actionDialog.prompt(saveMapPrompt, defaultName);
+        if (requestedName === null) {
+          return;
+        }
+        name = requestedName.trim() || defaultName;
+      }
+
+      statusType = null;
+      statusMessage = '';
+      const mapStateConfig = mapComponent?.getMapConfigFromCurrentState();
+      if (!mapStateConfig) {
+        setStatus('error', saveMapFailed);
+        return;
+      }
+
+      const sanitizedConfig = sanitizeMapConfigForStorage(mapStateConfig);
       const response = await fetch(`/${lang}/api/favourites`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'createMapConfig',
-          name: requestedName.trim() || defaultName,
+          ...(mode === 'update' ? { action: 'updateMapConfig', id: selectedMapConfig?.id } : { action: 'createMapConfig', name }),
           config: sanitizedConfig,
         }),
       });
 
-      const payload = (await response.json()) as { ok: boolean; mapConfigs?: MapConfigFavourite[]; reason?: string };
+      const payload = (await response.json()) as {
+        ok: boolean;
+        mapConfigs?: MapConfigFavourite[];
+        mapConfigId?: string;
+        reason?: string;
+      };
       if (!response.ok || !payload.ok) {
         if (payload.reason === 'limit') {
           setStatus('error', mapLimitReached);
         } else if (payload.reason === 'item-too-large') {
           setStatus('error', savedMapsTooLarge);
+        } else if (payload.reason === 'not-found') {
+          setStatus('error', savedMapNotFound);
+        } else if (payload.reason === 'unavailable') {
+          setStatus('error', savedDataUnavailable);
         } else {
           setStatus('error', saveMapFailed);
         }
         return;
       }
 
-      savedMaps = payload.mapConfigs ?? savedMaps;
+      if (!Array.isArray(payload.mapConfigs)) {
+        setStatus('error', saveMapFailed);
+        return;
+      }
+      if (mode === 'create') {
+        const createdMap = payload.mapConfigs.find((mapConfig) => mapConfig.id === payload.mapConfigId);
+        if (!createdMap) {
+          setStatus('error', saveMapFailed);
+          return;
+        }
+
+        selectedMapConfig = createdMap;
+        viewSource = 'maps';
+        const nextUrl = new URL(page.url);
+        nextUrl.searchParams.delete('ids');
+        nextUrl.searchParams.set('mapId', createdMap.id);
+        nextUrl.searchParams.set('source', 'maps');
+        replaceState(resolve(`/${lang}/favourites/view${nextUrl.search}${nextUrl.hash}`), { ...page.state });
+      }
+      savedMaps = payload.mapConfigs;
       setStatus('success', saveMapSuccess);
     } catch {
       setStatus('error', saveMapFailed);
+    } finally {
+      saving = false;
     }
   }
 
@@ -256,15 +285,15 @@
   });
 </script>
 
-{#if !presentationMode}
+{#if !presentationMode && selectedMapConfig}
   <h1 class="page-title-favourites font-custom-style-h1">
-    {selectedMapConfig ? selectedMapConfig.name : mapTitle}
+    {selectedMapConfig.name}
   </h1>
 {/if}
 
 <div
   bind:this={mapContainer}
-  class={presentationMode ? 'presentation-map-shell' : 'page-section-favourites'}
+  class={presentationMode ? 'presentation-map-shell' : `page-section-favourites${selectedMapConfig ? '' : ' pt-12'}`}
   style:--presentation-width={presentationSize ? `${presentationSize.width}px` : undefined}
   style:--presentation-height={presentationSize ? `${presentationSize.height}px` : undefined}
 >
@@ -290,8 +319,40 @@
         <p class="font-custom-style-body-1 mx-0 pt-5 mb-2">
           <!-- eslint-disable-next-line svelte/no-at-html-tags -->
           {@html saveMapHelp}
+          {#if selectedMapConfig}
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            {@html overwriteMapHelp}
+          {/if}
         </p>
       {/if}
+      <div class="flex flex-wrap gap-3 mt-5 mb-5">
+        {#if signedIn && (selectedMapConfig || selectedIds.length > 0)}
+          {#if selectedMapConfig}
+            <button
+              class="button-inline-desktop button-action-light surface-shadow button-width-mobile-full"
+              onclick={() => handleSaveMapClick('update')}
+              disabled={saving}
+            >
+              {saveMapLabel}
+            </button>
+          {/if}
+          <button
+            class="button-inline-desktop button-action-light surface-shadow button-width-mobile-full"
+            onclick={() => handleSaveMapClick('create')}
+            disabled={saving}
+          >
+            {saveMapAsLabel}
+          </button>
+        {/if}
+        {#if selectedMapConfig || selectedIds.length > 0}
+          <button
+            class="button-inline-desktop button-action-light surface-shadow button-width-mobile-full"
+            onclick={handleEnterPresentationMode}
+          >
+            {presentationModeLabel}
+          </button>
+        {/if}
+      </div>
       <div class="flex flex-wrap gap-3 mt-5 mb-5">
         {#if signedIn}
           <button
@@ -311,20 +372,6 @@
             {returnToList}
           </button>
         {/if}
-
-        {#if signedIn && (selectedMapConfig || selectedIds.length > 0)}
-          <button class="button-inline-desktop button-action-light surface-shadow button-width-mobile-full" onclick={handleSaveMapClick}>
-            {saveMapLabel}
-          </button>
-        {/if}
-        {#if selectedMapConfig || selectedIds.length > 0}
-          <button
-            class="button-inline-desktop button-action-light surface-shadow button-width-mobile-full"
-            onclick={handleEnterPresentationMode}
-          >
-            {presentationModeLabel}
-          </button>
-        {/if}
       </div>
     {/if}
   {:else}
@@ -332,24 +379,18 @@
   {/if}
 </div>
 
-{#if presentationMode && showPresentationNotice}
-  <div class="fixed inset-0 z-11100 flex items-center justify-center bg-black/40 p-4" role="presentation">
-    <dialog
-      open
-      class="static m-0 w-full max-w-md rounded border border-custom-16 bg-white p-6 shadow-lg"
-      aria-modal="true"
-      aria-labelledby="presentation-notice-title"
-      aria-describedby="presentation-notice-description"
-      onkeydown={handlePresentationNoticeKeydown}
-    >
-      <h2 id="presentation-notice-title" class="mb-3 text-xl font-bold">{presentationNoticeTitle}</h2>
-      <p id="presentation-notice-description" class="mb-5">{presentationNotice}</p>
-      <button class="button-action-dark rounded px-4 py-2" onclick={() => (showPresentationNotice = false)}>
-        {dismissPresentationNotice}
-      </button>
-    </dialog>
-  </div>
-{/if}
+<ActionDialog bind:this={actionDialog} />
+<AppDialog
+  open={presentationMode && showPresentationNotice}
+  title={presentationNoticeTitle}
+  describedby="presentation-notice-description"
+  onclose={() => (showPresentationNotice = false)}
+>
+  <p id="presentation-notice-description" class="mb-5">{presentationNotice}</p>
+  <button class="button-action-dark rounded px-4 py-2" onclick={() => (showPresentationNotice = false)}>
+    {dismissPresentationNotice}
+  </button>
+</AppDialog>
 
 <style>
   .presentation-map-shell {

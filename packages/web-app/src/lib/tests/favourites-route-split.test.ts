@@ -31,7 +31,7 @@ import { load as loadView } from '../../routes/[lang]/favourites/view/+page.serv
 function createPageData(uuid: string | null) {
   return {
     tTitle1: { text: 'Catalog', href: '/en-ca/map-browser' },
-    tTitle2: { text: 'Favourites', href: '/en-ca/favourites' },
+    tTitle2: { text: uuid ? 'My GEO.ca' : 'Favourites', href: '/en-ca/favourites' },
     results: [],
     userData: { uuid, favourites: [], mapConfigs: [] },
     canonicalUrl: 'https://example.test/en-ca/favourites',
@@ -146,7 +146,7 @@ describe('favourites split route loads', () => {
 
     expect(data.lang).toBe('en-ca');
     expect(data.userData.uuid).toBe('user-123');
-    expect(data.tTitle2).toMatchObject({ text: 'Favourites', href: 'https://example.test/en-ca/favourites' });
+    expect(data.tTitle2).toMatchObject({ text: 'My GEO.ca', href: 'https://example.test/en-ca/favourites' });
     expect(data.tTitle3).toMatchObject({ text: 'Datasets', href: 'https://example.test/en-ca/favourites/datasets' });
   });
 
@@ -162,7 +162,7 @@ describe('favourites split route loads', () => {
 
     expect(data.lang).toBe('en-ca');
     expect(data.userData.uuid).toBe('user-123');
-    expect(data.tTitle2).toMatchObject({ text: 'Favourites', href: 'https://example.test/en-ca/favourites' });
+    expect(data.tTitle2).toMatchObject({ text: 'My GEO.ca', href: 'https://example.test/en-ca/favourites' });
     expect(data.tTitle3).toMatchObject({ text: 'Maps', href: 'https://example.test/en-ca/favourites/maps' });
   });
 
@@ -178,7 +178,7 @@ describe('favourites split route loads', () => {
 
     expect(data.lang).toBe('en-ca');
     expect(data.userData.uuid).toBe('user-123');
-    expect(data.tTitle2).toMatchObject({ text: 'Favourites', href: 'https://example.test/en-ca/favourites' });
+    expect(data.tTitle2).toMatchObject({ text: 'My GEO.ca', href: 'https://example.test/en-ca/favourites' });
     expect(data.tTitle3).toMatchObject({ text: 'Map', href: 'https://example.test/en-ca/favourites/view?mapId=abc' });
   });
 

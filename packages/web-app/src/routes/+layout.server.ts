@@ -13,7 +13,7 @@ import { getUserData } from '$lib/db/user';
 import { getCookieDomainOptions } from '$lib/utils/auth/cookie-policy.server';
 import { isOidcConfigured } from '$lib/utils/auth/sign-in-core.server';
 import { getOidcManageUrl } from '$lib/utils/auth/oidc.server';
-import { getAppLanguage, isFrench, pickByLanguage } from '$lib/utils/language';
+import { getAppLanguage, pickByLanguage } from '$lib/utils/language';
 
 type NavLink = {
   title: string;
@@ -78,32 +78,12 @@ export const load: LayoutServerLoad = async ({ params, cookies, depends, url }) 
   if (authError) {
     cookies.delete('auth_error', { path: '/', ...getCookieDomainOptions() });
   }
-  const userDataUnavailable = userInfo.status === 'unavailable';
   const navitems = structuredClone(pickByLanguage(lang, enNavitems, frNavitems)) as NavItems;
 
-  if (signedIn && !userDataUnavailable && navitems.favourites) {
-    // Datasets and saved maps are stored separately and shown as tab-specific counters.
-    const datasetsCount = (userInfo.Item.favourites ?? []).length;
-    const mapConfigsCount = (userInfo.Item.mapConfigs ?? []).length;
-    const datasetsLabel = isFrench(lang) ? 'Jeux de donnees' : 'Datasets';
-    const mapsLabel = isFrench(lang) ? 'Cartes' : 'Maps';
-
+  if (signedIn && navitems.favourites) {
     navitems.favourites = {
-      title: navitems.favourites.title,
-      options: [
-        {
-          links: [
-            {
-              title: `${datasetsLabel} (${datasetsCount})`,
-              href: `/${lang}/favourites/datasets`,
-            },
-            {
-              title: `${mapsLabel} (${mapConfigsCount})`,
-              href: `/${lang}/favourites/maps`,
-            },
-          ],
-        },
-      ],
+      title: pickByLanguage(lang, 'My GEO.ca', 'Mon GEO.ca'),
+      href: `/${lang}/favourites`,
     };
   }
 

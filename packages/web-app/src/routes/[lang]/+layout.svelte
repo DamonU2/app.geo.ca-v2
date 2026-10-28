@@ -9,6 +9,8 @@
   import Breadcrumbs from '$lib/components/breadcrumbs/breadcrumbs.svelte';
   import LeavingNotice from '$lib/components/leaving-notice/leaving-notice.svelte';
   import GoogleTag from '$lib/components/google-tag/google-tag.svelte';
+  import AppDialog from '$lib/components/dialog/app-dialog.svelte';
+  import { getAppLanguage } from '$lib/utils/language';
 
   interface Props {
     children?: import('svelte').Snippet;
@@ -21,19 +23,30 @@
   let sessionExpiresAt = 0;
   let sessionRefreshPending = false;
   let sessionLayoutActive = true;
-  const lang = page.data.lang?.slice(0, 2) ?? 'en';
+  let sessionLogoutPending = false;
+  const appLang = getAppLanguage(page.data.lang);
+  const lang = appLang.slice(0, 2);
+
+  function endExpiredSession(): void {
+    if (!sessionLayoutActive || sessionLogoutPending) return;
+    sessionLogoutPending = true;
+    showSessionWarning = false;
+    sessionExpiresAt = 0;
+    window.location.replace(`/${appLang}/sign-in/logout?reason=session-expired`);
+  }
 
   // The browser never receives the refresh token; the server reads the HTTP-only cookie.
   /**
    * Refreshes the server-managed session or sends the user to logout if it has expired.
    */
   async function staySignedIn(): Promise<void> {
-    if (sessionRefreshPending) return;
+    if (sessionRefreshPending || sessionLogoutPending) return;
     sessionRefreshPending = true;
     try {
       const response = await fetch('/api/session', { method: 'POST' });
+      if (!sessionLayoutActive || sessionLogoutPending) return;
       if (!response.ok) {
-        window.location.href = `/${lang}/sign-in/oidc-logout`;
+        endExpiredSession();
         return;
       }
       const data = (await response.json()) as { expiresAt?: number };
@@ -41,29 +54,6 @@
       showSessionWarning = false;
     } finally {
       sessionRefreshPending = false;
-    }
-  }
-
-  /**
-   * Treats Escape as confirmation to keep the current session active.
-   *
-   * @param event - Keyboard event from the session warning.
-   */
-  function handleSessionWarningKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      void staySignedIn();
-    }
-  }
-
-  /**
-   * Treats a click outside the warning dialog as confirmation to stay signed in.
-   *
-   * @param event - Click event on the warning backdrop.
-   */
-  function handleSessionWarningBackdropClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) {
-      void staySignedIn();
     }
   }
 
@@ -83,7 +73,7 @@
 
       sessionSecondsRemaining = Math.max(0, Math.ceil((sessionExpiresAt - Date.now()) / 1000));
       if (sessionSecondsRemaining <= 0) {
-        window.location.href = `/${lang}/sign-in/oidc-logout`;
+        endExpiredSession();
       } else if (sessionSecondsRemaining <= 300) {
         showSessionWarning = true;
       }
@@ -98,6 +88,8 @@
         sessionExpiresAt = typeof data.expiresAt === 'number' ? data.expiresAt : 0;
         updateSessionWarning();
         sessionTimer = setInterval(updateSessionWarning, 1000);
+      } else if (response.status === 401) {
+        endExpiredSession();
       }
     };
 
@@ -194,53 +186,46 @@
 <Footer />
 
 {#if showSessionWarning}
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-    role="presentation"
-    onclick={handleSessionWarningBackdropClick}
+  <AppDialog
+    open={showSessionWarning}
+    role="alertdialog"
+    labelledby="session-warning-title"
+    describedby="session-warning-description"
+    closeOnBackdrop
+    onclose={() => void staySignedIn()}
   >
-    <dialog
-      open
-      class="static m-0 w-full max-w-lg rounded border border-custom-16 bg-white p-6 shadow-lg"
-      role="alertdialog"
-      aria-modal="true"
-      aria-labelledby="session-warning-title"
-      aria-describedby="session-warning-description"
-      onkeydown={handleSessionWarningKeydown}
+    <button
+      class="float-right text-2xl leading-none"
+      type="button"
+      aria-label={lang === 'fr' ? 'Fermer' : 'Close'}
+      onclick={() => void staySignedIn()}
     >
-      <button
-        class="float-right text-2xl leading-none"
-        type="button"
-        aria-label={lang === 'fr' ? 'Fermer' : 'Close'}
-        onclick={() => void staySignedIn()}
-      >
-        &times;
+      &times;
+    </button>
+    <h2 id="session-warning-title" class="mb-3 text-xl font-bold">
+      {lang === 'fr' ? 'Nous allons fermer votre session pour cause d’inactivité' : 'Your session is about to end due to inactivity'}
+    </h2>
+    <p id="session-warning-description" class="mb-2">
+      {lang === 'fr'
+        ? 'Si vous ne prolongez pas votre session, celle-ci sera automatiquement fermée.'
+        : 'If you do not continue your session you will be signed out automatically.'}
+    </p>
+    <p class="mb-4 font-semibold" aria-live="assertive">
+      {lang === 'fr'
+        ? `Temps restant : ${Math.ceil(sessionSecondsRemaining / 60)} minutes`
+        : `Time remaining: ${Math.ceil(sessionSecondsRemaining / 60)} minutes`}
+    </p>
+    <p class="mb-4">{lang === 'fr' ? 'Souhaitez-vous prolonger votre session?' : 'Do you wish to continue your session?'}</p>
+    <div class="flex flex-wrap gap-3">
+      <button class="button-action-dark rounded px-4 py-2" onclick={staySignedIn}>
+        {lang === 'fr' ? 'Prolonger la session' : 'Stay signed in'}
       </button>
-      <h2 id="session-warning-title" class="mb-3 text-xl font-bold">
-        {lang === 'fr' ? 'Nous allons fermer votre session pour cause d’inactivité' : 'Your session is about to end due to inactivity'}
-      </h2>
-      <p id="session-warning-description" class="mb-2">
-        {lang === 'fr'
-          ? 'Si vous ne prolongez pas votre session, celle-ci sera automatiquement fermée.'
-          : 'If you do not continue your session you will be signed out automatically.'}
-      </p>
-      <p class="mb-4 font-semibold" aria-live="assertive">
-        {lang === 'fr'
-          ? `Temps restant : ${Math.ceil(sessionSecondsRemaining / 60)} minutes`
-          : `Time remaining: ${Math.ceil(sessionSecondsRemaining / 60)} minutes`}
-      </p>
-      <p class="mb-4">{lang === 'fr' ? 'Souhaitez-vous prolonger votre session?' : 'Do you wish to continue your session?'}</p>
-      <div class="flex flex-wrap gap-3">
-        <button class="button-action-dark rounded px-4 py-2" onclick={staySignedIn}>
-          {lang === 'fr' ? 'Prolonger la session' : 'Stay signed in'}
-        </button>
-        <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-        <a class="button-action-light rounded px-4 py-2" href={`/${lang}/sign-in/oidc-logout`}>
-          {lang === 'fr' ? 'Se déconnecter' : 'Sign out'}
-        </a>
-      </div>
-    </dialog>
-  </div>
+      <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+      <a class="button-action-light rounded px-4 py-2" href={`/${appLang}/sign-in/oidc-logout`}>
+        {lang === 'fr' ? 'Se déconnecter' : 'Sign out'}
+      </a>
+    </div>
+  </AppDialog>
 {/if}
 
 {#if showLeavingSitePopup}
