@@ -82,6 +82,7 @@ interface MapConfigFavourite {
 - **Data**: Fetches saved dataset records from GeoCore API
 - **Features**: Display list, delete individual items, delete all, open selected items on map
 - **Storage**: Removes deleted IDs from `UserData.favourites`
+- **Add to saved map**: Signed-in users can choose an existing saved map for a dataset, using the Add button immediately before Delete (also available on mobile). The column heading retains the full action label. The button is disabled if the dataset has no map layer or no saved maps are available. The picker uses the shared centered app dialog.
 
 ### `[lang]/favourites/maps`
 
@@ -97,8 +98,10 @@ interface MapConfigFavourite {
 - **Parameters**: Accepts either:
   - `ids` query param: Array of dataset record IDs to view together
   - `mapId` query param: Single saved map config ID to view
+  - `addDatasetId` with `mapId`: Initialize the saved map first, then add this GeoCore dataset as soon as the map is ready, without waiting for existing layers to load. Waits for the new layer's completion promise before showing the save reminder; duplicates are not added. Missing maps and load failures are reported explicitly.
 - **Purpose**: Shared map viewer for displaying selected items
 - **Features**: Save as new map config, overwrite a loaded saved map config, return to dataset/maps list
+- **Unsaved additions**: Adding a dataset does not write to storage. A centered reminder explains that Save overwrites the loaded map and Save as creates a copy; this warning is not repeated below the map. Both save actions are disabled while adding. The addition query parameter survives refresh/language switching until a save succeeds, when it is removed without remounting the map. Failed saves retain the pending addition; already-present datasets clear the parameter immediately.
 - **Language switching**: Keeps the current view route, dataset IDs or saved-map ID, source, and presentation-mode query parameters.
 - **Navigation**: Desktop and mobile language links preserve each page's query parameters and fragment. On sign-out confirmation, the favourites return target follows the selected language; the sign-in launcher likewise localizes valid same-origin return destinations.
 

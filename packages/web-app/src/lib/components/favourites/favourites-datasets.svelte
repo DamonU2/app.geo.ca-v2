@@ -8,6 +8,7 @@
   import { FAVOURITES_STORAGE_KEY, getStoredFavourites, resolveInitialFavourites } from '$lib/utils/favourites-storage';
   import Card from '$lib/components/card/card.svelte';
   import ActionDialog from '$lib/components/dialog/action-dialog.svelte';
+  import AppDialog from '$lib/components/dialog/app-dialog.svelte';
   import NoMap from '$lib/components/icons/no-map.svelte';
   import SortableTable from '$lib/components/sortable-table/sortable-table.svelte';
   import FavouritesListSkeleton from '$lib/components/loading-mask/favourites-list-skeleton.svelte';
@@ -61,6 +62,42 @@
   let favouriteRecordList: string[] = $state(page.data?.userData?.favourites ? [...page.data.userData.favourites] : []);
   let records: FavouritesRecord[] = $state([]);
   let tableDataArray: FavouritesRow[] = $state([]);
+  const savedMaps = $derived(page.data.userData?.mapConfigs ?? []);
+  let datasetToAdd: string | null = $state(null);
+  let pickerError = $state(false);
+
+  /**
+   * Explains why a dataset cannot be added to a saved map.
+   *
+   * @param unmappable - Whether the dataset has no available map layer.
+   * @returns Localized disabled-state explanation, or an empty string when eligible.
+   */
+  function addDisabledReason(unmappable: boolean): string {
+    if (unmappable) return translations.datasetNotMappable;
+    if (userDataUnavailable) return savedDataUnavailable;
+    if (savedMaps.length === 0) return translations.noSavedMapsToAdd;
+    return '';
+  }
+
+  /**
+   * Opens the chosen saved map with a pending, unsaved dataset addition.
+   *
+   * Keeps the picker open with an error if navigation fails, allowing a retry.
+   *
+   * @param mapId - Identifier of the saved map selected in the picker.
+   */
+  async function handleSelectSavedMap(mapId: string): Promise<void> {
+    if (!datasetToAdd) return;
+    pickerError = false;
+    const query = new URLSearchParams({ mapId, addDatasetId: datasetToAdd, source: 'maps' });
+    try {
+      await goto(resolve(`/${lang}/favourites/view?${query}`));
+      datasetToAdd = null;
+    } catch (error) {
+      console.error('Unable to open the saved map:', error);
+      pickerError = true;
+    }
+  }
 
   let allSelected = $derived(
     tableDataArray.length > 0 && tableDataArray.every((row) => selectedIds.includes(row.id) || row.disableCheckbox)
@@ -199,6 +236,44 @@
 </script>
 
 <ActionDialog bind:this={actionDialog} />
+<AppDialog open={datasetToAdd !== null} title={translations.chooseSavedMap} onclose={() => (datasetToAdd = null)}>
+  <ul class="max-h-80 overflow-y-auto space-y-3 mb-5">
+    {#each savedMaps as savedMap (savedMap.id)}
+      <li>
+        <button class="button-action-light rounded px-4 py-2 w-full text-left" onclick={() => handleSelectSavedMap(savedMap.id)}>
+          {savedMap.name}
+        </button>
+      </li>
+    {/each}
+  </ul>
+  {#if pickerError}
+    <p class="status-alert-error mb-5" role="alert">{translations.openSavedMapFailed}</p>
+  {/if}
+  <button class="button-action-dark rounded px-4 py-2" onclick={() => (datasetToAdd = null)}>{translations.cancel}</button>
+</AppDialog>
+
+{#snippet addToSavedMapButton(id: string, unmappable: boolean, mobile = false)}
+  {@const reason = addDisabledReason(unmappable)}
+  <button
+    class="button-action-light rounded px-3 py-2"
+    disabled={Boolean(reason)}
+    title={reason || translations.addToSavedMap}
+    aria-describedby={reason ? `add-map-reason-${id}-${mobile}` : undefined}
+    onclick={() => {
+      pickerError = false;
+      datasetToAdd = id;
+    }}
+  >
+    {translations.add}
+  </button>
+  {#if reason}
+    <span id={`add-map-reason-${id}-${mobile}`} class="sr-only">{reason}</span>
+  {/if}
+{/snippet}
+
+{#snippet savedMapAction(row: { id: string; disableCheckbox?: boolean })}
+  {@render addToSavedMapButton(row.id, Boolean(row.disableCheckbox))}
+{/snippet}
 
 <h1 class="page-title-favourites font-custom-style-h1">{datasetsTabLabel}</h1>
 
@@ -229,6 +304,8 @@
             deleteResource={handleDeleteResource}
             bind:this={sortableTable}
             bind:selectedIds
+            actionColumnLabel={translations.addToSavedMap}
+            rowAction={signedIn ? savedMapAction : undefined}
           />
         </div>
 
@@ -262,6 +339,11 @@
                 </a>
                 <p class="font-custom-style-body-9">{item.id}</p>
 
+                {#if signedIn}
+                  <div class="mb-3">
+                    {@render addToSavedMapButton(item.id, Boolean(item.disableCheckbox), true)}
+                  </div>
+                {/if}
                 <button class="button-action-light button-action-remove" onclick={() => handleDeleteResource(item.id)}>
                   <GarbageCan classes="h-4 button-icon-inline" />
                   {remove}

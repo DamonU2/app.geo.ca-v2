@@ -10,13 +10,20 @@
   import { onMount } from 'svelte';
   import { loadCGPVScript } from '$lib/components/map/loadCGPVScript';
   import type { GeoviewConfig } from './map-types';
+  import { addDatasetToMap, type DatasetAdditionResult } from '$lib/utils/map-dataset';
 
   interface Props {
     layerIds: string[];
     mapConfig?: Record<string, unknown> | null;
+    /** Dataset to add to the live saved map once the map is ready. */
+    addDatasetId?: string | null;
+    /** Reports a completed addition or duplicate, never an intermediate loading state. */
+    onDatasetAdded?: (result: DatasetAdditionResult) => void;
+    /** Lets the parent display map initialization or dataset-addition failures. */
+    onLoadError?: () => void;
   }
 
-  let { layerIds, mapConfig = null }: Props = $props();
+  let { layerIds, mapConfig = null, addDatasetId = null, onDatasetAdded, onLoadError }: Props = $props();
 
   let mapId = 'map-favourites-resources';
   let mapLang = page.data.lang.split('-')[0] as 'en' | 'fr';
@@ -94,33 +101,55 @@
     }
   }
 
-  onMount(async (): Promise<void> => {
-    // The loadCGPVScript function ensures the external cgpv library is fully loaded before
-    // trying to use the geocore code, otherwise it sometimes fails
-    await loadCGPVScript();
+  onMount(() => {
+    let active = true;
+    const controller = new AbortController();
+    /**
+     * Initializes the viewer and applies any pending addition to a loaded saved map.
+     * Ignores late results after unmount so they cannot update the previous page.
+     */
+    async function initialize(): Promise<void> {
+      // The loadCGPVScript function ensures the external cgpv library is fully loaded before
+      // trying to use the geocore code, otherwise it sometimes fails
+      try {
+        await loadCGPVScript();
+        if (!active) return;
+        // Destroy the old map if it exists. This ensures that when the map is toggled
+        // on and off multiple time, it always has visible layers.
+        if (cgpv.api.hasMapViewer(mapId)) {
+          await cgpv.api.deleteMapViewer(mapId, false);
+        }
+        if (!active) return;
 
-    try {
-      // Destroy the old map if it exists. This ensures that when the map is toggled
-      // on and off multiple time, it always has visible layers.
-      if (cgpv.api.hasMapViewer(mapId)) {
-        await cgpv.api.deleteMapViewer(mapId, false);
+        if (mapConfig) {
+          // Build the map directly from a saved map config.
+          await cgpv.api.createMapFromConfig(mapId, JSON.stringify(mapConfig));
+          if (addDatasetId && active) {
+            const result = await addDatasetToMap(cgpv.api.getMapViewer(mapId), addDatasetId, controller.signal);
+            if (active) onDatasetAdded?.(result);
+          }
+        } else {
+          // Build the map from the default config.
+          await cgpv.api.createMapFromConfig(mapId, sConfig);
+          if (!active) return;
+
+          // Add map layers for each selected resource id.
+          layerIds.forEach((layer: string) => {
+            cgpv.api.getMapViewer(mapId).layer.addGeoviewLayerByGeoCoreUUID(layer);
+          });
+        }
+      } catch (error) {
+        if (!active) return;
+        console.error(error);
+        onLoadError?.();
       }
-
-      if (mapConfig) {
-        // Build the map directly from a saved map config.
-        await cgpv.api.createMapFromConfig(mapId, JSON.stringify(mapConfig));
-      } else {
-        // Build the map from the default config.
-        await cgpv.api.createMapFromConfig(mapId, sConfig);
-
-        // Add map layers for each selected resource id.
-        layerIds.forEach((layer: string) => {
-          cgpv.api.getMapViewer(mapId).layer.addGeoviewLayerByGeoCoreUUID(layer);
-        });
-      }
-    } catch (error) {
-      console.error(error);
     }
+    void initialize();
+    return () => {
+      active = false;
+      // Stop an addition still waiting on map readiness; an in-flight GeoView request is not cancellable here.
+      controller.abort();
+    };
   });
 </script>
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { page } from '$app/state';
   import { pickByLanguage } from '$lib/utils/language';
@@ -32,6 +33,10 @@
     removeCol?: boolean;
     deleteResource?: (id: string) => void;
     selectedIds?: string[];
+    /** Heading for the optional action column, positioned immediately before Delete. */
+    actionColumnLabel?: string;
+    /** Renders a standalone row action outside the resource-navigation links. */
+    rowAction?: Snippet<[NormalizedTableRow]>;
   }
 
   let {
@@ -46,6 +51,8 @@
     removeCol = false,
     deleteResource = () => {},
     selectedIds = $bindable([]),
+    actionColumnLabel,
+    rowAction,
   }: Props = $props();
 
   /************** Translations **************/
@@ -270,6 +277,9 @@
           </th>
         {/each}
 
+        {#if rowAction}
+          <th class="font-custom-style-header-1">{actionColumnLabel}</th>
+        {/if}
         {#if removeCol}
           <!-------------- Remove Row Column -------------->
           <th class="w-fit border border-custom-9">
@@ -336,6 +346,9 @@
             {/each}
           {/if}
 
+          {#if rowAction}
+            <td class="p-2.5">{@render rowAction(row)}</td>
+          {/if}
           {#if removeCol}
             <!-------------- Remove Row Column -------------->
             <td class="pointer-events-none align-center p-2.5 h-full">

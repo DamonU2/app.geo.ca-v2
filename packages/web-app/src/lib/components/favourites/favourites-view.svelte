@@ -10,6 +10,7 @@
   import enTranslations from '$lib/components/favourites/i18n/en/translations.json';
   import type { MapConfigFavourite } from '$lib/db/db-types';
   import type { AppLanguage } from '$lib/utils/language';
+  import type { DatasetAdditionResult } from '$lib/utils/map-dataset';
 
   /**
    * Shared favourites map viewer.
@@ -59,6 +60,9 @@
   let mapComponent: MycartMap | undefined = $state();
   let savedMaps: MapConfigFavourite[] = $state([]);
   let saving = $state(false);
+  let addDatasetId: string | null = $state(null);
+  let addingDataset = $state(false);
+  let showDatasetNotice = $state(false);
   // Dismissal overrides this value until the mode changes, so Forward shows the notice again.
   let showPresentationNotice = $derived(presentationMode);
   let mapContainer: HTMLDivElement;
@@ -114,6 +118,41 @@
   }
 
   /**
+   * Removes the replayable dataset-addition query parameter without remounting the map.
+   *
+   * Called only after saving successfully or finding the dataset already present.
+   */
+  function clearAdditionIntent(): void {
+    const nextUrl = new URL(page.url);
+    nextUrl.searchParams.delete('addDatasetId');
+    replaceState(resolve(`/${lang}/favourites/view${nextUrl.search}${nextUrl.hash}`), { ...page.state });
+  }
+
+  /**
+   * Completes the addition flow and shows either the save reminder or duplicate notice.
+   *
+   * @param result - Outcome reported after GeoView finishes loading the dataset.
+   */
+  function handleDatasetAdded(result: DatasetAdditionResult): void {
+    addingDataset = false;
+    if (result === 'already-present') {
+      clearAdditionIntent();
+      setStatus('success', translations.datasetAlreadyPresent);
+    } else {
+      // Retain the query parameter so refresh can replay the addition until a save succeeds.
+      showDatasetNotice = true;
+    }
+  }
+
+  /**
+   * Clears the pending-addition state and reports a map or dataset loading failure.
+   */
+  function handleMapLoadError(): void {
+    addingDataset = false;
+    setStatus('error', addDatasetId ? translations.addDatasetFailed : translations.mapLoadFailed);
+  }
+
+  /**
    * Returns to datasets or maps, depending on the current view source.
    */
   function handleReturnToListClick(): void {
@@ -161,7 +200,7 @@
    * Captures live map state, sanitizes payload size, then persists via the favourites API.
    */
   async function handleSaveMapClick(mode: 'create' | 'update'): Promise<void> {
-    if (!signedIn || saving || (mode === 'update' && !selectedMapConfig)) {
+    if (!signedIn || saving || addingDataset || (mode === 'update' && !selectedMapConfig)) {
       return;
     }
 
@@ -231,11 +270,14 @@
         viewSource = 'maps';
         const nextUrl = new URL(page.url);
         nextUrl.searchParams.delete('ids');
+        nextUrl.searchParams.delete('addDatasetId');
         nextUrl.searchParams.set('mapId', createdMap.id);
         nextUrl.searchParams.set('source', 'maps');
         replaceState(resolve(`/${lang}/favourites/view${nextUrl.search}${nextUrl.hash}`), { ...page.state });
       }
       savedMaps = payload.mapConfigs;
+      showDatasetNotice = false;
+      if (mode === 'update' && page.url.searchParams.has('addDatasetId')) clearAdditionIntent();
       setStatus('success', saveMapSuccess);
     } catch {
       setStatus('error', saveMapFailed);
@@ -260,13 +302,26 @@
     const mapId = page.url.searchParams.get('mapId');
     const idsParam = page.url.searchParams.get('ids');
 
-    if (signedIn && userDataUnavailable && viewSource === 'maps' && mapId) {
+    if (signedIn && userDataUnavailable && mapId) {
+      viewSource = 'maps';
       loading = false;
       return;
     }
 
     if (mapId) {
       selectedMapConfig = savedMaps.find((mapConfig) => mapConfig.id === mapId) ?? null;
+    }
+
+    const requestedDataset = page.url.searchParams.get('addDatasetId')?.trim();
+    if (requestedDataset) {
+      if (!signedIn || !selectedMapConfig) {
+        setStatus('error', translations.openSavedMapFailed);
+        loading = false;
+        return;
+      }
+      viewSource = 'maps';
+      addDatasetId = requestedDataset;
+      addingDataset = true;
     }
 
     if (!selectedMapConfig) {
@@ -299,13 +354,25 @@
 >
   {#if !loading}
     {#if selectedMapConfig || selectedIds.length > 0}
-      <MycartMap layerIds={selectedIds} mapConfig={selectedMapConfig?.config ?? null} bind:this={mapComponent} />
+      <MycartMap
+        layerIds={selectedIds}
+        mapConfig={selectedMapConfig?.config ?? null}
+        {addDatasetId}
+        onDatasetAdded={handleDatasetAdded}
+        onLoadError={handleMapLoadError}
+        bind:this={mapComponent}
+      />
     {:else if userDataUnavailable && viewSource === 'maps'}
       <div class="status-alert-error font-custom-style-body-1" role="status" aria-live="polite">
         {savedDataUnavailable}
       </div>
     {/if}
     {#if !presentationMode}
+      {#if addingDataset}
+        <p class="mt-5 font-custom-style-body-1" role="status">
+          {translations.addingDataset}
+        </p>
+      {/if}
       {#if statusType && statusMessage}
         <div
           class={`mt-5 status-alert-base font-custom-style-body-1 ${statusType === 'success' ? 'status-alert-success' : 'status-alert-danger'}`}
@@ -331,7 +398,7 @@
             <button
               class="button-inline-desktop button-action-light surface-shadow button-width-mobile-full"
               onclick={() => handleSaveMapClick('update')}
-              disabled={saving}
+              disabled={saving || addingDataset}
             >
               {saveMapLabel}
             </button>
@@ -339,7 +406,7 @@
           <button
             class="button-inline-desktop button-action-light surface-shadow button-width-mobile-full"
             onclick={() => handleSaveMapClick('create')}
-            disabled={saving}
+            disabled={saving || addingDataset}
           >
             {saveMapAsLabel}
           </button>
@@ -380,6 +447,17 @@
 </div>
 
 <ActionDialog bind:this={actionDialog} />
+<AppDialog
+  open={showDatasetNotice}
+  title={translations.unsavedMapChanges}
+  describedby="unsaved-dataset-description"
+  onclose={() => (showDatasetNotice = false)}
+>
+  <p id="unsaved-dataset-description" class="mb-5">{translations.unsavedDatasetNotice}</p>
+  <button class="button-action-dark rounded px-4 py-2" onclick={() => (showDatasetNotice = false)}>
+    {dismissPresentationNotice}
+  </button>
+</AppDialog>
 <AppDialog
   open={presentationMode && showPresentationNotice}
   title={presentationNoticeTitle}

@@ -92,6 +92,16 @@ describe('getLangFromPath', () => {
         expect(getLanguageSwitchUrl(switched, from)).toBe(url.href);
       });
 
+      it('preserves an unsaved dataset addition to a saved map', () => {
+        const url = new URL(`https://example.test/${from}/favourites/view?mapId=saved-map&addDatasetId=dataset-id&source=maps#map`);
+        const switched = new URL(getLanguageSwitchUrl(url, to));
+
+        expect(switched.pathname).toBe(`/${to}/favourites/view`);
+        expect(switched.search).toBe(url.search);
+        expect(switched.hash).toBe('#map');
+        expect(getLanguageSwitchUrl(switched, from)).toBe(url.href);
+      });
+
       it('preserves a local sign-in return destination in the selected language', () => {
         const destination = `https://example.test/${from}/favourites/view?mapId=saved-map&source=maps#map`;
         const url = new URL(`https://example.test/${from}/sign-in/launch`);
