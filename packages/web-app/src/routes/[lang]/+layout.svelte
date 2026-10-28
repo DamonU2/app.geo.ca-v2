@@ -201,7 +201,7 @@
   >
     <dialog
       open
-      class="w-full max-w-lg rounded border border-custom-16 bg-white p-6 shadow-lg"
+      class="static m-0 w-full max-w-lg rounded border border-custom-16 bg-white p-6 shadow-lg"
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="session-warning-title"

@@ -155,6 +155,7 @@ If you store this JSON directly in Secrets Manager, keep embedded newlines escap
 4. **Configure your staging/production deployment**:
 
 - Create your stage env file (for example `.env.staging` or `.env.production`) with:
+
   ```
   OIDC_CLIENT_ID=<your-stage-client-id>
   OIDC_CUSTOM_DOMAIN=<your-stage-oidc-domain>
@@ -163,9 +164,11 @@ If you store this JSON directly in Secrets Manager, keep embedded newlines escap
   OIDC_PRIVATE_KEY_SECRET_ID=<stage>/oidc/private-key
   OIDC_USE_PRIVATE_KEY_JWT=true
   SESSION_COOKIE_SECRET=<unique-random-secret-for-this-stage>
+  AUTH_STATUS_ALLOWED_ORIGINS=https://geo.ca,https://www.geo.ca
   ```
 
   - `SESSION_COOKIE_SECRET` is required for staging and production. Generate a unique value for each stage (for example, `openssl rand -base64 32`) and provide it through the stage environment; never commit the value.
+  - `AUTH_STATUS_ALLOWED_ORIGINS` is an optional comma-separated list of exact HTTPS origins allowed to call `/api/auth-status` with cookies. Production defaults to `https://geo.ca,https://www.geo.ca`; configure the static-site origin for staging as needed.
   - `OIDC_CLIENT_SECRET` is optional when `private_key_jwt` is enabled and key material is configured.
   - `OIDC_TOKEN_ENDPOINT` is optional; defaults to `<OIDC_CUSTOM_DOMAIN>/oauth2/token`. Set this when your provider requires a different token endpoint path (e.g., `/v1.0/endpoint/default/token`).
   - `OIDC_JWT_KID` (Key ID) is optional; when provided, it's included in the JWT header to help the provider identify the signing key (e.g., `staging-nrcan-geoca-signer`).
@@ -173,6 +176,54 @@ If you store this JSON directly in Secrets Manager, keep embedded newlines escap
   - Staging/production deployments fail fast when private_key_jwt is enforced and `OIDC_PRIVATE_KEY_SECRET_ID` is missing or malformed.
   - The app only fetches the private key from Secrets Manager when `OIDC_USE_PRIVATE_KEY_JWT=true`.
   - Leave `OIDC_USE_PRIVATE_KEY_JWT` unset or `false` in `.env.dev` to keep local development on `client_secret_post`.
+
+#### Reading sign-in status from the static `geo.ca` site
+
+The static site cannot read or validate the authentication cookie itself. The cookie is `HttpOnly`; instead, call the app's status endpoint from the browser and let `app.geo.ca` validate the session. For example, add an element for the sign-in state:
+
+```html
+<span id="sign-in-status" aria-live="polite"></span>
+```
+
+Then load this script on `https://geo.ca` (or `https://www.geo.ca`):
+
+```html
+<script>
+  async function updateSignInStatus() {
+    const status = document.getElementById("sign-in-status");
+    if (!status) return;
+
+    try {
+      const response = await fetch("https://app.geo.ca/api/auth-status", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (response.status === 503) {
+        status.textContent = "Sign-in status is temporarily unavailable.";
+        return;
+      }
+
+      if (!response.ok) {
+        status.textContent = "Unable to check sign-in status.";
+        return;
+      }
+
+      const result = await response.json();
+      status.textContent = result.signedIn ? "Signed in" : "Not signed in";
+    } catch (error) {
+      console.error("Unable to check sign-in status", error);
+      status.textContent = "Unable to check sign-in status.";
+    }
+  }
+
+  updateSignInStatus();
+</script>
+```
+
+`credentials: 'include'` is essential: it asks the browser to send eligible cookies to `app.geo.ca`. The app's auth cookies must be scoped to `geo.ca`, and users must already have signed in through the app. Since this is a cross-origin request, the app must allow the page's **exact origin** in `AUTH_STATUS_ALLOWED_ORIGINS` (for example, `https://geo.ca`; include `https://www.geo.ca` too if the page is served there). The endpoint returns `{ "signedIn": true }` or `{ "signedIn": false }`; `503` means the server could not verify the status, while a network/CORS failure means the page should treat status as unknown, not as signed out. The response is marked `Cache-Control: no-store`.
+
+The browser sends the cookie, but static-site JavaScript never receives or inspects it. Do not copy cookie values into JavaScript, expose tokens, or use `mode: 'no-cors'` (which prevents reading the response).
 
 5. **Deploy**:
 

@@ -103,6 +103,9 @@ export default $config({
       transform: {
         server: (args: any) => {
           args.logging = logRetention;
+          // SST defaults function URL CORS to "*", which duplicates the exact-origin
+          // credentialed CORS headers set by /api/auth-status. Let the app own CORS.
+          args.url = { ...args.url, cors: false };
         },
         imageOptimizer: (args: any) => {
           args.logging = logRetention;
@@ -111,6 +114,8 @@ export default $config({
       environment: {
         GEOCORE_API_DOMAIN,
         SEMANTIC_SEARCH_URL,
+        AUTH_STATUS_ALLOWED_ORIGINS:
+          process.env.AUTH_STATUS_ALLOWED_ORIGINS ?? (isProduction ? "https://geo.ca,https://www.geo.ca" : ""),
         OIDC_CLIENT_ID: env.oidcClientId,
         OIDC_CUSTOM_DOMAIN: env.oidcCustomDomain,
         OIDC_TOKEN_ENDPOINT: env.oidcTokenEndpoint,
