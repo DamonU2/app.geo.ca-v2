@@ -1,6 +1,6 @@
-import type { Handle } from '@sveltejs/kit';
+import type { Handle } from '@sveltejs/kit/hooks';
 import { redirect } from '@sveltejs/kit';
-import { getAppLanguage, isAppLanguage } from '$lib/utils/language';
+import { getAppLanguage, isAppLanguage } from '#lib/utils/language.js';
 
 // OP-to-RP server calls carry no Origin header; the route authenticates via the signed logout_token.
 const CSRF_EXEMPT_PATHS = new Set(['/sign-in/back-channel-logout']);

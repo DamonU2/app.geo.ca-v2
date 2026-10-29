@@ -1,17 +1,17 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import type { Cookies } from '@sveltejs/kit';
-import { encodeBase64Url } from '$lib/utils/auth/base64url';
-import { createClientAssertionJwt } from '$lib/utils/auth/client-assertion.server';
-import { getCookieDomainOptions, isSecureCookieEnvironment } from '$lib/utils/auth/cookie-policy.server';
+import { encodeBase64Url } from '#lib/utils/auth/base64url.js';
+import { createClientAssertionJwt } from '#lib/utils/auth/client-assertion.server.js';
+import { getCookieDomainOptions, isSecureCookieEnvironment } from '#lib/utils/auth/cookie-policy.server.js';
 import {
   getOidcConfig,
   getOidcMinimalConfigOrFail,
   getOpenIdConfiguration,
   isHttpsOrLocalhostUrl,
   isLocalhostUrl,
-} from '$lib/utils/auth/oidc.server';
-import { getAuthorizeScopeValue } from '$lib/utils/auth/scope-policy.server';
-import { getLangFromPath, isFrench } from '$lib/utils/language';
+} from '#lib/utils/auth/oidc.server.js';
+import { getAuthorizeScopeValue } from '#lib/utils/auth/scope-policy.server.js';
+import { getLangFromPath, isFrench } from '#lib/utils/language.js';
 
 /**
  * Cookie name used to persist the one-time PKCE verifier between send and receive routes.

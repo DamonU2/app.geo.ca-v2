@@ -2,10 +2,10 @@
   import { page } from '$app/state';
   import { onMount } from 'svelte';
   import { invalidate } from '$app/navigation';
-  import { updateLocalStorage } from '$lib/utils/event-dispatchers/local-storage-changed';
-  import { FAVOURITES_STORAGE_KEY } from '$lib/utils/favourites-storage';
-  import Heart from '$lib/components/icons/heart.svelte';
-  import HeartFilled from '$lib/components/icons/heart-filled.svelte';
+  import { updateLocalStorage } from '#lib/utils/event-dispatchers/local-storage-changed.js';
+  import { FAVOURITES_STORAGE_KEY } from '#lib/utils/favourites-storage.js';
+  import Heart from '#lib/components/icons/heart.svelte';
+  import HeartFilled from '#lib/components/icons/heart-filled.svelte';
 
   const data = page.data;
   const translations = data.t;

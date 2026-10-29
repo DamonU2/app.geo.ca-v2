@@ -7,14 +7,12 @@ const { getUserDataMock } = vi.hoisted(() => ({
   getUserDataMock: vi.fn(),
 }));
 
-vi.mock('$lib/db/user', () => ({
+vi.mock('#lib/db/user.js', () => ({
   getUserData: getUserDataMock,
 }));
 
-vi.mock('$env/dynamic/private', () => ({
-  env: {
-    AUTH_STATUS_ALLOWED_ORIGINS: 'https://geo.ca,https://www.geo.ca',
-  },
+vi.mock('$app/env/private', () => ({
+  AUTH_STATUS_ALLOWED_ORIGINS: 'https://geo.ca,https://www.geo.ca',
 }));
 
 import { GET, OPTIONS } from '../../routes/api/auth-status/+server';

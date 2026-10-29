@@ -23,11 +23,11 @@
   import { tick } from 'svelte';
   import { fly } from 'svelte/transition';
   import { page } from '$app/state';
-  import { pickByLanguage } from '$lib/utils/language';
-  import Chevrondown from '$lib/components/icons/chevrondown.svelte';
-  import Chevronup from '$lib/components/icons/chevronup.svelte';
-  import Close from '$lib/components/icons/close.svelte';
-  import type { SelectOption } from '$lib/components/select-customized/selected-types.d.ts';
+  import { pickByLanguage } from '#lib/utils/language.js';
+  import Chevrondown from '#lib/components/icons/chevrondown.svelte';
+  import Chevronup from '#lib/components/icons/chevronup.svelte';
+  import Close from '#lib/components/icons/close.svelte';
+  import type { SelectOption } from '#lib/components/select-customized/selected-types.d.ts';
 
   interface Props {
     optionsData: Array<SelectOption>;

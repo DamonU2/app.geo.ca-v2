@@ -1,9 +1,9 @@
 <script lang="ts">
   import { fly } from 'svelte/transition';
   import { page } from '$app/state';
-  import { pickByLanguage } from '$lib/utils/language';
-  import Chevronleft from '$lib/components/icons/chevronleft.svelte';
-  import Chevronright from '$lib/components/icons/chevronright.svelte';
+  import { pickByLanguage } from '#lib/utils/language.js';
+  import Chevronleft from '#lib/components/icons/chevronleft.svelte';
+  import Chevronright from '#lib/components/icons/chevronright.svelte';
 
   type CarouselCard = {
     title: string;

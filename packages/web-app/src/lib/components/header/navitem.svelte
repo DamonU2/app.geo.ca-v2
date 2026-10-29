@@ -1,16 +1,16 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { onMount } from 'svelte';
-  import { clickOutside } from '$lib/components/component-utils/clickOutside';
-  import { toggleScroll } from '$lib/components/component-utils/toggleScroll';
-  import { LOCALSTORAGE_UPDATED } from '$lib/utils/event-dispatchers/local-storage-changed';
-  import type { AppLanguage } from '$lib/utils/language';
-  import { getLanguageSwitchUrl, pickByLanguage } from '$lib/utils/language';
-  import Navdropdown from '$lib/components/header/navdropdown.svelte';
-  import Chevronup from '$lib/components/icons/chevronup.svelte';
-  import Chevrondown from '$lib/components/icons/chevrondown.svelte';
-  import Chevronright from '$lib/components/icons/chevronright.svelte';
-  import Globe from '$lib/components/icons/globe.svelte';
+  import { clickOutside } from '#lib/components/component-utils/clickOutside.js';
+  import { toggleScroll } from '#lib/components/component-utils/toggleScroll.js';
+  import { LOCALSTORAGE_UPDATED } from '#lib/utils/event-dispatchers/local-storage-changed.js';
+  import type { AppLanguage } from '#lib/utils/language.js';
+  import { getLanguageSwitchUrl, pickByLanguage } from '#lib/utils/language.js';
+  import Navdropdown from '#lib/components/header/navdropdown.svelte';
+  import Chevronup from '#lib/components/icons/chevronup.svelte';
+  import Chevrondown from '#lib/components/icons/chevrondown.svelte';
+  import Chevronright from '#lib/components/icons/chevronright.svelte';
+  import Globe from '#lib/components/icons/globe.svelte';
 
   let { linkData, orientation, dropDownClick } = $props();
 
@@ -107,7 +107,7 @@
    * @returns The new URL.
    */
   function toggleLanguage(lang: AppLanguage): string {
-    return getLanguageSwitchUrl(page.url, lang);
+    return getLanguageSwitchUrl(new URL(page.url.href), lang);
   }
 
   onMount((): (() => void) => {

@@ -1,5 +1,5 @@
 import { tick } from 'svelte';
-import { GEOVIEW_APP_VERSION } from '$lib/config/constants';
+import { GEOVIEW_APP_VERSION } from '#lib/config/constants.js';
 
 declare global {
   interface Window {

@@ -6,7 +6,7 @@ import {
   decodeGuestFavouritesCookieValue,
   encodeGuestFavouritesCookieValue,
   GUEST_FAVOURITES_COOKIE_NAME,
-} from '$lib/utils/guest-favourites';
+} from '#lib/utils/guest-favourites.js';
 
 describe('GUEST_FAVOURITES_COOKIE_NAME', () => {
   it('is a stable cookie name shared by client and server', () => {

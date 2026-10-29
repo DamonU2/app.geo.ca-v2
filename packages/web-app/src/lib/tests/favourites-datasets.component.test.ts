@@ -18,7 +18,9 @@ const mocks = vi.hoisted(() => ({
   },
   navigating: { type: null },
   goto: vi.fn(),
-  resolve: vi.fn((path: string) => path),
+  resolve: vi.fn((path: string, params?: Record<string, string>) =>
+    path.replace(/\[([^\]]+)\]/g, (_match, key: string) => params?.[key] ?? `[${key}]`)
+  ),
   updateLocalStorage: vi.fn(),
   datasetResponseJson: vi.fn<() => Promise<unknown>>(),
   fetch: vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<{ ok: boolean; json?: () => Promise<unknown> }>>(),
@@ -27,9 +29,9 @@ const mocks = vi.hoisted(() => ({
 vi.mock('$app/state', () => ({ page: mocks.page, navigating: mocks.navigating }));
 vi.mock('$app/navigation', () => ({ goto: mocks.goto }));
 vi.mock('$app/paths', () => ({ resolve: mocks.resolve }));
-vi.mock('$lib/utils/event-dispatchers/local-storage-changed', () => ({ updateLocalStorage: mocks.updateLocalStorage }));
+vi.mock('#lib/utils/event-dispatchers/local-storage-changed.js', () => ({ updateLocalStorage: mocks.updateLocalStorage }));
 
-import FavouritesDatasets from '$lib/components/favourites/favourites-datasets.svelte';
+import FavouritesDatasets from '#lib/components/favourites/favourites-datasets.svelte';
 
 const originalShowModal = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, 'showModal');
 const originalClose = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, 'close');

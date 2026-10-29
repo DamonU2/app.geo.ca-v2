@@ -1,8 +1,8 @@
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
-import { getAppLanguage } from '$lib/utils/language';
-import { loadFavouritesPageData } from '$lib/utils/favourites/page-load.server';
-import { buildPageTitle } from '$lib/utils/metadata';
+import { getAppLanguage } from '#lib/utils/language.js';
+import { loadFavouritesPageData } from '#lib/utils/favourites/page-load.server.js';
+import { buildPageTitle } from '#lib/utils/metadata.js';
 
 /**
  * Loads favourites maps page data for signed-in users.

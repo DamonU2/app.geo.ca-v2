@@ -1,7 +1,7 @@
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
-import type { Filter } from '$lib/components/search-results/filters/filter-types';
-import type { ContactInfo, GeospatialRecord, MapConfigFavourite, SimilarityRecord } from '$lib/db/db-types';
+import type { Filter } from '#lib/components/search-results/filters/filter-types';
+import type { ContactInfo, GeospatialRecord, MapConfigFavourite, SimilarityRecord } from '#lib/db/db-types.js';
 
 // SemanticSearch results have coordinates as number[][] instead of string
 type SemanticResultWithCoordinates = Omit<GeospatialRecord, 'coordinates'> & {

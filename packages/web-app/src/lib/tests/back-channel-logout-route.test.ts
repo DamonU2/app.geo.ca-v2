@@ -8,11 +8,11 @@ const { markUserAuthRevokedMock, verifyBackChannelLogoutTokenMock } = vi.hoisted
   verifyBackChannelLogoutTokenMock: vi.fn(),
 }));
 
-vi.mock('$lib/db/user', () => ({
+vi.mock('#lib/db/user.js', () => ({
   markUserAuthRevoked: markUserAuthRevokedMock,
 }));
 
-vi.mock('$lib/utils/auth/sign-in-back-channel.server', () => ({
+vi.mock('#lib/utils/auth/sign-in-back-channel.server.js', () => ({
   verifyBackChannelLogoutToken: verifyBackChannelLogoutTokenMock,
 }));
 

@@ -1,9 +1,9 @@
-import { decodeBase64UrlJson } from '$lib/utils/auth/base64url';
-import { splitJwt } from '$lib/utils/auth/jwt';
-import { verifyJwtSignatureWithJwks } from '$lib/utils/auth/jwt-signature.server';
-import { getAudienceValues, hasNumericIat, hasValidExp, issuerMatches } from '$lib/utils/auth/oidc-claims.server';
-import { getOidcMinimalConfigOrFail, resolveVerifiedDiscovery } from '$lib/utils/auth/oidc.server';
-import type { JwtHeader } from '$lib/utils/auth/jwt-types';
+import { decodeBase64UrlJson } from '#lib/utils/auth/base64url.js';
+import { splitJwt } from '#lib/utils/auth/jwt.js';
+import { verifyJwtSignatureWithJwks } from '#lib/utils/auth/jwt-signature.server.js';
+import { getAudienceValues, hasNumericIat, hasValidExp, issuerMatches } from '#lib/utils/auth/oidc-claims.server.js';
+import { getOidcMinimalConfigOrFail, resolveVerifiedDiscovery } from '#lib/utils/auth/oidc.server.js';
+import type { JwtHeader } from '#lib/utils/auth/jwt-types.js';
 
 const BACK_CHANNEL_LOGOUT_EVENT = 'http://schemas.openid.net/event/backchannel-logout';
 

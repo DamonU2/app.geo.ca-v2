@@ -1,6 +1,6 @@
 import type { Cookies } from '@sveltejs/kit';
-import { getCookieDomainOptions } from '$lib/utils/auth/cookie-policy.server';
-import { clearSessionCookie } from '$lib/utils/auth/session-cookie.server';
+import { getCookieDomainOptions } from '#lib/utils/auth/cookie-policy.server.js';
+import { clearSessionCookie } from '#lib/utils/auth/session-cookie.server.js';
 
 /**
  * Clears all authentication cookies.

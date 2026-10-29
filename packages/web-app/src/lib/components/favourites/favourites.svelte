@@ -4,20 +4,20 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { updateLocalStorage } from '$lib/utils/event-dispatchers/local-storage-changed';
-  import { FAVOURITES_STORAGE_KEY, getStoredFavourites, resolveInitialFavourites } from '$lib/utils/favourites-storage';
-  import Card from '$lib/components/card/card.svelte';
-  import ActionDialog from '$lib/components/dialog/action-dialog.svelte';
-  import NoMap from '$lib/components/icons/no-map.svelte';
-  import SortableTable from '$lib/components/sortable-table/sortable-table.svelte';
-  import FavouritesListSkeleton from '$lib/components/loading-mask/favourites-list-skeleton.svelte';
-  import Checkmark from '$lib/components/icons/checkmark.svelte';
-  import GarbageCan from '$lib/components/icons/garbage-can.svelte';
-  import SearchBarSimplified from '$lib/components/search-results/search-bar-simplified.svelte';
-  import enTranslations from '$lib/components/favourites/i18n/en/translations.json';
-  import type { FavouritesRecord, FavouritesRow } from '$lib/db/db-types';
-  import type { AppLanguage } from '$lib/utils/language';
-  import { isFrench, pickByLanguage } from '$lib/utils/language';
+  import { updateLocalStorage } from '#lib/utils/event-dispatchers/local-storage-changed.js';
+  import { FAVOURITES_STORAGE_KEY, getStoredFavourites, resolveInitialFavourites } from '#lib/utils/favourites-storage.js';
+  import Card from '#lib/components/card/card.svelte';
+  import ActionDialog from '#lib/components/dialog/action-dialog.svelte';
+  import NoMap from '#lib/components/icons/no-map.svelte';
+  import SortableTable from '#lib/components/sortable-table/sortable-table.svelte';
+  import FavouritesListSkeleton from '#lib/components/loading-mask/favourites-list-skeleton.svelte';
+  import Checkmark from '#lib/components/icons/checkmark.svelte';
+  import GarbageCan from '#lib/components/icons/garbage-can.svelte';
+  import SearchBarSimplified from '#lib/components/search-results/search-bar-simplified.svelte';
+  import enTranslations from '#lib/components/favourites/i18n/en/translations.json';
+  import type { FavouritesRecord, FavouritesRow } from '#lib/db/db-types.js';
+  import type { AppLanguage } from '#lib/utils/language.js';
+  import { isFrench, pickByLanguage } from '#lib/utils/language.js';
 
   type FavouritesTranslations = typeof enTranslations;
   const translations: FavouritesTranslations = {
@@ -168,7 +168,7 @@
     }
 
     const ids = selectedIds.join(',');
-    goto(resolve(`/${lang}/favourites/view?ids=${encodeURIComponent(ids)}&source=datasets`));
+    goto(resolve(`/[lang]/favourites/view?ids=${encodeURIComponent(ids)}&source=datasets`, { lang }));
   }
 
   /**
@@ -246,13 +246,13 @@
           >
             <div class="flex items-start justify-between gap-4">
               <h2 class="font-custom-style-h2-2">
-                <a class="hover:underline" href={resolve(`/${lang}/favourites/datasets`)}>
+                <a class="hover:underline" href={resolve('/[lang]/favourites/datasets', { lang })}>
                   {datasetsTabLabel} ({favouriteRecordList.length})
                 </a>
               </h2>
             </div>
             <p class="font-custom-style-body-1 mt-3 mb-5 leading-relaxed">{datasetsLandingDescription}</p>
-            <a class="button-action-dark button-cta-link-dark" href={resolve(`/${lang}/favourites/datasets`)}>
+            <a class="button-action-dark button-cta-link-dark" href={resolve('/[lang]/favourites/datasets', { lang })}>
               {datasetsLinkLabel}
             </a>
           </section>
@@ -262,13 +262,13 @@
           >
             <div class="flex items-start justify-between gap-4">
               <h2 class="font-custom-style-h2-2">
-                <a class="hover:underline" href={resolve(`/${lang}/favourites/maps`)}>
+                <a class="hover:underline" href={resolve('/[lang]/favourites/maps', { lang })}>
                   {mapsTabLabel} ({savedMapsCount})
                 </a>
               </h2>
             </div>
             <p class="font-custom-style-body-1 mt-3 mb-5 leading-relaxed">{mapsLandingDescription}</p>
-            <a class="button-action-dark button-cta-link-dark" href={resolve(`/${lang}/favourites/maps`)}>
+            <a class="button-action-dark button-cta-link-dark" href={resolve('/[lang]/favourites/maps', { lang })}>
               {mapsLinkLabel}
             </a>
           </section>
@@ -336,7 +336,7 @@
               <!-- Resource -->
               <div class="flex-1">
                 <!-- Resource data-->
-                <a href={resolve(`/${lang}/map-browser/record/${item.id}`)} class="font-custom-style-h2-2 block">
+                <a href={resolve('/[lang]/map-browser/record/[uuid]', { lang, uuid: item.id })} class="font-custom-style-h2-2 block">
                   {item.name}
                 </a>
                 <p class="font-custom-style-body-9">{item.id}</p>
@@ -383,7 +383,7 @@
           {resourceListEmpty}
         </p>
 
-        <a class="button-action-dark button-cta-link-dark block m-auto mt-5" href={resolve(`/${lang}/map-browser`)}>
+        <a class="button-action-dark button-cta-link-dark block m-auto mt-5" href={resolve('/[lang]/map-browser', { lang })}>
           {findAResource}
         </a>
       </div>

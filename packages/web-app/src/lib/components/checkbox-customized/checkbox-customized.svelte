@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Checkmark from '$lib/components/icons/checkmark.svelte';
+  import Checkmark from '#lib/components/icons/checkmark.svelte';
 
   // Note: checkboxes in the same form, with the same name attribute
   // are grouped together

@@ -1,7 +1,7 @@
 /**
  * Test coverage: Unit tests for user auth revocation marker persistence and error handling behavior.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { docSendMock, getTokenMock } = vi.hoisted(() => ({
   docSendMock: vi.fn(),
@@ -30,29 +30,30 @@ vi.mock('@aws-sdk/lib-dynamodb', () => {
   };
 });
 
-vi.mock('$lib/utils/aws-region', () => ({
+vi.mock('#lib/utils/aws-region.js', () => ({
   getAwsRegion: vi.fn(() => 'ca-central-1'),
 }));
 
-vi.mock('$lib/utils/auth/parse-jwt', () => ({
+vi.mock('#lib/utils/auth/parse-jwt.js', () => ({
   getToken: getTokenMock,
 }));
 
-vi.mock('$lib/utils/auth/auth-cookies', () => ({
+vi.mock('#lib/utils/auth/auth-cookies.js', () => ({
   clearAuthCookies: vi.fn(),
 }));
 
-vi.mock('$env/static/private', () => ({
-  USER_TABLE_NAME: 'users-table',
-}));
-
 import type { Cookies } from '@sveltejs/kit';
-import { getToken } from '$lib/utils/auth/parse-jwt';
-import { markUserAuthRevoked, putUserData } from '$lib/db/user';
+import { getToken } from '#lib/utils/auth/parse-jwt.js';
+import { markUserAuthRevoked, putUserData } from '#lib/db/user.js';
 
 describe('putUserData', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv('USER_TABLE_NAME', 'users-table');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('updates profile fields without replacing authentication revocation attributes', async () => {
@@ -78,6 +79,7 @@ describe('putUserData', () => {
 describe('markUserAuthRevoked', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv('USER_TABLE_NAME', 'users-table');
   });
 
   it('writes a monotonic condition so authRevokedAt cannot move backward', async () => {

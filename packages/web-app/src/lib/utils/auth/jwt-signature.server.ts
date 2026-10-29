@@ -1,7 +1,7 @@
 import { createPublicKey, createVerify, randomUUID } from 'node:crypto';
-import { decodeBase64UrlBytes } from '$lib/utils/auth/base64url';
-import type { JwtHeader, JsonWebKey } from '$lib/utils/auth/jwt-types';
-import type { JwtParts } from '$lib/utils/auth/jwt';
+import { decodeBase64UrlBytes } from '#lib/utils/auth/base64url.js';
+import type { JwtHeader, JsonWebKey } from '#lib/utils/auth/jwt-types.js';
+import type { JwtParts } from '#lib/utils/auth/jwt.js';
 
 /**
  * Result shape returned by JWT signature verification attempts.

@@ -1,12 +1,17 @@
-import type { TokenPayload } from '$lib/db/db-types';
+import type { TokenPayload } from '#lib/db/db-types.js';
 import { randomUUID } from 'node:crypto';
-import { decodeBase64UrlJson } from '$lib/utils/auth/base64url';
-import { splitJwt } from '$lib/utils/auth/jwt';
-import { verifyJwtSignatureWithJwks } from '$lib/utils/auth/jwt-signature.server';
-import { getAudienceValues, hasNumericIat, hasValidExp, hasValidNbf, issuerMatches } from '$lib/utils/auth/oidc-claims.server';
-import { ensureTrailingSlashless, getOidcPublicConfig, getOpenIdConfiguration, isHttpsOrLocalhostUrl } from '$lib/utils/auth/oidc.server';
-import { getRequestedScopes, validateScopedIdTokenClaims } from '$lib/utils/auth/scope-policy.server';
-import type { JwtHeader } from '$lib/utils/auth/jwt-types';
+import { decodeBase64UrlJson } from '#lib/utils/auth/base64url.js';
+import { splitJwt } from '#lib/utils/auth/jwt.js';
+import { verifyJwtSignatureWithJwks } from '#lib/utils/auth/jwt-signature.server.js';
+import { getAudienceValues, hasNumericIat, hasValidExp, hasValidNbf, issuerMatches } from '#lib/utils/auth/oidc-claims.server.js';
+import {
+  ensureTrailingSlashless,
+  getOidcPublicConfig,
+  getOpenIdConfiguration,
+  isHttpsOrLocalhostUrl,
+} from '#lib/utils/auth/oidc.server.js';
+import { getRequestedScopes, validateScopedIdTokenClaims } from '#lib/utils/auth/scope-policy.server.js';
+import type { JwtHeader } from '#lib/utils/auth/jwt-types.js';
 
 /**
  * Verifies the ID token signature and required OIDC claims against provider metadata.

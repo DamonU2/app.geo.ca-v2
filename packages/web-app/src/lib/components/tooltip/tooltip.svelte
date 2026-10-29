@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { setPosition } from '$lib/components/tooltip/setPosition';
+  import { setPosition } from '#lib/components/tooltip/setPosition.js';
 
   let { describedById, tooltipText } = $props();
 </script>

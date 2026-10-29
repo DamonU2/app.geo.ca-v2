@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { pickByLanguage } from '$lib/utils/language';
+  import { pickByLanguage } from '#lib/utils/language.js';
 
   let { data } = $props();
 
@@ -20,7 +20,7 @@
     </p>
     <!-- The server constructs this localized route, including its preserved sign-in state. -->
     <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-    <a href={data.signInUrl} class="button-action-dark rounded px-4 py-2">
+    <a href={data.signInUrl} class="button-action-dark">
       {pickByLanguage(data.lang, 'Continue', 'Continuer')}
     </a>
   </section>

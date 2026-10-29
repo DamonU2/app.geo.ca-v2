@@ -25,10 +25,10 @@
 ------------------------------------------------------------->
 
 <script lang="ts">
-  import Chevronleft from '$lib/components/icons/chevronleft.svelte';
-  import Chevronright from '$lib/components/icons/chevronright.svelte';
+  import Chevronleft from '#lib/components/icons/chevronleft.svelte';
+  import Chevronright from '#lib/components/icons/chevronright.svelte';
   import { page } from '$app/state';
-  import { formatNumber } from '$lib/utils/format-number';
+  import { formatNumber } from '#lib/utils/format-number.js';
 
   interface Props {
     totalItems?: number;

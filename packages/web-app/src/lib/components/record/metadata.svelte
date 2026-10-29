@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { pickByLanguage } from '$lib/utils/language';
-  import Card from '$lib/components/card/card.svelte';
-  import type { ContactInfo } from '$lib/db/db-types';
+  import { pickByLanguage } from '#lib/utils/language.js';
+  import Card from '#lib/components/card/card.svelte';
+  import type { ContactInfo } from '#lib/db/db-types.js';
 
   /******************* Translations *******************/
   const translations = page.data.t;

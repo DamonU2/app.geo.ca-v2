@@ -2,9 +2,9 @@
   import { page } from '$app/state';
   import Menubutton from './menubutton.svelte';
   import Navitem from './navitem.svelte';
-  import { toggleScroll } from '$lib/components/component-utils/toggleScroll';
+  import { toggleScroll } from '#lib/components/component-utils/toggleScroll.js';
   import Chevronleft from '../icons/chevronleft.svelte';
-  import SignIn from '$lib/components/profile/sign-in.svelte';
+  import SignIn from '#lib/components/profile/sign-in.svelte';
 
   let navItems = $derived(page.data.navitems);
   const orientation = 'vertical';

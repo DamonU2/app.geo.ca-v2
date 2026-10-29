@@ -8,12 +8,12 @@ const { getAppLanguageMock, loadFavouritesPageDataMock } = vi.hoisted(() => ({
   loadFavouritesPageDataMock: vi.fn(),
 }));
 
-vi.mock('$lib/utils/language', () => ({
+vi.mock('#lib/utils/language.js', () => ({
   getAppLanguage: getAppLanguageMock,
   pickByLanguage: (lang: 'en-ca' | 'fr-ca', enValue: string, frValue: string) => (lang === 'fr-ca' ? frValue : enValue),
 }));
 
-vi.mock('$lib/utils/favourites/page-load.server', () => ({
+vi.mock('#lib/utils/favourites/page-load.server.js', () => ({
   loadFavouritesPageData: loadFavouritesPageDataMock,
 }));
 

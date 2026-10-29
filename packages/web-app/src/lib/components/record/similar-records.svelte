@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { onMount } from 'svelte';
-  import { pickByLanguage } from '$lib/utils/language';
-  import Carousel from '$lib/components/carousel/carousel.svelte';
-  import type { SimilarityRecord } from '$lib/db/db-types';
+  import { pickByLanguage } from '#lib/utils/language.js';
+  import Carousel from '#lib/components/carousel/carousel.svelte';
+  import type { SimilarityRecord } from '#lib/db/db-types.js';
 
   const translations = page.data.t;
   const similarRecordsText = translations?.similarProducts ? translations['similarProducts'] : 'Similar records';

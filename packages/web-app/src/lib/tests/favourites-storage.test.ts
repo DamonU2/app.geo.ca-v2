@@ -2,7 +2,12 @@
  * Test coverage: Unit tests for local favourites storage and initial source resolution.
  */
 import { describe, expect, it, vi } from 'vitest';
-import { FAVOURITES_STORAGE_KEY, getStoredFavourites, normalizeFavourites, resolveInitialFavourites } from '$lib/utils/favourites-storage';
+import {
+  FAVOURITES_STORAGE_KEY,
+  getStoredFavourites,
+  normalizeFavourites,
+  resolveInitialFavourites,
+} from '#lib/utils/favourites-storage.js';
 
 describe('normalizeFavourites', () => {
   it('trims IDs, removes empty values, and preserves only the first occurrence', () => {

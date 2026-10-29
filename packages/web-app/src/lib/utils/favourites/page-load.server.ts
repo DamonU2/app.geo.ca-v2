@@ -1,9 +1,8 @@
-import { GEOCORE_API_DOMAIN } from '$env/static/private';
-import { getUserData } from '$lib/db/user';
-import type { GeospatialRecord, UserData, UserDataLoadStatus } from '$lib/db/db-types';
-import { sanitize } from '$lib/utils/data-sanitization/geocore-result';
-import { buildCatalogTitle, buildPageTitle, buildSeoMetadata } from '$lib/utils/metadata';
-import type { AppLanguage } from '$lib/utils/language';
+import { getUserData } from '#lib/db/user.js';
+import type { GeospatialRecord, UserData, UserDataLoadStatus } from '#lib/db/db-types.js';
+import { sanitize } from '#lib/utils/data-sanitization/geocore-result.js';
+import { buildCatalogTitle, buildPageTitle, buildSeoMetadata } from '#lib/utils/metadata.js';
+import type { AppLanguage } from '#lib/utils/language.js';
 
 type FavouritesLoadInput = {
   fetch: (url: string | URL, options?: RequestInit) => Promise<Response>;
@@ -83,7 +82,7 @@ export async function loadFavouritesPageData({ fetch, url, cookies, lang }: Favo
  * @returns Promise resolving to the GeoCore response for a single record.
  */
 function getRecord(id: string, lang: string, fetch: (url: string | URL, options?: RequestInit) => Promise<Response>): Promise<Response> {
-  const url = new URL(`${GEOCORE_API_DOMAIN}/id`);
+  const url = new URL(`${process.env.GEOCORE_API_DOMAIN}/id`);
   const params = {
     id: id,
     lang: lang.split('-')[0],

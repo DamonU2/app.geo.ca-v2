@@ -23,7 +23,7 @@ const {
   setPkceVerifierCookieMock: vi.fn(),
 }));
 
-vi.mock('$lib/utils/auth/sign-in-core.server', () => ({
+vi.mock('#lib/utils/auth/sign-in-core.server.js', () => ({
   createOidcNonce: createOidcNonceMock,
   createOidcStateToken: createOidcStateTokenMock,
   createPkceChallenge: createPkceChallengeMock,

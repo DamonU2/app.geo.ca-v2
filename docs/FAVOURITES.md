@@ -2,7 +2,7 @@
 
 ## Overview
 
-The favourites feature allows signed-in users to save and manage datasets and custom map configurations. Guest users can save favourites temporarily in a cookie, which are merged into their profile upon sign-in.
+The favourites feature allows signed-in users to save and manage datasets and custom map configurations. Guest favourites are stored in browser local storage; when a guest starts sign-in, that list is copied into a short-lived cookie and merged into the signed-in profile.
 
 ## Directory Structure
 
@@ -42,7 +42,10 @@ interface UserData {
   uuid: string | null; // User ID from auth token (null before first write)
   favourites: string[]; // Array of saved dataset record IDs
   mapConfigs?: MapConfigFavourite[]; // Array of saved map configurations
-  authRevokedAt?: number | null; // Back-channel logout marker
+  authRevokedAt?: number | null; // Global back-channel logout marker
+  authRevokedSids?: Record<string, number> | null; // Revocation timestamps keyed by provider session ID
+  lastBackChannelLogoutJti?: string | null; // Most recently accepted logout-token ID
+  lastBackChannelLogoutJtiSeenAt?: number | null; // Timestamp used for replay-window checks
 }
 
 interface MapConfigFavourite {
@@ -61,7 +64,8 @@ interface MapConfigFavourite {
 
 ### Guest Favourites
 
-- Stored in `guest_favourites` cookie (temporary)
+- Kept in browser local storage while browsing as a guest
+- Copied into the short-lived `guest_favourites` cookie when sign-in starts
 - Merged into `UserData.favourites` after sign-in
 - Cookie is cleared after successful persistence
 
@@ -90,7 +94,7 @@ interface MapConfigFavourite {
 - **Data**: Retrieves saved map configs from `UserData.mapConfigs`
 - **Features**: Upload JSON configs, download configs, delete configs, view on map
 - **Upload**: Validates max-item limit (25) and auto-renames duplicates
-- **Storage**: PATCH endpoint creates/deletes map configs
+- **Storage**: PATCH endpoint creates, updates, and deletes map configs
 
 ### `[lang]/favourites/view`
 
@@ -232,7 +236,7 @@ Shared guest favourites cookie contract used by both the client and server:
 Test favourites API behavior:
 
 ```bash
-npm run test -- src/lib/tests/favourites-api.test.ts
+npm run test:unit -- src/lib/tests/favourites-api.test.ts
 ```
 
 ### Adding a New Favourites Feature

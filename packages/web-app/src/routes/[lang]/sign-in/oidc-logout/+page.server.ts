@@ -1,9 +1,9 @@
 import type { Actions, PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
-import { getOidcLogoutUrl } from '$lib/utils/auth/sign-in-core.server';
-import { getCookieDomainOptions, isSecureCookieEnvironment } from '$lib/utils/auth/cookie-policy.server';
-import { isLocalhostUrl } from '$lib/utils/auth/oidc.server';
-import { getAppLanguage } from '$lib/utils/language';
+import { getOidcLogoutUrl } from '#lib/utils/auth/sign-in-core.server.js';
+import { getCookieDomainOptions, isSecureCookieEnvironment } from '#lib/utils/auth/cookie-policy.server.js';
+import { isLocalhostUrl } from '#lib/utils/auth/oidc.server.js';
+import { getAppLanguage } from '#lib/utils/language.js';
 
 /**
  * Renders the confirmation page without changing the user's authentication state.
@@ -50,6 +50,6 @@ export const actions: Actions = {
       throw redirect(303, localLogoutPath);
     }
 
-    throw redirect(303, oidcLogoutUrl);
+    throw redirect(303, oidcLogoutUrl, { external: true });
   },
 };

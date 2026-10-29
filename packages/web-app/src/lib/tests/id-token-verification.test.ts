@@ -2,9 +2,9 @@
  * Test coverage: Unit tests for ID token verification against OIDC metadata/JWKS, including success and rejection scenarios.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createTestSigningKey, signTestJwt, stubOidcDiscoveryAndJwksFetch } from '$lib/tests/auth-test-helpers';
-import { OIDC_CLOCK_SKEW_SECONDS } from '$lib/utils/auth/oidc-claims.server';
-import { verifyIdToken } from '$lib/utils/auth/id-token.server';
+import { createTestSigningKey, signTestJwt, stubOidcDiscoveryAndJwksFetch } from '#lib/tests/auth-test-helpers.js';
+import { OIDC_CLOCK_SKEW_SECONDS } from '#lib/utils/auth/oidc-claims.server.js';
+import { verifyIdToken } from '#lib/utils/auth/id-token.server.js';
 
 const clientId = 'cb802d19-a800-4433-ba7e-369d8ab58604';
 const issuer = 'https://auth.test.login-connexion.alpha.canada.ca';

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { toggleScroll } from '$lib/components/component-utils/toggleScroll';
+  import { toggleScroll } from '#lib/components/component-utils/toggleScroll.js';
 
   interface Props {
     active: boolean;

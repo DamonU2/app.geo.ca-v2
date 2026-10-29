@@ -1,7 +1,7 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import type { GeospatialRecord } from './db-types';
-import { GEOCORE_RECORD_PREFIX } from '$lib/config/constants';
-import { getAwsRegion } from '$lib/utils/aws-region';
+import { GEOCORE_RECORD_PREFIX } from '#lib/config/constants.js';
+import { getAwsRegion } from '#lib/utils/aws-region.js';
 
 // Configuration constants
 const BUCKET_NAME = process.env.VITE_BUCKET_NAME || process.env.BUCKET_NAME;

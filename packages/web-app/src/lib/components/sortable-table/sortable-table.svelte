@@ -2,12 +2,12 @@
   import type { Snippet } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { page } from '$app/state';
-  import { pickByLanguage } from '$lib/utils/language';
-  import SortDown from '$lib/components/icons/sort-down.svelte';
-  import SortInactive from '$lib/components/icons/sort-inactive.svelte';
-  import SortUp from '$lib/components/icons/sort-up.svelte';
-  import Checkmark from '$lib/components/icons/checkmark.svelte';
-  import GarbageCan from '$lib/components/icons/garbage-can.svelte';
+  import { pickByLanguage } from '#lib/utils/language.js';
+  import SortDown from '#lib/components/icons/sort-down.svelte';
+  import SortInactive from '#lib/components/icons/sort-inactive.svelte';
+  import SortUp from '#lib/components/icons/sort-up.svelte';
+  import Checkmark from '#lib/components/icons/checkmark.svelte';
+  import GarbageCan from '#lib/components/icons/garbage-can.svelte';
 
   // Every item in the array should have the same set of keys,
   // since the keys will become the column titles of the table

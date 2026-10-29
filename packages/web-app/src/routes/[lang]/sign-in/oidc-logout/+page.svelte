@@ -1,6 +1,6 @@
 <script lang="ts">
   import { resolve } from '$app/paths';
-  import { pickByLanguage } from '$lib/utils/language';
+  import { pickByLanguage } from '#lib/utils/language.js';
 
   let { data } = $props();
 
@@ -33,11 +33,11 @@
         {#if data.returnTo}
           <input type="hidden" name="returnTo" value={data.returnTo} />
         {/if}
-        <button type="submit" class="button-action-dark rounded px-4 py-2">
+        <button type="submit" class="button-action-dark">
           {pickByLanguage(data.lang, 'Sign out', 'Se déconnecter')}
         </button>
       </form>
-      <a href={resolve(`/${data.lang}/map-browser`)} onclick={handleCancel} class="button-action-light rounded px-4 py-2">
+      <a href={resolve('/[lang]/map-browser', { lang: data.lang })} onclick={handleCancel} class="button-action-light">
         {pickByLanguage(data.lang, 'Cancel', 'Annuler')}
       </a>
     </div>

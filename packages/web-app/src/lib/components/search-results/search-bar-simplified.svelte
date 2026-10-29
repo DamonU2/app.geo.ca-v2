@@ -8,7 +8,7 @@
   import { page, navigating } from '$app/state';
   import { resolve } from '$app/paths';
   import { goto } from '$app/navigation';
-  import Search from '$lib/components/icons/search.svelte';
+  import Search from '#lib/components/icons/search.svelte';
 
   /************* Translations ***************/
   const translations = page.data.t;
@@ -58,11 +58,11 @@
 
     let opts = {
       replaceState: true,
-      keepfocus: true,
+      reset: false,
     };
     // This component is used outside the search page, so it must navigate to map-browser explicitly.
     // Navigating to '/?...' hits root redirect and can drop query params.
-    goto(resolve(`/${page.data.lang}/map-browser?${query.toString()}`), opts);
+    goto(resolve(`/[lang]/map-browser?${query.toString()}`, { lang: page.data.lang }), opts);
   }
 </script>
 

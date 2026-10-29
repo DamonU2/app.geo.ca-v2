@@ -1,6 +1,5 @@
 import { createHash, createPublicKey, randomUUID } from 'node:crypto';
-import { env } from '$env/dynamic/private';
-import type { OpenIdConfiguration } from '$lib/utils/auth/jwt-types';
+import type { OpenIdConfiguration } from '#lib/utils/auth/jwt-types.js';
 
 const OPENID_CONFIGURATION_PATHS = ['/.well-known/openid-configuration', '/oauth2/.well-known/openid-configuration'];
 const OPENID_CONFIGURATION_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -58,11 +57,11 @@ export function isLocalhostUrl(url: string): boolean {
  * @returns Client id, client secret, and normalized custom domain.
  */
 export function getOidcConfig(): { clientId: string; clientSecret: string; customDomain: string; tokenEndpoint: string; jwtKid: string } {
-  const clientId = env.OIDC_CLIENT_ID ?? process.env.OIDC_CLIENT_ID ?? '';
-  const clientSecret = env.OIDC_CLIENT_SECRET ?? process.env.OIDC_CLIENT_SECRET ?? '';
-  const customDomain = ensureTrailingSlashless(env.OIDC_CUSTOM_DOMAIN ?? process.env.OIDC_CUSTOM_DOMAIN ?? '');
-  const tokenEndpoint = (env.OIDC_TOKEN_ENDPOINT ?? process.env.OIDC_TOKEN_ENDPOINT ?? '').trim();
-  const jwtKid = env.OIDC_JWT_KID ?? process.env.OIDC_JWT_KID ?? '';
+  const clientId = process.env.OIDC_CLIENT_ID ?? '';
+  const clientSecret = process.env.OIDC_CLIENT_SECRET ?? '';
+  const customDomain = ensureTrailingSlashless(process.env.OIDC_CUSTOM_DOMAIN ?? '');
+  const tokenEndpoint = (process.env.OIDC_TOKEN_ENDPOINT ?? '').trim();
+  const jwtKid = process.env.OIDC_JWT_KID ?? '';
 
   return { clientId, clientSecret, customDomain, tokenEndpoint, jwtKid };
 }
@@ -97,7 +96,7 @@ export function getOidcMinimalConfigOrFail(): { clientId: string; customDomain: 
  */
 export function getOidcManageUrl(): string | null {
   const { clientId } = getOidcConfig();
-  const baseUrl = (env.OIDC_MANAGE_BASE_URL ?? process.env.OIDC_MANAGE_BASE_URL ?? '').trim().replace(/\/$/, '');
+  const baseUrl = (process.env.OIDC_MANAGE_BASE_URL ?? '').trim().replace(/\/$/, '');
   if (!clientId || !baseUrl || !isHttpsOrLocalhostUrl(baseUrl)) {
     return null;
   }
@@ -378,8 +377,8 @@ function normalizeSecretTextValue(value: unknown, nestedKeys: string[]): string 
  * - `OIDC_PRIVATE_KEY_SECRET_ID` is not configured.
  */
 export async function getPrivateKeyMaterial(): Promise<{ pem: string; x5tS256: string | null } | null> {
-  const usePrivateKeyJwt = (env.OIDC_USE_PRIVATE_KEY_JWT ?? process.env.OIDC_USE_PRIVATE_KEY_JWT ?? '').toLowerCase() === 'true';
-  const secretId = env.OIDC_PRIVATE_KEY_SECRET_ID ?? process.env.OIDC_PRIVATE_KEY_SECRET_ID;
+  const usePrivateKeyJwt = (process.env.OIDC_USE_PRIVATE_KEY_JWT ?? '').toLowerCase() === 'true';
+  const secretId = process.env.OIDC_PRIVATE_KEY_SECRET_ID;
 
   if (!usePrivateKeyJwt || !secretId) {
     return null;

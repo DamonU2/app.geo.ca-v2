@@ -1,6 +1,6 @@
 import type { Cookies } from '@sveltejs/kit';
-import { clearAuthCookies } from '$lib/utils/auth/auth-cookies';
-import { getLangFromPath } from '$lib/utils/language';
+import { clearAuthCookies } from '#lib/utils/auth/auth-cookies.js';
+import { getLangFromPath } from '#lib/utils/language.js';
 
 /**
  * Normalizes and validates post-auth state redirects.

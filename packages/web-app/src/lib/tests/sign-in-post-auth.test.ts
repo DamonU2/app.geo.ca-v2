@@ -3,7 +3,7 @@
  */
 import type { Cookies } from '@sveltejs/kit';
 import { describe, expect, it } from 'vitest';
-import { completeLocalLogout, getPostAuthRedirect, getPostLogoutRedirectPath } from '$lib/utils/auth/sign-in-post-auth.server';
+import { completeLocalLogout, getPostAuthRedirect, getPostLogoutRedirectPath } from '#lib/utils/auth/sign-in-post-auth.server.js';
 
 /**
  * Creates a minimal cookie jar test double that records deleted cookie names.

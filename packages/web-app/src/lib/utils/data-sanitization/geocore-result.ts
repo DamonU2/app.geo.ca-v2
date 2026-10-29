@@ -1,4 +1,4 @@
-import type { GeospatialRecord } from '$lib/db/db-types';
+import type { GeospatialRecord } from '#lib/db/db-types.js';
 
 /**
  * Sanitizes the given results by filtering, fixing coordinate types, and normalizing language fields.

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { navigating, page } from '$app/state';
-  import LoadingMask from '$lib/components/loading-mask/loading-mask.svelte';
-  import FavouritesView from '$lib/components/favourites/favourites-view.svelte';
+  import LoadingMask from '#lib/components/loading-mask/loading-mask.svelte';
+  import FavouritesView from '#lib/components/favourites/favourites-view.svelte';
 
   const title = `app.geo.ca - ${page.data.tTitle2?.text}`;
 

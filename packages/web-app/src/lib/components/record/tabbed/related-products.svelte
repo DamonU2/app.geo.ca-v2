@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import SortableTable from '$lib/components/sortable-table/sortable-table.svelte';
-  import Pagination from '$lib/components/pagination/pagination.svelte';
+  import SortableTable from '#lib/components/sortable-table/sortable-table.svelte';
+  import Pagination from '#lib/components/pagination/pagination.svelte';
 
   type RelatedProductsRow = {
     id: string;

@@ -3,14 +3,14 @@
   import { page, updated } from '$app/state';
   import { onMount } from 'svelte';
   import '../../app.css';
-  import Header from '$lib/components/header/header.svelte';
-  import Footer from '$lib/components/footer/footer.svelte';
-  import Feedback from '$lib/components/feedback/feedback.svelte';
-  import Breadcrumbs from '$lib/components/breadcrumbs/breadcrumbs.svelte';
-  import LeavingNotice from '$lib/components/leaving-notice/leaving-notice.svelte';
-  import GoogleTag from '$lib/components/google-tag/google-tag.svelte';
-  import AppDialog from '$lib/components/dialog/app-dialog.svelte';
-  import { getAppLanguage } from '$lib/utils/language';
+  import Header from '#lib/components/header/header.svelte';
+  import Footer from '#lib/components/footer/footer.svelte';
+  import Feedback from '#lib/components/feedback/feedback.svelte';
+  import Breadcrumbs from '#lib/components/breadcrumbs/breadcrumbs.svelte';
+  import LeavingNotice from '#lib/components/leaving-notice/leaving-notice.svelte';
+  import GoogleTag from '#lib/components/google-tag/google-tag.svelte';
+  import AppDialog from '#lib/components/dialog/app-dialog.svelte';
+  import { getAppLanguage } from '#lib/utils/language.js';
 
   interface Props {
     children?: import('svelte').Snippet;
@@ -217,11 +217,11 @@
     </p>
     <p class="mb-4">{lang === 'fr' ? 'Souhaitez-vous prolonger votre session?' : 'Do you wish to continue your session?'}</p>
     <div class="flex flex-wrap gap-3">
-      <button class="button-action-dark rounded px-4 py-2" onclick={staySignedIn}>
+      <button class="button-action-dark" onclick={staySignedIn}>
         {lang === 'fr' ? 'Prolonger la session' : 'Stay signed in'}
       </button>
       <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-      <a class="button-action-light rounded px-4 py-2" href={`/${appLang}/sign-in/oidc-logout`}>
+      <a class="button-action-light" href={`/${appLang}/sign-in/oidc-logout`}>
         {lang === 'fr' ? 'Se déconnecter' : 'Sign out'}
       </a>
     </div>

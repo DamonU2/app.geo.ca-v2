@@ -2,7 +2,7 @@
  * Test coverage: Unit tests for app-language normalization and path-based language detection.
  */
 import { describe, expect, it } from 'vitest';
-import { getAppLanguage, getLangFromPath, getLanguageSwitchUrl, isAppLanguage, isFrench, pickByLanguage } from '$lib/utils/language';
+import { getAppLanguage, getLangFromPath, getLanguageSwitchUrl, isAppLanguage, isFrench, pickByLanguage } from '#lib/utils/language.js';
 
 describe('getAppLanguage', () => {
   it('normalizes short codes to full app codes', () => {

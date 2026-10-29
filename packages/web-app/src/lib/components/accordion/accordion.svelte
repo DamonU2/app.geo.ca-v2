@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Chevronup from '$lib/components/icons/chevronup.svelte';
-  import Chevrondown from '$lib/components/icons/chevrondown.svelte';
+  import Chevronup from '#lib/components/icons/chevronup.svelte';
+  import Chevrondown from '#lib/components/icons/chevrondown.svelte';
 
   let {
     accordionTitle,

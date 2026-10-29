@@ -1,13 +1,12 @@
 import type { PageServerLoad } from './$types';
-import { GEOCORE_API_DOMAIN } from '$env/static/private';
-import enLabels from '$lib/components/record/i18n/en/translations.json';
-import frLabels from '$lib/components/record/i18n/fr/translations.json';
-import { parseText } from '$lib/utils/parse-text';
-import { formatNumber } from '$lib/utils/format-number';
-import { normalizeCoordinates } from '$lib/utils/normalize-coordinates';
-import { getAppLanguage, pickByLanguage } from '$lib/utils/language';
-import { buildCatalogTitle, buildPageTitle, buildSeoMetadata } from '$lib/utils/metadata';
-import type { GeospatialRecord, SimilarityRecord, ContactInfo } from '$lib/db/db-types';
+import enLabels from '#lib/components/record/i18n/en/translations.json';
+import frLabels from '#lib/components/record/i18n/fr/translations.json';
+import { parseText } from '#lib/utils/parse-text.js';
+import { formatNumber } from '#lib/utils/format-number.js';
+import { normalizeCoordinates } from '#lib/utils/normalize-coordinates.js';
+import { getAppLanguage, pickByLanguage } from '#lib/utils/language.js';
+import { buildCatalogTitle, buildPageTitle, buildSeoMetadata } from '#lib/utils/metadata.js';
+import type { GeospatialRecord, SimilarityRecord, ContactInfo } from '#lib/db/db-types.js';
 import { error } from '@sveltejs/kit';
 
 type MutableGeospatialRecord = Omit<GeospatialRecord, 'keywords' | 'topicCategory'> & {
@@ -67,7 +66,7 @@ export const load: PageServerLoad = async ({ request, fetch, params, url, cookie
    */
   const fetchRelated = async (id: string): Promise<GeospatialRecord[]> => {
     try {
-      const collectionsResponse = await fetch(`${GEOCORE_API_DOMAIN}/collections?id=${id}`);
+      const collectionsResponse = await fetch(`${process.env.GEOCORE_API_DOMAIN}/collections?id=${id}`);
       const parsedCollectionsResponse = await collectionsResponse.json();
       const related = [];
 
@@ -237,7 +236,7 @@ export const load: PageServerLoad = async ({ request, fetch, params, url, cookie
     token: string,
     ip: string
   ): Promise<Response> {
-    const url = new URL(`${GEOCORE_API_DOMAIN}/id/v2?id=${uuid}&lang=${lang}`);
+    const url = new URL(`${process.env.GEOCORE_API_DOMAIN}/id/v2?id=${uuid}&lang=${lang}`);
 
     return fetch(url, {
       headers: {

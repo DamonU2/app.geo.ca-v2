@@ -5,7 +5,7 @@ import {
   SESSION_MAXIMUM_SECONDS,
   createSessionCookie,
   touchSessionCookie,
-} from '$lib/utils/auth/session-cookie.server';
+} from '#lib/utils/auth/session-cookie.server.js';
 
 function createCookies(): Cookies & {
   values: Map<string, string>;

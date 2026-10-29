@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { isFrench, pickByLanguage } from '$lib/utils/language';
+  import { isFrench, pickByLanguage } from '#lib/utils/language.js';
 
   const lang = page.data.lang;
   const title = pickByLanguage(lang, 'Tell us what you think!', 'Dites-nous ce que vous pensez!');

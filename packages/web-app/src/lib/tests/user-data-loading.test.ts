@@ -1,7 +1,7 @@
 /**
  * Test coverage: Unit tests for user-data loading from auth cookies and persistence layer, including anonymous/missing/unavailable states.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { docSendMock, getTokenMock, clearAuthCookiesMock } = vi.hoisted(() => ({
   docSendMock: vi.fn(),
@@ -32,28 +32,30 @@ vi.mock('@aws-sdk/lib-dynamodb', () => {
   };
 });
 
-vi.mock('$lib/utils/aws-region', () => ({
+vi.mock('#lib/utils/aws-region.js', () => ({
   getAwsRegion: vi.fn(() => 'ca-central-1'),
 }));
 
-vi.mock('$lib/utils/auth/parse-jwt', () => ({
+vi.mock('#lib/utils/auth/parse-jwt.js', () => ({
   getToken: getTokenMock,
 }));
 
-vi.mock('$lib/utils/auth/auth-cookies', () => ({
+vi.mock('#lib/utils/auth/auth-cookies.js', () => ({
   clearAuthCookies: clearAuthCookiesMock,
 }));
 
-vi.mock('$env/static/private', () => ({
-  USER_TABLE_NAME: 'users-table',
-}));
-
-import { getUserData } from '$lib/db/user';
+import { getUserData } from '#lib/db/user.js';
 
 describe('getUserData', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv('USER_TABLE_NAME', 'users-table');
+    vi.stubEnv('SESSION_COOKIE_SECRET', '');
     getTokenMock.mockResolvedValue({ ok: true, value: { sub: 'user-123', iat: 1700000001 } });
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('marks user data as unavailable when DynamoDB reads fail', async () => {

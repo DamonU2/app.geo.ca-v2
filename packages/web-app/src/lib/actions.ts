@@ -1,4 +1,4 @@
-import { getUserData, putUserData } from '$lib/db/user';
+import { getUserData, putUserData } from '#lib/db/user.js';
 import type { Cookies } from '@sveltejs/kit';
 
 interface favouritesProps {

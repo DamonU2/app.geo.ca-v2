@@ -25,7 +25,7 @@ const {
   verifyIdTokenMock: vi.fn(),
 }));
 
-vi.mock('$lib/utils/auth/sign-in-core.server', () => ({
+vi.mock('#lib/utils/auth/sign-in-core.server.js', () => ({
   consumeOidcNonceCookie: consumeOidcNonceCookieMock,
   consumeOidcStateCookies: consumeOidcStateCookiesMock,
   consumePkceVerifierCookie: consumePkceVerifierCookieMock,
@@ -33,16 +33,16 @@ vi.mock('$lib/utils/auth/sign-in-core.server', () => ({
   setAuthCookies: setAuthCookiesMock,
 }));
 
-vi.mock('$lib/utils/auth/sign-in-post-auth.server', () => ({
+vi.mock('#lib/utils/auth/sign-in-post-auth.server.js', () => ({
   getLangFromState: getLangFromStateMock,
   getPostAuthRedirect: getPostAuthRedirectMock,
 }));
 
-vi.mock('$lib/db/favourites', () => ({
+vi.mock('#lib/db/favourites.js', () => ({
   mergeGuestFavourites: mergeGuestFavouritesMock,
 }));
 
-vi.mock('$lib/utils/auth/id-token.server', () => ({
+vi.mock('#lib/utils/auth/id-token.server.js', () => ({
   verifyIdToken: verifyIdTokenMock,
 }));
 

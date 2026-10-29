@@ -4,21 +4,21 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { updateLocalStorage } from '$lib/utils/event-dispatchers/local-storage-changed';
-  import { FAVOURITES_STORAGE_KEY, getStoredFavourites, resolveInitialFavourites } from '$lib/utils/favourites-storage';
-  import Card from '$lib/components/card/card.svelte';
-  import ActionDialog from '$lib/components/dialog/action-dialog.svelte';
-  import AppDialog from '$lib/components/dialog/app-dialog.svelte';
-  import NoMap from '$lib/components/icons/no-map.svelte';
-  import SortableTable from '$lib/components/sortable-table/sortable-table.svelte';
-  import FavouritesListSkeleton from '$lib/components/loading-mask/favourites-list-skeleton.svelte';
-  import Checkmark from '$lib/components/icons/checkmark.svelte';
-  import GarbageCan from '$lib/components/icons/garbage-can.svelte';
-  import SearchBarSimplified from '$lib/components/search-results/search-bar-simplified.svelte';
-  import enTranslations from '$lib/components/favourites/i18n/en/translations.json';
-  import type { FavouritesRecord, FavouritesRow } from '$lib/db/db-types';
-  import type { AppLanguage } from '$lib/utils/language';
-  import { isFrench, pickByLanguage } from '$lib/utils/language';
+  import { updateLocalStorage } from '#lib/utils/event-dispatchers/local-storage-changed.js';
+  import { FAVOURITES_STORAGE_KEY, getStoredFavourites, resolveInitialFavourites } from '#lib/utils/favourites-storage.js';
+  import Card from '#lib/components/card/card.svelte';
+  import ActionDialog from '#lib/components/dialog/action-dialog.svelte';
+  import AppDialog from '#lib/components/dialog/app-dialog.svelte';
+  import NoMap from '#lib/components/icons/no-map.svelte';
+  import SortableTable from '#lib/components/sortable-table/sortable-table.svelte';
+  import FavouritesListSkeleton from '#lib/components/loading-mask/favourites-list-skeleton.svelte';
+  import Checkmark from '#lib/components/icons/checkmark.svelte';
+  import GarbageCan from '#lib/components/icons/garbage-can.svelte';
+  import SearchBarSimplified from '#lib/components/search-results/search-bar-simplified.svelte';
+  import enTranslations from '#lib/components/favourites/i18n/en/translations.json';
+  import type { FavouritesRecord, FavouritesRow } from '#lib/db/db-types.js';
+  import type { AppLanguage } from '#lib/utils/language.js';
+  import { isFrench, pickByLanguage } from '#lib/utils/language.js';
 
   /**
    * Signed-in favourites datasets view.
@@ -91,7 +91,7 @@
     pickerError = false;
     const query = new URLSearchParams({ mapId, addDatasetId: datasetToAdd, source: 'maps' });
     try {
-      await goto(resolve(`/${lang}/favourites/view?${query}`));
+      await goto(resolve(`/[lang]/favourites/view?${query}`, { lang }));
       datasetToAdd = null;
     } catch (error) {
       console.error('Unable to open the saved map:', error);
@@ -192,7 +192,7 @@
     }
 
     const ids = selectedIds.join(',');
-    goto(resolve(`/${lang}/favourites/view?ids=${encodeURIComponent(ids)}&source=datasets`));
+    goto(resolve(`/[lang]/favourites/view?ids=${encodeURIComponent(ids)}&source=datasets`, { lang }));
   }
 
   /**
@@ -240,7 +240,7 @@
   <ul class="max-h-80 overflow-y-auto space-y-3 mb-5">
     {#each savedMaps as savedMap (savedMap.id)}
       <li>
-        <button class="button-action-light rounded px-4 py-2 w-full text-left" onclick={() => handleSelectSavedMap(savedMap.id)}>
+        <button class="button-action-light w-full text-left" onclick={() => handleSelectSavedMap(savedMap.id)}>
           {savedMap.name}
         </button>
       </li>
@@ -249,13 +249,13 @@
   {#if pickerError}
     <p class="status-alert-error mb-5" role="alert">{translations.openSavedMapFailed}</p>
   {/if}
-  <button class="button-action-dark rounded px-4 py-2" onclick={() => (datasetToAdd = null)}>{translations.cancel}</button>
+  <button class="button-action-dark" onclick={() => (datasetToAdd = null)}>{translations.cancel}</button>
 </AppDialog>
 
 {#snippet addToSavedMapButton(id: string, unmappable: boolean, mobile = false)}
   {@const reason = addDisabledReason(unmappable)}
   <button
-    class="button-action-light rounded px-3 py-2"
+    class="button-action-light"
     disabled={Boolean(reason)}
     title={reason || translations.addToSavedMap}
     aria-describedby={reason ? `add-map-reason-${id}-${mobile}` : undefined}
@@ -334,7 +334,7 @@
               </div>
 
               <div class="flex-1">
-                <a href={resolve(`/${lang}/map-browser/record/${item.id}`)} class="font-custom-style-h2-2 block">
+                <a href={resolve('/[lang]/map-browser/record/[uuid]', { lang, uuid: item.id })} class="font-custom-style-h2-2 block">
                   {item.name}
                 </a>
                 <p class="font-custom-style-body-9">{item.id}</p>
@@ -373,7 +373,7 @@
       </Card>
 
       <div class="mt-9">
-        <a class="button-action-dark button-cta-link-dark" href={resolve(`/${lang}/favourites/maps`)}>
+        <a class="button-action-dark button-cta-link-dark" href={resolve('/[lang]/favourites/maps', { lang })}>
           {mapsLinkLabel}
         </a>
       </div>
@@ -390,7 +390,7 @@
           {resourceListEmpty}
         </p>
 
-        <a class="button-action-dark button-cta-link-dark block m-auto mt-5" href={resolve(`/${lang}/map-browser`)}>
+        <a class="button-action-dark button-cta-link-dark block m-auto mt-5" href={resolve('/[lang]/map-browser', { lang })}>
           {findAResource}
         </a>
       </div>

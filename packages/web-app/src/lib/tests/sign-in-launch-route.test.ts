@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { load } from '../../routes/[lang]/sign-in/launch/+page.server';
-import { getLanguageSwitchUrl } from '$lib/utils/language';
+import { getLanguageSwitchUrl } from '#lib/utils/language.js';
 
 function loadLaunch(lang: string, url: string) {
   return load({

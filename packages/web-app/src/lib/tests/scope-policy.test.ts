@@ -7,7 +7,7 @@ import {
   getRequestedScopes,
   parseRequestedScopes,
   validateScopedIdTokenClaims,
-} from '$lib/utils/auth/scope-policy.server';
+} from '#lib/utils/auth/scope-policy.server.js';
 
 describe('scope-policy', () => {
   beforeEach(() => {

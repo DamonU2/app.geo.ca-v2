@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
-import { getAppLanguage } from '$lib/utils/language';
+import { getAppLanguage } from '#lib/utils/language.js';
 
 /**
  * Redirects the localized root page to the corresponding map-browser route.

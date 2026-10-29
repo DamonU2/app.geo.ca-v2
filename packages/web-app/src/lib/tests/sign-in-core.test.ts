@@ -22,9 +22,9 @@ import {
   setOidcNonceCookie,
   setOidcStateCookies,
   setPkceVerifierCookie,
-} from '$lib/utils/auth/sign-in-core.server';
+} from '#lib/utils/auth/sign-in-core.server.js';
 
-vi.mock('$lib/utils/auth/oidc.server', () => ({
+vi.mock('#lib/utils/auth/oidc.server.js', () => ({
   isHttpsOrLocalhostUrl: (value: string) =>
     value.startsWith('https://') || value.startsWith('http://localhost') || value.startsWith('http://127.0.0.1'),
   isLocalhostUrl: (value: string) =>

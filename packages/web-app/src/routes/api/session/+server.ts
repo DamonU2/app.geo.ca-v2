@@ -1,10 +1,9 @@
 import type { RequestHandler } from './$types';
-import { json } from '@sveltejs/kit';
-import { getToken } from '$lib/utils/auth/parse-jwt';
-import { getPrivateKeyMaterial } from '$lib/utils/auth/oidc.server';
-import { exchangeRefreshToken, setAuthCookies } from '$lib/utils/auth/sign-in-core.server';
-import { verifyIdToken } from '$lib/utils/auth/id-token.server';
-import { touchSessionCookie } from '$lib/utils/auth/session-cookie.server';
+import { getToken } from '#lib/utils/auth/parse-jwt.js';
+import { getPrivateKeyMaterial } from '#lib/utils/auth/oidc.server.js';
+import { exchangeRefreshToken, setAuthCookies } from '#lib/utils/auth/sign-in-core.server.js';
+import { verifyIdToken } from '#lib/utils/auth/id-token.server.js';
+import { touchSessionCookie } from '#lib/utils/auth/session-cookie.server.js';
 
 /**
  * Returns the verified ID-token expiry for the current session.
@@ -24,10 +23,10 @@ export const GET: RequestHandler = async ({ cookies }): Promise<Response> => {
       typeof token.value.sid === 'string' ? token.value.sid : null
     )
   ) {
-    return json({ signedIn: false }, { status: 401 });
+    return Response.json({ signedIn: false }, { status: 401 });
   }
 
-  return json({ signedIn: true, expiresAt: token.value.exp * 1000 });
+  return Response.json({ signedIn: true, expiresAt: token.value.exp * 1000 });
 };
 
 /**
@@ -39,7 +38,7 @@ export const GET: RequestHandler = async ({ cookies }): Promise<Response> => {
 export const POST: RequestHandler = async ({ cookies }): Promise<Response> => {
   const refreshToken = cookies.get('refresh_token');
   if (!refreshToken) {
-    return json({ signedIn: false }, { status: 401 });
+    return Response.json({ signedIn: false }, { status: 401 });
   }
 
   const keyMaterial = await getPrivateKeyMaterial();
@@ -57,13 +56,13 @@ export const POST: RequestHandler = async ({ cookies }): Promise<Response> => {
     ) ||
     !setAuthCookies(cookies, tokenResponse)
   ) {
-    return json({ signedIn: false }, { status: 401 });
+    return Response.json({ signedIn: false }, { status: 401 });
   }
 
   const token = await getToken(cookies);
   if (!token.ok || typeof token.value?.exp !== 'number') {
-    return json({ signedIn: false }, { status: 401 });
+    return Response.json({ signedIn: false }, { status: 401 });
   }
 
-  return json({ signedIn: true, expiresAt: token.value.exp * 1000 });
+  return Response.json({ signedIn: true, expiresAt: token.value.exp * 1000 });
 };

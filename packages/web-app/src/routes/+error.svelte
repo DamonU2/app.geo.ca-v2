@@ -1,11 +1,11 @@
 <script lang="ts">
   import '../app.css';
   import { navigating, page } from '$app/state';
-  import Header from '$lib/components/header/header.svelte';
-  import Footer from '$lib/components/footer/footer.svelte';
-  import Feedback from '$lib/components/feedback/feedback.svelte';
-  import LoadingMask from '$lib/components/loading-mask/loading-mask.svelte';
-  import Breadcrumbs from '$lib/components/breadcrumbs/breadcrumbs.svelte';
+  import Header from '#lib/components/header/header.svelte';
+  import Footer from '#lib/components/footer/footer.svelte';
+  import Feedback from '#lib/components/feedback/feedback.svelte';
+  import LoadingMask from '#lib/components/loading-mask/loading-mask.svelte';
+  import Breadcrumbs from '#lib/components/breadcrumbs/breadcrumbs.svelte';
 </script>
 
 {#if navigating.type !== null}

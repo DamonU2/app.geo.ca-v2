@@ -1,7 +1,7 @@
 import { createSign, generateKeyPairSync } from 'node:crypto';
 import { vi } from 'vitest';
-import { encodeBase64Url } from '$lib/utils/auth/base64url';
-import type { JsonWebKey } from '$lib/utils/auth/jwt-types';
+import { encodeBase64Url } from '#lib/utils/auth/base64url.js';
+import type { JsonWebKey } from '#lib/utils/auth/jwt-types.js';
 
 export type TestJwk = JsonWebKey & {
   kid?: string;

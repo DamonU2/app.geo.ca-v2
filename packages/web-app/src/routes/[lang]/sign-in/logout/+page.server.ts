@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
-import { completeLocalLogout } from '$lib/utils/auth/sign-in-post-auth.server';
-import { getCookieDomainOptions } from '$lib/utils/auth/cookie-policy.server';
+import { completeLocalLogout } from '#lib/utils/auth/sign-in-post-auth.server.js';
+import { getCookieDomainOptions } from '#lib/utils/auth/cookie-policy.server.js';
 
 /**
  * Clears local auth cookies and redirects to the map browser.

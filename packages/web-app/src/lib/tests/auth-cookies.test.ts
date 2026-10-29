@@ -8,11 +8,11 @@ const { clearSessionCookieMock } = vi.hoisted(() => ({
   clearSessionCookieMock: vi.fn(),
 }));
 
-vi.mock('$lib/utils/auth/session-cookie.server', () => ({
+vi.mock('#lib/utils/auth/session-cookie.server.js', () => ({
   clearSessionCookie: clearSessionCookieMock,
 }));
 
-import { clearAuthCookies } from '$lib/utils/auth/auth-cookies';
+import { clearAuthCookies } from '#lib/utils/auth/auth-cookies.js';
 
 describe('clearAuthCookies', () => {
   beforeEach(() => {

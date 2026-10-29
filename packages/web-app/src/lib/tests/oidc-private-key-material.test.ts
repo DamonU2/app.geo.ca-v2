@@ -2,17 +2,10 @@
  * Test coverage: Unit tests for OIDC private key material loading/parsing, including secret formats, validation, and cache behavior.
  */
 import { createHash } from 'node:crypto';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
 
 const { sendMock } = vi.hoisted(() => ({
   sendMock: vi.fn(),
-}));
-
-vi.mock('$env/dynamic/private', () => ({
-  env: {
-    OIDC_USE_PRIVATE_KEY_JWT: 'true',
-    OIDC_PRIVATE_KEY_SECRET_ID: 'staging/oidc/private-key',
-  },
 }));
 
 vi.mock('@aws-sdk/client-secrets-manager', () => {
@@ -38,6 +31,12 @@ describe('getPrivateKeyMaterial', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    vi.stubEnv('OIDC_USE_PRIVATE_KEY_JWT', 'true');
+    vi.stubEnv('OIDC_PRIVATE_KEY_SECRET_ID', 'staging/oidc/private-key');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('normalizes nested/double-encoded JSON and array payloads into usable PEM', async () => {
@@ -52,7 +51,7 @@ describe('getPrivateKeyMaterial', () => {
 
     sendMock.mockResolvedValue({ SecretString: secretString });
 
-    const { getPrivateKeyMaterial } = await import('$lib/utils/auth/oidc.server');
+    const { getPrivateKeyMaterial } = await import('#lib/utils/auth/oidc.server.js');
     const material = await getPrivateKeyMaterial();
 
     expect(material).not.toBeNull();
@@ -76,7 +75,7 @@ describe('getPrivateKeyMaterial', () => {
 
     sendMock.mockResolvedValue({ SecretString: secretString });
 
-    const { getPrivateKeyMaterial } = await import('$lib/utils/auth/oidc.server');
+    const { getPrivateKeyMaterial } = await import('#lib/utils/auth/oidc.server.js');
     const material = await getPrivateKeyMaterial();
 
     expect(material).not.toBeNull();
@@ -95,7 +94,7 @@ describe('getPrivateKeyMaterial', () => {
 
     sendMock.mockResolvedValue({ SecretString: secretString });
 
-    const { getPrivateKeyMaterial } = await import('$lib/utils/auth/oidc.server');
+    const { getPrivateKeyMaterial } = await import('#lib/utils/auth/oidc.server.js');
     const material = await getPrivateKeyMaterial();
 
     const expectedThumbprint = createHash('sha256').update(Buffer.from('QUJDRA==', 'base64')).digest('base64url');

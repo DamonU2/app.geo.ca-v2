@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
-import { completeLocalLogout } from '$lib/utils/auth/sign-in-post-auth.server';
-import { isAppLanguage } from '$lib/utils/language';
+import { completeLocalLogout } from '#lib/utils/auth/sign-in-post-auth.server.js';
+import { isAppLanguage } from '#lib/utils/language.js';
 
 /**
  * Clears local auth cookies after provider logout and returns to a language-aware map browser path.

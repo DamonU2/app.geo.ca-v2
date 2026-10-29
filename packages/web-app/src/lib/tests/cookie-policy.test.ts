@@ -2,7 +2,7 @@
  * Test coverage: Unit tests for the environment-based Secure cookie policy.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { isSecureCookieEnvironment } from '$lib/utils/auth/cookie-policy.server';
+import { isSecureCookieEnvironment } from '#lib/utils/auth/cookie-policy.server.js';
 
 describe('isSecureCookieEnvironment', () => {
   afterEach(() => {

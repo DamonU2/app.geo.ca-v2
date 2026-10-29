@@ -8,9 +8,9 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { onMount } from 'svelte';
-  import { loadCGPVScript } from '$lib/components/map/loadCGPVScript';
+  import { loadCGPVScript } from '#lib/components/map/loadCGPVScript.js';
   import type { GeoviewConfig } from './map-types';
-  import { addDatasetToMap, type DatasetAdditionResult } from '$lib/utils/map-dataset';
+  import { addDatasetToMap, type DatasetAdditionResult } from '#lib/utils/map-dataset.js';
 
   interface Props {
     layerIds: string[];

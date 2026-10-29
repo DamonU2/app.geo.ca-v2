@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/state';
-  import Map from '$lib/components/map/map.svelte';
-  import NotVisible from '$lib/components/icons/not-visible.svelte';
+  import Map from '#lib/components/map/map.svelte';
+  import NotVisible from '#lib/components/icons/not-visible.svelte';
 
   const translations = page.data.t;
   const mapText = translations?.map ? translations['map'] : 'Map';

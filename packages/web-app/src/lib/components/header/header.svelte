@@ -1,9 +1,9 @@
 <script>
   import { page } from '$app/state';
-  import { pickByLanguage } from '$lib/utils/language';
+  import { pickByLanguage } from '#lib/utils/language.js';
   import Navbarhorizontal from './navbarhorizontal.svelte';
   import Navbarvertical from './navbarvertical.svelte';
-  import SignIn from '$lib/components/profile/sign-in.svelte';
+  import SignIn from '#lib/components/profile/sign-in.svelte';
 
   const translations = page.data.headerTranslations;
   const lang = page.data.lang;

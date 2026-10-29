@@ -1,12 +1,11 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { getToken } from '$lib/utils/auth/parse-jwt';
-import { getAwsRegion } from '$lib/utils/aws-region';
+import { getToken } from '#lib/utils/auth/parse-jwt.js';
+import { getAwsRegion } from '#lib/utils/aws-region.js';
 import type { UserInfo, UserData, TokenResponse } from './db-types';
 import type { Cookies } from '@sveltejs/kit';
-import { USER_TABLE_NAME } from '$env/static/private';
-import { clearAuthCookies } from '$lib/utils/auth/auth-cookies';
-import { touchSessionCookie } from '$lib/utils/auth/session-cookie.server';
+import { clearAuthCookies } from '#lib/utils/auth/auth-cookies.js';
+import { touchSessionCookie } from '#lib/utils/auth/session-cookie.server.js';
 
 const awsRegion = getAwsRegion();
 const client = new DynamoDBClient({ region: awsRegion });
@@ -128,12 +127,12 @@ const getUserData = async (cookies: Cookies): Promise<UserInfo> => {
   const unavailableUserData: UserInfo = { Item: { uuid: userKey, favourites: [], mapConfigs: [] }, status: 'unavailable' };
   const missingUserData: UserInfo = { Item: { uuid: userKey, favourites: [], mapConfigs: [] }, status: 'missing' };
 
-  if (!USER_TABLE_NAME) {
+  if (!process.env.USER_TABLE_NAME) {
     return unavailableUserData;
   }
 
   const command = new GetCommand({
-    TableName: USER_TABLE_NAME,
+    TableName: process.env.USER_TABLE_NAME,
     Key: {
       uuid: userKey,
     },
@@ -198,7 +197,7 @@ const putUserData = async (data: Partial<UserData>, cookies: Cookies): Promise<R
   const userKey = getUserKey(token);
   if (!userKey) return { ok: false };
 
-  if (!USER_TABLE_NAME) {
+  if (!process.env.USER_TABLE_NAME) {
     return { ok: false };
   }
 
@@ -225,7 +224,7 @@ const putUserData = async (data: Partial<UserData>, cookies: Cookies): Promise<R
   try {
     await docClient.send(
       new UpdateCommand({
-        TableName: USER_TABLE_NAME,
+        TableName: process.env.USER_TABLE_NAME,
         Key: { uuid: userKey },
         UpdateExpression: `SET ${expressionParts.join(', ')}`,
         ExpressionAttributeNames: expressionAttributeNames,
@@ -272,7 +271,7 @@ const markUserAuthRevoked = async (
   logoutTokenJti: string,
   sid?: string
 ): Promise<'stored' | 'replayed' | 'error'> => {
-  if (!USER_TABLE_NAME) {
+  if (!process.env.USER_TABLE_NAME) {
     return 'error';
   }
 
@@ -285,7 +284,7 @@ const markUserAuthRevoked = async (
       // DynamoDB rejects overlapping paths in one expression, so the parent map is created first.
       await docClient.send(
         new UpdateCommand({
-          TableName: USER_TABLE_NAME,
+          TableName: process.env.USER_TABLE_NAME,
           Key: {
             uuid: userKey,
           },
@@ -298,7 +297,7 @@ const markUserAuthRevoked = async (
 
     await docClient.send(
       new UpdateCommand({
-        TableName: USER_TABLE_NAME,
+        TableName: process.env.USER_TABLE_NAME,
         Key: {
           uuid: userKey,
         },

@@ -2,15 +2,15 @@
  * Test coverage: Route tests for favourites API map configuration mutations and persistence calls.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { MapConfigFavourite } from '$lib/db/db-types';
+import type { MapConfigFavourite } from '#lib/db/db-types.js';
 
-vi.mock('$lib/db/user', () => ({
+vi.mock('#lib/db/user.js', () => ({
   getUserData: vi.fn(),
   putUserData: vi.fn(),
 }));
 
 import { DELETE, PATCH, POST, PUT } from '../../routes/[lang]/api/favourites/+server';
-import { getUserData, putUserData } from '$lib/db/user';
+import { getUserData, putUserData } from '#lib/db/user.js';
 
 const mockedGetUserData = vi.mocked(getUserData);
 const mockedPutUserData = vi.mocked(putUserData);

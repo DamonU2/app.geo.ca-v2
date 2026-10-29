@@ -8,15 +8,15 @@ const { verifyIdTokenMock, clearAuthCookiesMock } = vi.hoisted(() => ({
   clearAuthCookiesMock: vi.fn(),
 }));
 
-vi.mock('$lib/utils/auth/id-token.server', () => ({
+vi.mock('#lib/utils/auth/id-token.server.js', () => ({
   verifyIdToken: verifyIdTokenMock,
 }));
 
-vi.mock('$lib/utils/auth/auth-cookies', () => ({
+vi.mock('#lib/utils/auth/auth-cookies.js', () => ({
   clearAuthCookies: clearAuthCookiesMock,
 }));
 
-import { getToken } from '$lib/utils/auth/parse-jwt';
+import { getToken } from '#lib/utils/auth/parse-jwt.js';
 
 /**
  * Creates a minimal cookies test double that supports read access by key.

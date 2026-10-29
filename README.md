@@ -6,7 +6,7 @@ This project uses the [SvelteKit](https://kit.svelte.dev/) framework and [SST](h
 
 - Create a fork of the app.geo.ca-v2 repo for your personal development environment.
 - Clone the repo in your dev environment using the following command in a new Linux terminal: `git clone <Your-forked-repo-url>`.
-- Check to make sure node, npm, and nvm are installed with these commands:
+- Check to make sure Node.js, npm, and nvm are installed with these commands:
   - `node -v`
   - `npm -v`
   - `nvm -v`
@@ -14,13 +14,20 @@ This project uses the [SvelteKit](https://kit.svelte.dev/) framework and [SST](h
   - First install curl as a sudo user: `sudo apt-get install curl`.
   - Next install nvm: `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash`.
   - Test to make sure nvm installed successfully: `command -v nvm`. Note: If successful, `nvm` will print. If nothing happens or an error is received, close and open a new terminal.
-  - Next, install the latest stable version of node and npm: `nvm install --lts`. Note: A Node.js version that matches the `.nvmrc` may be required instead of the latest version. You can adjust the nvm install command by specifying the node version like this: `nvm install 18.20.8`. Replace the number with the correct version.
+  - Next, install a Node.js LTS version and npm: `nvm install --lts`. This repository does not currently include an `.nvmrc` file.
   - Confirm node and npm were installed: `node -v` and `npm -v`.
-  - Check to make sure the correct version of npm is set as indicated by the `.nvmrc` file. See [nvm](https://github.com/nvm-sh/nvm).
+  - See [nvm](https://github.com/nvm-sh/nvm) for version management.
 - Navigate to your project's directory: `cd app.geo.ca-v2`. Note: the name of your directory may differ based on the name of your forked repo.
-- Install node packages with: `npm i`.
-- Navigate to the `/packages/web-app/` directory using `cd packages/web-app`.
-- Install node packages here too with: `npm i`.
+- Install the root package and web-app workspace dependencies from the repository root with: `npm install`.
+
+### SST adapter compatibility
+
+The app uses SvelteKit 3 and the pinned `svelte-kit-sst@3.0.0` adapter. Both Vite configurations use
+[a compatibility wrapper](packages/web-app/scripts/svelte-kit-sst.js) that removes the adapter's obsolete
+`@sveltejs/kit/node/polyfills` import and initialization from the generated Lambda handler on every build.
+SST's default Node.js 24 Lambda runtime provides these APIs natively. The wrapper fails explicitly if the
+upstream handler changes; review or remove it when updating the adapter. Do not edit the generated
+`.svelte-kit` output or `node_modules` to fix this incompatibility.
 
 ## Developing
 
@@ -31,6 +38,7 @@ After following the setup, start a development server with these steps:
 - `packages/web-app/.env` is an optional local override file for web-app runtime values read from `process.env` (for example `GEOCORE_API_DOMAIN`, `SEMANTIC_SEARCH_URL`, and `USER_TABLE_NAME`).
 - Keep auth/stage settings (`OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_CUSTOM_DOMAIN`) in your stage env file at the repository root (for example `.env.dev`).
 - Optional scope policy setting: `OIDC_REQUESTED_SCOPES` (space/comma delimited; supported: `openid`, `profile`, `email`, `phone`, `language`).
+- Optional CanadaLogin account-management link: set `OIDC_MANAGE_BASE_URL` to the HTTPS management base URL for the selected provider environment. The link is hidden when this setting or the client ID is missing.
 - `packages/web-app/.env` is ignored by git and should stay local to your machine.
 - Set the values for `OIDC_CLIENT_ID` and `OIDC_CLIENT_SECRET` from your OIDC app client.
 - Set `OIDC_CUSTOM_DOMAIN` to the base auth host only (no `/oauth2` suffix), for example `https://auth.login-connexion.alpha.canada.ca`.
@@ -163,6 +171,7 @@ If you store this JSON directly in Secrets Manager, keep embedded newlines escap
   OIDC_JWT_KID=<your-jwt-key-id>
   OIDC_PRIVATE_KEY_SECRET_ID=<stage>/oidc/private-key
   OIDC_USE_PRIVATE_KEY_JWT=true
+  OIDC_MANAGE_BASE_URL=<stage-specific-https-canadalogin-management-base-url>
   SESSION_COOKIE_SECRET=<unique-random-secret-for-this-stage>
   AUTH_STATUS_ALLOWED_ORIGINS=https://geo.ca,https://www.geo.ca
   ```
@@ -173,6 +182,7 @@ If you store this JSON directly in Secrets Manager, keep embedded newlines escap
   - `OIDC_TOKEN_ENDPOINT` is optional; defaults to `<OIDC_CUSTOM_DOMAIN>/oauth2/token`. Set this when your provider requires a different token endpoint path (e.g., `/v1.0/endpoint/default/token`).
   - `OIDC_JWT_KID` (Key ID) is optional; when provided, it's included in the JWT header to help the provider identify the signing key (e.g., `staging-nrcan-geoca-signer`).
   - `OIDC_PRIVATE_KEY_SECRET_ID` may be set as either a secret name/id (for example `<stage>/oidc/private-key`) or a full Secrets Manager ARN.
+  - `OIDC_MANAGE_BASE_URL` is optional and should match the CanadaLogin management portal for the selected environment; it controls the signed-in account-management link.
   - Staging/production deployments fail fast when private_key_jwt is enforced and `OIDC_PRIVATE_KEY_SECRET_ID` is missing or malformed.
   - The app only fetches the private key from Secrets Manager when `OIDC_USE_PRIVATE_KEY_JWT=true`.
   - Leave `OIDC_USE_PRIVATE_KEY_JWT` unset or `false` in `.env.dev` to keep local development on `client_secret_post`.
@@ -266,13 +276,15 @@ Core auth routes used by the app:
 - `/${lang}/sign-in/oidc-logout`: redirects to provider logout when applicable.
 - `/${lang}/sign-in/logout` and `/sign-in/logout`: clear local auth cookies and redirect to map browser.
 - `/sign-in/back-channel-logout`: receives provider back-channel logout notifications and stores revocation markers server-side.
+- `/sign-in/front-channel-logout`: clears local auth cookies when the provider initiates front-channel logout.
+- `/api/session`: reports the current session expiry (`GET`) and refreshes the session (`POST`).
 
 Session invalidation behavior:
 
 - Front-channel logout clears browser cookies immediately.
-- Back-channel logout updates `authRevokedAt` in DynamoDB for the user.
-- Back-channel logout tracks the most recent logout token `jti` and treats duplicate `jti` values within a short window as idempotent replays.
-- On subsequent reads, token `iat` is compared against `authRevokedAt`; revoked sessions are treated as signed out and cookies are cleared.
+- Back-channel logout updates a per-session revocation marker when the provider supplies a `sid`, or a user-wide `authRevokedAt` marker otherwise.
+- Back-channel logout tracks the most recent logout token `jti` and rejects duplicate `jti` values within a ten-minute replay window.
+- On subsequent reads, token `iat` is compared with the applicable revocation marker; revoked sessions are treated as signed out and cookies are cleared.
 
 Auth telemetry behavior:
 
@@ -291,14 +303,15 @@ For signed-in users, the DynamoDB users table stores:
 - `favourites`: array of dataset record ids saved by the user.
 - `mapConfigs`: array of saved map configurations for the Maps tab in Favourites.
 - `authRevokedAt`: server-side revocation marker (token `iat` threshold) used for back-channel logout.
+- `authRevokedSids`: per-session revocation timestamps when the provider supplies a session ID.
+- `lastBackChannelLogoutJti` and `lastBackChannelLogoutJtiSeenAt`: recent logout-token replay tracking.
 
 Not stored by current app code:
 
-- OIDC tokens or session secrets.
+- OIDC tokens or session secrets; the separately signed session cookie contains its own session metadata.
 - User profile attributes such as email or display name.
-- Generic timestamps, TTL fields, or audit metadata beyond `authRevokedAt`.
 
-Guest favourites are stored temporarily in the `guest_favourites` cookie and merged into the signed-in user's `favourites` list after authentication.
+Guest favourites are stored in browser local storage. When a guest starts sign-in, the list is copied into the short-lived `guest_favourites` cookie and merged into the signed-in user's `favourites` list after authentication.
 
 Favourites feature routes:
 
@@ -319,8 +332,7 @@ Data persistence:
 - Create a stage env file by copying `.env.example` to `.env.<your-stage-name>`.
 - Keep auth/stage settings (`OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_CUSTOM_DOMAIN`) in the root stage env file for the deployment target.
 - `packages/web-app/.env` remains optional local-only overrides for web-app runtime values and is git-ignored.
-- From `/`, run `npm i`.
-- From `/packages/web-app/`, run `npm i`. A Node.js version that matches the `.nvmrc` may be required.
+- From the repository root, run `npm install` to install the root package and web-app workspace dependencies.
 - Ensure login and logout URLs are configured in your OIDC provider app client.
   - Example allowed callback URLs.
     - https://d28mialgy1tfmv.cloudfront.net/sign-in/receive
@@ -357,12 +369,6 @@ If any blocker is found, the script exits with a non-zero status and prints `RES
 
 ## Importing Data
 
-Do the following while your project's server is running:
+The app reads already-prepared GeoCore record JSON files from S3. For a record with UUID `<uuid>`, it expects the file at `geocore/<uuid>.geojson` in the stage's HNAP bucket, with content matching the `GeospatialRecord` shape consumed by the application.
 
-- From AWS, go to your S3 bucket list and find the bucket with a name like this: `<your-stage-name>-<your-project-name>-site-hnapbucket<some-other-random-characters>`.
-- Click on the bucket name from the list to see the bucket's details.
-- From the Objects tab, click on the 'Create Folder' button and create two new folders with these names:
-  - `geocore`
-  - `hnap`
-- From the hnap folder, copy the content from the project's `data-samples` folder.
-- This triggers the hnap-bridge lambda, generates the geojson records required for viewing, and stores them under `<your-bucket-name>/geojson`. Note that any record not imported this way will return a 404 when viewed.
+The HNAP-to-GeoCore conversion trigger is not currently deployed by this repository (`hnap-bridge` has been removed). Uploading source files under `hnap/` does not generate records. Prepare/convert the records using your data pipeline, then upload the resulting files under the `geocore/` prefix. A record without its corresponding file will not load from S3.

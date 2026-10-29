@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { pickByLanguage } from '$lib/utils/language';
-  import CheckboxCustomized from '$lib/components/checkbox-customized/checkbox-customized.svelte';
+  import { pickByLanguage } from '#lib/utils/language.js';
+  import CheckboxCustomized from '#lib/components/checkbox-customized/checkbox-customized.svelte';
   import type { Filter, FilterItem } from './filter-types';
 
   /************* Filter Data ***************/

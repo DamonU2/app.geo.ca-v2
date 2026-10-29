@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { pickByLanguage } from '$lib/utils/language';
-  import { parseDataResources } from '$lib/components/record/tabbed/parseDataResources';
-  import SortableTable from '$lib/components/sortable-table/sortable-table.svelte';
+  import { pickByLanguage } from '#lib/utils/language.js';
+  import { parseDataResources } from '#lib/components/record/tabbed/parseDataResources.js';
+  import SortableTable from '#lib/components/sortable-table/sortable-table.svelte';
 
   type DataResourcesRow = {
     name: string;

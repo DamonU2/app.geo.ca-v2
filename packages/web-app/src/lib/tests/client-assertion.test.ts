@@ -2,9 +2,9 @@
  * Test coverage: Unit tests for private_key_jwt client assertion creation, including header/payload shape and signature expectations.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createTestSigningKey } from '$lib/tests/auth-test-helpers';
-import { createClientAssertionJwt } from '$lib/utils/auth/client-assertion.server';
-import { decodeBase64UrlJson } from '$lib/utils/auth/base64url';
+import { createTestSigningKey } from '#lib/tests/auth-test-helpers.js';
+import { createClientAssertionJwt } from '#lib/utils/auth/client-assertion.server.js';
+import { decodeBase64UrlJson } from '#lib/utils/auth/base64url.js';
 
 /** Decoded JWT header shape used in client assertion verification tests. */
 type TestJwtHeader = {

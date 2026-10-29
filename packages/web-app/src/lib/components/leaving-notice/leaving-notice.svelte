@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/state';
-  import { pickByLanguage } from '$lib/utils/language';
-  import AppDialog from '$lib/components/dialog/app-dialog.svelte';
+  import { pickByLanguage } from '#lib/utils/language.js';
+  import AppDialog from '#lib/components/dialog/app-dialog.svelte';
 
   const lang = page.data.lang;
   const message = pickByLanguage(lang, 'Leaving geo.ca', 'Vous quittez geo.ca');

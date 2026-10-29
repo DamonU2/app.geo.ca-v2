@@ -2,16 +2,16 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import Card from '$lib/components/card/card.svelte';
-  import ActionDialog from '$lib/components/dialog/action-dialog.svelte';
-  import DownloadIcon from '$lib/components/icons/download.svelte';
-  import GarbageCan from '$lib/components/icons/garbage-can.svelte';
-  import MapIcon from '$lib/components/icons/map.svelte';
-  import UploadIcon from '$lib/components/icons/upload.svelte';
-  import enTranslations from '$lib/components/favourites/i18n/en/translations.json';
-  import type { MapConfigFavourite } from '$lib/db/db-types';
-  import type { AppLanguage } from '$lib/utils/language';
-  import { pickByLanguage } from '$lib/utils/language';
+  import Card from '#lib/components/card/card.svelte';
+  import ActionDialog from '#lib/components/dialog/action-dialog.svelte';
+  import DownloadIcon from '#lib/components/icons/download.svelte';
+  import GarbageCan from '#lib/components/icons/garbage-can.svelte';
+  import MapIcon from '#lib/components/icons/map.svelte';
+  import UploadIcon from '#lib/components/icons/upload.svelte';
+  import enTranslations from '#lib/components/favourites/i18n/en/translations.json';
+  import type { MapConfigFavourite } from '#lib/db/db-types.js';
+  import type { AppLanguage } from '#lib/utils/language.js';
+  import { pickByLanguage } from '#lib/utils/language.js';
 
   /**
    * Signed-in favourites maps view.
@@ -120,7 +120,7 @@
    * @param mapConfig - Saved map metadata and config payload.
    */
   function handleOpenSavedMapClick(mapConfig: MapConfigFavourite): void {
-    goto(resolve(`/${lang}/favourites/view?mapId=${encodeURIComponent(mapConfig.id)}&source=maps`));
+    goto(resolve(`/[lang]/favourites/view?mapId=${encodeURIComponent(mapConfig.id)}&source=maps`, { lang }));
   }
 
   /**
@@ -328,7 +328,7 @@
     {/if}
 
     <div class="mt-9">
-      <a class="button-action-dark button-cta-link-dark" href={resolve(`/${lang}/favourites/datasets`)}>
+      <a class="button-action-dark button-cta-link-dark" href={resolve('/[lang]/favourites/datasets', { lang })}>
         {datasetsLinkLabel}
       </a>
     </div>

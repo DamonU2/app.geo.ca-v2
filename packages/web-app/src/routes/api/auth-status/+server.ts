@@ -1,7 +1,6 @@
 import type { RequestHandler } from './$types';
-import { env } from '$env/dynamic/private';
-import { json } from '@sveltejs/kit';
-import { getUserData } from '$lib/db/user';
+import * as env from '$app/env/private';
+import { getUserData } from '#lib/db/user.js';
 
 /** Exact origins permitted to make credentialed auth-status requests. */
 const allowedOrigins = (env.AUTH_STATUS_ALLOWED_ORIGINS ?? process.env.AUTH_STATUS_ALLOWED_ORIGINS ?? '')
@@ -57,15 +56,15 @@ export const GET: RequestHandler = async ({ cookies, request }): Promise<Respons
   const headers = createResponseHeaders(origin);
 
   if (origin && !isAllowedOrigin(origin)) {
-    return json({ signedIn: false }, { status: 403, headers });
+    return Response.json({ signedIn: false }, { status: 403, headers });
   }
 
   const userInfo = await getUserData(cookies);
   if (userInfo.status === 'unavailable') {
-    return json({ error: 'Authentication status unavailable' }, { status: 503, headers });
+    return Response.json({ error: 'Authentication status unavailable' }, { status: 503, headers });
   }
 
-  return json({ signedIn: Boolean(userInfo.Item.uuid) }, { headers });
+  return Response.json({ signedIn: Boolean(userInfo.Item.uuid) }, { headers });
 };
 
 /**

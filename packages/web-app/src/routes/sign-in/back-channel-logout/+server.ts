@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types';
-import { markUserAuthRevoked } from '$lib/db/user';
-import { verifyBackChannelLogoutToken } from '$lib/utils/auth/sign-in-back-channel.server';
+import { markUserAuthRevoked } from '#lib/db/user.js';
+import { verifyBackChannelLogoutToken } from '#lib/utils/auth/sign-in-back-channel.server.js';
 
 /**
  * Receives provider back-channel logout notifications and revokes the matching user session.

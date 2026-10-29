@@ -126,7 +126,7 @@ npm run test
 ### Favourites
 
 - `favourites-api.test.ts`
-  - Covers all four favourites API operations: POST/DELETE (single dataset id add/remove), PUT (clear all), and PATCH (map-config create/delete, including duplicate-name auto-renaming and the max-item limit).
+  - Covers all four favourites API operations: POST/DELETE (single dataset id add/remove), PUT (clear all), and PATCH (map-config create/update/delete, including duplicate-name auto-renaming and the max-item limit).
 
 - `favourites-datasets.component.test.ts`
   - Covers the datasets component's initial render, failed deletion state preservation, saved-map navigation errors, and selected-dataset map navigation.

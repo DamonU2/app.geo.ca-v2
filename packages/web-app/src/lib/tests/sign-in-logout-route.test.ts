@@ -8,18 +8,18 @@ const { clearAuthCookiesMock, getOidcLogoutUrlMock } = vi.hoisted(() => ({
   getOidcLogoutUrlMock: vi.fn<(url: URL) => Promise<string | null>>(),
 }));
 
-vi.mock('$lib/utils/auth/auth-cookies', () => ({
+vi.mock('#lib/utils/auth/auth-cookies.js', () => ({
   clearAuthCookies: clearAuthCookiesMock,
 }));
 
-vi.mock('$lib/utils/auth/sign-in-core.server', () => ({
+vi.mock('#lib/utils/auth/sign-in-core.server.js', () => ({
   getOidcLogoutUrl: getOidcLogoutUrlMock,
 }));
 
 import { load as loadLangLogout } from '../../routes/[lang]/sign-in/logout/+page.server';
 import { load as loadRootLogout } from '../../routes/sign-in/logout/+page.server';
 import { actions as oidcLogoutActions, load as loadOidcLogout } from '../../routes/[lang]/sign-in/oidc-logout/+page.server';
-import { getLanguageSwitchUrl } from '$lib/utils/language';
+import { getLanguageSwitchUrl } from '#lib/utils/language.js';
 
 /**
  * Asserts that a route loader throws a redirect matching expectations.

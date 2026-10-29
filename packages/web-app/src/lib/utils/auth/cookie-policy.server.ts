@@ -1,5 +1,3 @@
-import { env } from '$env/dynamic/private';
-
 /**
  * Determines whether authentication cookies should use the Secure attribute.
  *
@@ -15,6 +13,6 @@ export function isSecureCookieEnvironment(): boolean {
  * @returns Cookie domain options when configured, otherwise an empty object.
  */
 export function getCookieDomainOptions(): { domain?: string } {
-  const domain = env.AUTH_COOKIE_DOMAIN || process.env.AUTH_COOKIE_DOMAIN;
+  const domain = process.env.AUTH_COOKIE_DOMAIN;
   return domain ? { domain } : {};
 }

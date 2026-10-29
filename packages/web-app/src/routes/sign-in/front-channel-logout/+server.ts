@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import { clearAuthCookies } from '$lib/utils/auth/auth-cookies';
+import { clearAuthCookies } from '#lib/utils/auth/auth-cookies.js';
 
 /**
  * Handles front-channel logout callbacks from the OP.

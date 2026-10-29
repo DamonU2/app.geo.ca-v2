@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { resolve } from '$app/paths';
-  import type { AppLanguage } from '$lib/utils/language';
-  import { pickByLanguage } from '$lib/utils/language';
+  import type { AppLanguage } from '#lib/utils/language.js';
+  import { pickByLanguage } from '#lib/utils/language.js';
 
   // Assign a default lang to prevent 'undefined' in the url when lang is not set
   const lang = (page.data.lang ?? 'en-ca') as AppLanguage;

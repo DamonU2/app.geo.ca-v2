@@ -8,17 +8,17 @@ const { createClientAssertionJwtMock, getOidcConfigMock } = vi.hoisted(() => ({
   getOidcConfigMock: vi.fn(),
 }));
 
-vi.mock('$lib/utils/auth/client-assertion.server', () => ({
+vi.mock('#lib/utils/auth/client-assertion.server.js', () => ({
   createClientAssertionJwt: createClientAssertionJwtMock,
 }));
 
-vi.mock('$lib/utils/auth/oidc.server', () => ({
+vi.mock('#lib/utils/auth/oidc.server.js', () => ({
   isHttpsOrLocalhostUrl: (value: string) => value.startsWith('https://') || value.startsWith('http://localhost'),
   isLocalhostUrl: (value: string) => value.startsWith('http://localhost') || value.startsWith('https://localhost'),
   getOidcConfig: getOidcConfigMock,
 }));
 
-import { exchangeCodeForTokens, exchangeRefreshToken } from '$lib/utils/auth/sign-in-core.server';
+import { exchangeCodeForTokens, exchangeRefreshToken } from '#lib/utils/auth/sign-in-core.server.js';
 
 describe('exchangeCodeForTokens', () => {
   beforeEach(() => {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { addDatasetToMap, type DatasetMapViewer } from '$lib/utils/map-dataset';
+import { addDatasetToMap, type DatasetMapViewer } from '#lib/utils/map-dataset.js';
 
 function createViewer(ids: string[] = []) {
   return {

@@ -1,4 +1,4 @@
-import { pickByLanguage, type AppLanguage } from '$lib/utils/language';
+import { pickByLanguage, type AppLanguage } from '#lib/utils/language.js';
 
 /**
  * Localized description payload used for SEO metadata.

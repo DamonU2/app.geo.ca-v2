@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { getAppLanguage, pickByLanguage } from '$lib/utils/language';
-  import Share from '$lib/components/share/share.svelte';
+  import { getAppLanguage, pickByLanguage } from '#lib/utils/language.js';
+  import Share from '#lib/components/share/share.svelte';
 
   const lang = getAppLanguage(page.data.lang);
   const dateModifiedText: string = pickByLanguage(lang, 'Date Modified', 'Date modifiée');

@@ -2,18 +2,18 @@
   import { SvelteURLSearchParams } from 'svelte/reactivity';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import { updateTempCategoryOfInterest } from '$lib/components/search-results/store';
-  import { toggleScroll } from '$lib/components/component-utils/toggleScroll';
-  import AppDialog from '$lib/components/dialog/app-dialog.svelte';
-  import Close from '$lib/components/icons/close.svelte';
-  import CategoryOfInterest from '$lib/components/search-results/filters/category-of-interest.svelte';
-  import Organizations from '$lib/components/search-results/filters/organizations.svelte';
-  import Types from '$lib/components/search-results/filters/types.svelte';
-  import Themes from '$lib/components/search-results/filters/themes.svelte';
-  import EoCollections from '$lib/components/search-results/filters/eo-collections.svelte';
-  import SourceSystem from '$lib/components/search-results/filters/source-system.svelte';
-  import OtherFilters from '$lib/components/search-results/filters/other-filters.svelte';
-  import SpatioTemporal from '$lib/components/search-results/filters/spatio-temporal.svelte';
+  import { updateTempCategoryOfInterest } from '#lib/components/search-results/store.js';
+  import { toggleScroll } from '#lib/components/component-utils/toggleScroll.js';
+  import AppDialog from '#lib/components/dialog/app-dialog.svelte';
+  import Close from '#lib/components/icons/close.svelte';
+  import CategoryOfInterest from '#lib/components/search-results/filters/category-of-interest.svelte';
+  import Organizations from '#lib/components/search-results/filters/organizations.svelte';
+  import Types from '#lib/components/search-results/filters/types.svelte';
+  import Themes from '#lib/components/search-results/filters/themes.svelte';
+  import EoCollections from '#lib/components/search-results/filters/eo-collections.svelte';
+  import SourceSystem from '#lib/components/search-results/filters/source-system.svelte';
+  import OtherFilters from '#lib/components/search-results/filters/other-filters.svelte';
+  import SpatioTemporal from '#lib/components/search-results/filters/spatio-temporal.svelte';
   import type { BBox, DateRangeItem } from './filters/filter-types';
 
   interface Props {
@@ -147,8 +147,7 @@
 
     // We need to keep the user on the current localized map-browser route.
     // Using resolve('/?...') navigates to the site root and drops the search page context.
-    // eslint-disable-next-line svelte/no-navigation-without-resolve
-    await goto(`${page.url.pathname}?${query.toString()}`, { replaceState: true, keepFocus: true });
+    await goto(`${page.url.pathname}?${query.toString()}`, { replace: true, reset: false });
   }
 
   /************* utility methods ***************/
@@ -172,7 +171,7 @@
    * @param searchParams - The URL search parameters.
    * @returns The count of active filters.
    */
-  function getFilterCountFromUrl(searchParams: URLSearchParams): number {
+  function getFilterCountFromUrl(searchParams: Pick<URLSearchParams, 'getAll'>): number {
     const filterLists = {
       bboxList: getList(bboxKey, false, searchParams),
       categoryList: getList(categoriesKey, false, searchParams),
@@ -375,7 +374,7 @@
    * @param searchParams - The URL search parameters.
    * @returns The retrieved value or array of values.
    */
-  function getList(key: string, split: boolean, searchParams: URLSearchParams): string | string[] | null {
+  function getList(key: string, split: boolean, searchParams: Pick<URLSearchParams, 'getAll'>): string | string[] | null {
     const value = searchParams.getAll(key)[0];
     return split && value ? value.split(delineator) : value;
   }

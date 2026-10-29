@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import { page } from '$app/state';
-  import { pickByLanguage } from '$lib/utils/language';
+  import { pickByLanguage } from '#lib/utils/language.js';
   import AppDialog from './app-dialog.svelte';
 
   const id = $props.id();
@@ -61,13 +61,13 @@
           onfocus={(event) => event.currentTarget.select()}
         />
       {:else}
-        <p id={`${id}-message`} class="mb-5 whitespace-pre-line break-words font-custom-style-body-1">{pending.message}</p>
+        <p id={`${id}-message`} class="mb-5 whitespace-pre-line wrap-break-word font-custom-style-body-1">{pending.message}</p>
       {/if}
       <div class="flex flex-wrap gap-3">
-        <button type="button" class="button-action-light rounded px-4 py-2" onclick={() => finish(null)}>
+        <button type="button" class="button-action-light" onclick={() => finish(null)}>
           {cancelLabel}
         </button>
-        <button type="submit" class="button-action-dark rounded px-4 py-2">
+        <button type="submit" class="button-action-dark">
           {pending.mode === 'prompt' ? saveLabel : confirmLabel}
         </button>
       </div>

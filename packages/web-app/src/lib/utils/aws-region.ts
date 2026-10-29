@@ -1,4 +1,4 @@
-import { AWS_REGION_FALLBACK } from '$lib/config/constants';
+import { AWS_REGION_FALLBACK } from '#lib/config/constants.js';
 
 /**
  * Resolves AWS region from runtime environment with a safe local fallback.

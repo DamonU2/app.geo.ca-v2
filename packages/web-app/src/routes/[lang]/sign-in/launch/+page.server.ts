@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import { getAppLanguage } from '$lib/utils/language';
+import { getAppLanguage } from '#lib/utils/language.js';
 
 /**
  * Resolves a same-app return state and the localized sign-in route.

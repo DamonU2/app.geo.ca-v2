@@ -1,7 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { Cookies } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
-import { getCookieDomainOptions, isSecureCookieEnvironment } from '$lib/utils/auth/cookie-policy.server';
+import { getCookieDomainOptions, isSecureCookieEnvironment } from '#lib/utils/auth/cookie-policy.server.js';
 
 /** Name of the signed, server-owned authentication session cookie. */
 export const SESSION_COOKIE_NAME = 'auth_session';
@@ -25,7 +24,7 @@ type SessionCookiePayload = {
  * @returns Configured signing secret, or null when none is available.
  */
 function getSessionSecret(): string | null {
-  return env.SESSION_COOKIE_SECRET ?? process.env.SESSION_COOKIE_SECRET ?? null;
+  return process.env.SESSION_COOKIE_SECRET ?? null;
 }
 
 /**

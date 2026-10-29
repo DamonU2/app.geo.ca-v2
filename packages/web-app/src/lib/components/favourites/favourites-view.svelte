@@ -3,14 +3,14 @@
   import { page } from '$app/state';
   import { goto, pushState, replaceState } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { sanitizeMapConfigForStorage } from '$lib/utils/map-config-sanitizer';
-  import MycartMap from '$lib/components/map/favourites-map.svelte';
-  import ActionDialog from '$lib/components/dialog/action-dialog.svelte';
-  import AppDialog from '$lib/components/dialog/app-dialog.svelte';
-  import enTranslations from '$lib/components/favourites/i18n/en/translations.json';
-  import type { MapConfigFavourite } from '$lib/db/db-types';
-  import type { AppLanguage } from '$lib/utils/language';
-  import type { DatasetAdditionResult } from '$lib/utils/map-dataset';
+  import { sanitizeMapConfigForStorage } from '#lib/utils/map-config-sanitizer.js';
+  import MycartMap from '#lib/components/map/favourites-map.svelte';
+  import ActionDialog from '#lib/components/dialog/action-dialog.svelte';
+  import AppDialog from '#lib/components/dialog/app-dialog.svelte';
+  import enTranslations from '#lib/components/favourites/i18n/en/translations.json';
+  import type { MapConfigFavourite } from '#lib/db/db-types.js';
+  import type { AppLanguage } from '#lib/utils/language.js';
+  import type { DatasetAdditionResult } from '#lib/utils/map-dataset.js';
 
   /**
    * Shared favourites map viewer.
@@ -123,9 +123,9 @@
    * Called only after saving successfully or finding the dataset already present.
    */
   function clearAdditionIntent(): void {
-    const nextUrl = new URL(page.url);
+    const nextUrl = new URL(page.url.href);
     nextUrl.searchParams.delete('addDatasetId');
-    replaceState(resolve(`/${lang}/favourites/view${nextUrl.search}${nextUrl.hash}`), { ...page.state });
+    replaceState(`${resolve('/[lang]/favourites/view', { lang })}${nextUrl.search}${nextUrl.hash}`, { ...page.state });
   }
 
   /**
@@ -156,21 +156,21 @@
    * Returns to datasets or maps, depending on the current view source.
    */
   function handleReturnToListClick(): void {
-    goto(resolve(`/${lang}/favourites/${viewSource}`));
+    goto(resolve(viewSource === 'maps' ? '/[lang]/favourites/maps' : '/[lang]/favourites/datasets', { lang }));
   }
 
   /**
    * Navigates back to saved maps.
    */
   function handleGoToMapsClick(): void {
-    goto(resolve(`/${lang}/favourites/maps`));
+    goto(resolve('/[lang]/favourites/maps', { lang }));
   }
 
   /**
    * Navigates back to favourite datasets.
    */
   function handleGoToDatasetsClick(): void {
-    goto(resolve(`/${lang}/favourites/datasets`));
+    goto(resolve('/[lang]/favourites/datasets', { lang }));
   }
 
   /**
@@ -189,9 +189,12 @@
       presentationSize = { width: target.width, height: mapArea ? mapArea.height : target.height };
     }
 
-    const nextUrl = new URL(page.url);
+    const nextUrl = new URL(page.url.href);
     nextUrl.searchParams.set('presentation', '1');
-    pushState(resolve(`/${lang}/favourites/view${nextUrl.search}${nextUrl.hash}`), { ...page.state, presentationMode: true });
+    pushState(`${resolve('/[lang]/favourites/view', { lang })}${nextUrl.search}${nextUrl.hash}`, {
+      ...page.state,
+      presentationMode: true,
+    });
   }
 
   /**
@@ -268,12 +271,12 @@
 
         selectedMapConfig = createdMap;
         viewSource = 'maps';
-        const nextUrl = new URL(page.url);
+        const nextUrl = new URL(page.url.href);
         nextUrl.searchParams.delete('ids');
         nextUrl.searchParams.delete('addDatasetId');
         nextUrl.searchParams.set('mapId', createdMap.id);
         nextUrl.searchParams.set('source', 'maps');
-        replaceState(resolve(`/${lang}/favourites/view${nextUrl.search}${nextUrl.hash}`), { ...page.state });
+        replaceState(`${resolve('/[lang]/favourites/view', { lang })}${nextUrl.search}${nextUrl.hash}`, { ...page.state });
       }
       savedMaps = payload.mapConfigs;
       showDatasetNotice = false;
@@ -332,7 +335,7 @@
     }
 
     if (!selectedMapConfig && selectedIds.length === 0) {
-      await goto(resolve(`/${lang}/favourites/datasets`), { replaceState: true });
+      await goto(resolve('/[lang]/favourites/datasets', { lang }), { replace: true, reset: false });
       return;
     }
 
@@ -454,7 +457,7 @@
   onclose={() => (showDatasetNotice = false)}
 >
   <p id="unsaved-dataset-description" class="mb-5">{translations.unsavedDatasetNotice}</p>
-  <button class="button-action-dark rounded px-4 py-2" onclick={() => (showDatasetNotice = false)}>
+  <button class="button-action-dark" onclick={() => (showDatasetNotice = false)}>
     {dismissPresentationNotice}
   </button>
 </AppDialog>
@@ -465,7 +468,7 @@
   onclose={() => (showPresentationNotice = false)}
 >
   <p id="presentation-notice-description" class="mb-5">{presentationNotice}</p>
-  <button class="button-action-dark rounded px-4 py-2" onclick={() => (showPresentationNotice = false)}>
+  <button class="button-action-dark" onclick={() => (showPresentationNotice = false)}>
     {dismissPresentationNotice}
   </button>
 </AppDialog>

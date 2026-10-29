@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import CheckboxCustomized from '$lib/components/checkbox-customized/checkbox-customized.svelte';
-  import SelectCustomized from '$lib/components/select-customized/select-customized.svelte';
-  import type { SelectOption } from '$lib/components/select-customized/selected-types.d.ts';
-  import type { Filter, FilterItem } from '$lib/components/search-results/filters/filter-types.d.ts';
+  import CheckboxCustomized from '#lib/components/checkbox-customized/checkbox-customized.svelte';
+  import SelectCustomized from '#lib/components/select-customized/select-customized.svelte';
+  import type { SelectOption } from '#lib/components/select-customized/selected-types.d.ts';
+  import type { Filter, FilterItem } from '#lib/components/search-results/filters/filter-types.d.ts';
 
   /************* Filter Data ***************/
   const filters = page.data.filters?.filters;

@@ -1,5 +1,5 @@
 import { createSign, randomUUID } from 'node:crypto';
-import { encodeBase64Url } from '$lib/utils/auth/base64url';
+import { encodeBase64Url } from '#lib/utils/auth/base64url.js';
 
 const CLIENT_ASSERTION_TTL_SECONDS = 5 * 60;
 

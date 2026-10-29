@@ -1,5 +1,4 @@
-import { env } from '$env/dynamic/private';
-import type { TokenPayload } from '$lib/db/db-types';
+import type { TokenPayload } from '#lib/db/db-types.js';
 
 /**
  * Supported OIDC scopes that this relying party can safely request and validate.
@@ -85,7 +84,7 @@ export function parseRequestedScopes(rawScopes: string | null | undefined): Requ
  * @returns Requested scopes with `openid` guaranteed.
  */
 export function getRequestedScopes(): RequestedScope[] {
-  return parseRequestedScopes(env.OIDC_REQUESTED_SCOPES ?? process.env.OIDC_REQUESTED_SCOPES ?? 'openid');
+  return parseRequestedScopes(process.env.OIDC_REQUESTED_SCOPES ?? 'openid');
 }
 
 /**

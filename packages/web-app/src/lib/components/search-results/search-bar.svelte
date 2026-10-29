@@ -2,11 +2,11 @@
   import { SvelteURLSearchParams } from 'svelte/reactivity';
   import { page, navigating } from '$app/state';
   import { goto } from '$app/navigation';
-  import { toggleScroll } from '$lib/components/component-utils/toggleScroll';
-  import Card from '$lib/components/card/card.svelte';
-  import Search from '$lib/components/icons/search.svelte';
-  import FilterModal from '$lib/components/search-results/filter-modal.svelte';
-  import Filter from '$lib/components/icons/filter.svelte';
+  import { toggleScroll } from '#lib/components/component-utils/toggleScroll.js';
+  import Card from '#lib/components/card/card.svelte';
+  import Search from '#lib/components/icons/search.svelte';
+  import FilterModal from '#lib/components/search-results/filter-modal.svelte';
+  import Filter from '#lib/components/icons/filter.svelte';
 
   /************* Translations ***************/
   const translations = page.data.t;
@@ -86,7 +86,6 @@
     };
     // We need to preserve the current localized search-results route.
     // Using resolve('/?...') here sends the user to the site root instead of updating the current search page.
-    // eslint-disable-next-line svelte/no-navigation-without-resolve
     goto(`${page.url.pathname}?${query.toString()}`, opts);
   }
 </script>

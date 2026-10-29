@@ -1,6 +1,6 @@
 import type { Cookies } from '@sveltejs/kit';
-import { getUserData, putUserData } from '$lib/db/user';
-import { decodeGuestFavouritesCookieValue, GUEST_FAVOURITES_COOKIE_NAME } from '$lib/utils/guest-favourites';
+import { getUserData, putUserData } from '#lib/db/user.js';
+import { decodeGuestFavouritesCookieValue, GUEST_FAVOURITES_COOKIE_NAME } from '#lib/utils/guest-favourites.js';
 
 /**
  * Merges guest favourites captured before sign-in into the signed-in profile.

@@ -8,8 +8,8 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { onMount } from 'svelte';
-  import { loadCGPVScript } from '$lib/components/map/loadCGPVScript';
-  import { pickByLanguage } from '$lib/utils/language';
+  import { loadCGPVScript } from '#lib/components/map/loadCGPVScript.js';
+  import { pickByLanguage } from '#lib/utils/language.js';
   import type { GeoviewConfig } from './map-types';
 
   // OpenLayers Feature type definition to avoid adding ol dependency

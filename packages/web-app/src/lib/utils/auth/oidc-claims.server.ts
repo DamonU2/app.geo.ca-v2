@@ -1,4 +1,4 @@
-import { ensureTrailingSlashless } from '$lib/utils/auth/oidc.server';
+import { ensureTrailingSlashless } from '#lib/utils/auth/oidc.server.js';
 
 /**
  * Permitted clock difference when validating time-based OIDC claims, in seconds.

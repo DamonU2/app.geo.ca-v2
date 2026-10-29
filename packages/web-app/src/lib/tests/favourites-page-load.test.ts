@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('$lib/db/user', () => ({ getUserData: vi.fn() }));
+vi.mock('#lib/db/user.js', () => ({ getUserData: vi.fn() }));
 
-import { getUserData } from '$lib/db/user';
-import { loadFavouritesPageData } from '$lib/utils/favourites/page-load.server';
+import { getUserData } from '#lib/db/user.js';
+import { loadFavouritesPageData } from '#lib/utils/favourites/page-load.server.js';
 
 describe('favourites page titles', () => {
   beforeEach(() => {

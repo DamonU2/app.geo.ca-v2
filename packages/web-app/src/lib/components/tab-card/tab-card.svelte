@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import Card from '$lib/components/card/card.svelte';
-  import type { SelectOption } from '$lib/components/select-customized/selected-types.d.ts';
-  import SelectCustomized from '$lib/components/select-customized/select-customized.svelte';
+  import Card from '#lib/components/card/card.svelte';
+  import type { SelectOption } from '#lib/components/select-customized/selected-types.d.ts';
+  import SelectCustomized from '#lib/components/select-customized/select-customized.svelte';
 
   interface Props {
     tabContentArray: SelectOption[];

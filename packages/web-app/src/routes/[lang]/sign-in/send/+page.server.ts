@@ -9,7 +9,7 @@ import {
   setOidcNonceCookie,
   setOidcStateCookies,
   setPkceVerifierCookie,
-} from '$lib/utils/auth/sign-in-core.server';
+} from '#lib/utils/auth/sign-in-core.server.js';
 
 /**
  * Starts the OIDC sign-in flow by redirecting to the provider authorized URL.
@@ -47,5 +47,5 @@ export const load: PageServerLoad = async ({ cookies, params, url }: Parameters<
   setPkceVerifierCookie(cookies, pkceVerifier);
   setOidcNonceCookie(cookies, oidcNonce);
   setOidcStateCookies(cookies, oidcState, returnTo);
-  throw redirect(303, signInUrl);
+  throw redirect(303, signInUrl, { external: true });
 };

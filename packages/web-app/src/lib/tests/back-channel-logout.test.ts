@@ -2,8 +2,8 @@
  * Test coverage: Unit tests for back-channel logout token verification, covering signature/claim validation and failure paths.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createTestSigningKey, signTestJwt, stubOidcDiscoveryAndJwksFetch } from '$lib/tests/auth-test-helpers';
-import { verifyBackChannelLogoutToken } from '$lib/utils/auth/sign-in-back-channel.server';
+import { createTestSigningKey, signTestJwt, stubOidcDiscoveryAndJwksFetch } from '#lib/tests/auth-test-helpers.js';
+import { verifyBackChannelLogoutToken } from '#lib/utils/auth/sign-in-back-channel.server.js';
 
 const clientId = 'cb802d19-a800-4433-ba7e-369d8ab58604';
 const issuer = 'https://auth.test.login-connexion.alpha.canada.ca';

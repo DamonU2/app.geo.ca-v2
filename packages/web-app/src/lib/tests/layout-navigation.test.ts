@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { UserInfo } from '$lib/db/db-types';
+import type { UserInfo } from '#lib/db/db-types.js';
 
-vi.mock('$lib/db/user', () => ({ getUserData: vi.fn() }));
-vi.mock('$lib/utils/auth/sign-in-core.server', () => ({ isOidcConfigured: vi.fn(() => true) }));
-vi.mock('$lib/utils/auth/oidc.server', () => ({ getOidcManageUrl: vi.fn(() => null) }));
+vi.mock('#lib/db/user.js', () => ({ getUserData: vi.fn() }));
+vi.mock('#lib/utils/auth/sign-in-core.server.js', () => ({ isOidcConfigured: vi.fn(() => true) }));
+vi.mock('#lib/utils/auth/oidc.server.js', () => ({ getOidcManageUrl: vi.fn(() => null) }));
 
-import { getUserData } from '$lib/db/user';
+import { getUserData } from '#lib/db/user.js';
 import { load } from '../../routes/+layout.server';
 
 describe('layout favourites navigation', () => {

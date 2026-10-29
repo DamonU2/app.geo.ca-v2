@@ -1,7 +1,7 @@
 import type { Cookies } from '@sveltejs/kit';
-import type { TokenPayload, TokenResponse } from '$lib/db/db-types';
-import { verifyIdToken } from '$lib/utils/auth/id-token.server';
-import { clearAuthCookies } from '$lib/utils/auth/auth-cookies';
+import type { TokenPayload, TokenResponse } from '#lib/db/db-types.js';
+import { verifyIdToken } from '#lib/utils/auth/id-token.server.js';
+import { clearAuthCookies } from '#lib/utils/auth/auth-cookies.js';
 
 /**
  * Parses id_token from cookies and verifies it against provider JWKS metadata.

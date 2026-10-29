@@ -2,10 +2,10 @@
   import { resolve } from '$app/paths';
   import { slide } from 'svelte/transition';
   import { page } from '$app/state';
-  import { pickByLanguage } from '$lib/utils/language';
-  import { FAVOURITES_STORAGE_KEY } from '$lib/utils/favourites-storage';
-  import { encodeGuestFavouritesCookieValue, GUEST_FAVOURITES_COOKIE_NAME } from '$lib/utils/guest-favourites';
-  import LeavingNotice from '$lib/components/leaving-notice/leaving-notice.svelte';
+  import { pickByLanguage } from '#lib/utils/language.js';
+  import { FAVOURITES_STORAGE_KEY } from '#lib/utils/favourites-storage.js';
+  import { encodeGuestFavouritesCookieValue, GUEST_FAVOURITES_COOKIE_NAME } from '#lib/utils/guest-favourites.js';
+  import LeavingNotice from '#lib/components/leaving-notice/leaving-notice.svelte';
 
   type Props = {
     light?: boolean;
@@ -31,8 +31,8 @@
   let showLeavingNotice = $state(false);
   const signOutHref = $derived(
     shouldReturnToFavourites
-      ? resolve(`/${lang}/sign-in/oidc-logout?returnTo=${encodeURIComponent(`/${lang}/favourites`)}`)
-      : resolve(`/${lang}/sign-in/oidc-logout`)
+      ? resolve(`/[lang]/sign-in/oidc-logout?returnTo=${encodeURIComponent(`/${lang}/favourites`)}`, { lang })
+      : resolve('/[lang]/sign-in/oidc-logout', { lang })
   );
 
   /**

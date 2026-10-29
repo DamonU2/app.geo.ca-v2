@@ -1,7 +1,7 @@
 import type { Actions, PageServerLoad } from './$types';
-import { clearFavourites, removeFromFavourites } from '$lib/actions';
-import { getAppLanguage } from '$lib/utils/language';
-import { loadFavouritesPageData } from '$lib/utils/favourites/page-load.server';
+import { clearFavourites, removeFromFavourites } from '#lib/actions.js';
+import { getAppLanguage } from '#lib/utils/language.js';
+import { loadFavouritesPageData } from '#lib/utils/favourites/page-load.server.js';
 
 /**
  * Loads the favourites page data by reading user favourites, fetching matching

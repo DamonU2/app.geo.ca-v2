@@ -6,13 +6,13 @@ import {
   consumePkceVerifierCookie,
   exchangeCodeForTokens,
   setAuthCookies,
-} from '$lib/utils/auth/sign-in-core.server';
-import { getLangFromState, getPostAuthRedirect } from '$lib/utils/auth/sign-in-post-auth.server';
-import { mergeGuestFavourites } from '$lib/db/favourites';
-import { getCookieDomainOptions, isSecureCookieEnvironment } from '$lib/utils/auth/cookie-policy.server';
-import { verifyIdToken } from '$lib/utils/auth/id-token.server';
-import { getPrivateKeyMaterial } from '$lib/utils/auth/oidc.server';
-import { createSessionCookie } from '$lib/utils/auth/session-cookie.server';
+} from '#lib/utils/auth/sign-in-core.server.js';
+import { getLangFromState, getPostAuthRedirect } from '#lib/utils/auth/sign-in-post-auth.server.js';
+import { mergeGuestFavourites } from '#lib/db/favourites.js';
+import { getCookieDomainOptions, isSecureCookieEnvironment } from '#lib/utils/auth/cookie-policy.server.js';
+import { verifyIdToken } from '#lib/utils/auth/id-token.server.js';
+import { getPrivateKeyMaterial } from '#lib/utils/auth/oidc.server.js';
+import { createSessionCookie } from '#lib/utils/auth/session-cookie.server.js';
 
 const AUTH_ERROR_COOKIE_NAME = 'auth_error';
 

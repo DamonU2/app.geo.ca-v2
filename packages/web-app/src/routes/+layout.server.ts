@@ -1,19 +1,19 @@
 import type { LayoutServerLoad } from './$types';
-import enFooterLinks from '$lib/components/footer/i18n/en/links.json';
-import enLegal from '$lib/components/footer/i18n/en/legal.json';
-import frFooterLinks from '$lib/components/footer/i18n/fr/links.json';
-import frLegal from '$lib/components/footer/i18n/fr/legal.json';
-import enNavitems from '$lib/components/header/i18n/en/navitems.json';
-import frNavitems from '$lib/components/header/i18n/fr/navitems.json';
-import enHeaderTranslations from '$lib/components/header/i18n/en/translations.json';
-import frHeaderTranslations from '$lib/components/header/i18n/fr/translations.json';
-import enShareTranslations from '$lib/components/share/i18n/en/translations.json';
-import frShareTranslations from '$lib/components/share/i18n/fr/translations.json';
-import { getUserData } from '$lib/db/user';
-import { getCookieDomainOptions } from '$lib/utils/auth/cookie-policy.server';
-import { isOidcConfigured } from '$lib/utils/auth/sign-in-core.server';
-import { getOidcManageUrl } from '$lib/utils/auth/oidc.server';
-import { getAppLanguage, pickByLanguage } from '$lib/utils/language';
+import enFooterLinks from '#lib/components/footer/i18n/en/links.json';
+import enLegal from '#lib/components/footer/i18n/en/legal.json';
+import frFooterLinks from '#lib/components/footer/i18n/fr/links.json';
+import frLegal from '#lib/components/footer/i18n/fr/legal.json';
+import enNavitems from '#lib/components/header/i18n/en/navitems.json';
+import frNavitems from '#lib/components/header/i18n/fr/navitems.json';
+import enHeaderTranslations from '#lib/components/header/i18n/en/translations.json';
+import frHeaderTranslations from '#lib/components/header/i18n/fr/translations.json';
+import enShareTranslations from '#lib/components/share/i18n/en/translations.json';
+import frShareTranslations from '#lib/components/share/i18n/fr/translations.json';
+import { getUserData } from '#lib/db/user.js';
+import { getCookieDomainOptions } from '#lib/utils/auth/cookie-policy.server.js';
+import { isOidcConfigured } from '#lib/utils/auth/sign-in-core.server.js';
+import { getOidcManageUrl } from '#lib/utils/auth/oidc.server.js';
+import { getAppLanguage, pickByLanguage } from '#lib/utils/language.js';
 
 type NavLink = {
   title: string;

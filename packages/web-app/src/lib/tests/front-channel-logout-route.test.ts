@@ -7,7 +7,7 @@ const { clearAuthCookiesMock } = vi.hoisted(() => ({
   clearAuthCookiesMock: vi.fn(),
 }));
 
-vi.mock('$lib/utils/auth/auth-cookies', () => ({
+vi.mock('#lib/utils/auth/auth-cookies.js', () => ({
   clearAuthCookies: clearAuthCookiesMock,
 }));
 

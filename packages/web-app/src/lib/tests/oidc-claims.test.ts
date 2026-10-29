@@ -9,7 +9,7 @@ import {
   hasValidNbf,
   issuerMatches,
   OIDC_CLOCK_SKEW_SECONDS,
-} from '$lib/utils/auth/oidc-claims.server';
+} from '#lib/utils/auth/oidc-claims.server.js';
 
 describe('getAudienceValues', () => {
   it('wraps a single string audience in an array', () => {

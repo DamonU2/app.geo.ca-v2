@@ -4,13 +4,13 @@
 import type { Cookies } from '@sveltejs/kit';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('$lib/db/user', () => ({
+vi.mock('#lib/db/user.js', () => ({
   getUserData: vi.fn(),
   putUserData: vi.fn(),
 }));
 
-import { getUserData, putUserData } from '$lib/db/user';
-import { mergeGuestFavourites } from '$lib/db/favourites';
+import { getUserData, putUserData } from '#lib/db/user.js';
+import { mergeGuestFavourites } from '#lib/db/favourites.js';
 
 const mockedGetUserData = vi.mocked(getUserData);
 const mockedPutUserData = vi.mocked(putUserData);

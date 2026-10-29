@@ -3,20 +3,20 @@
   import { SvelteURLSearchParams } from 'svelte/reactivity';
   import { page, navigating } from '$app/state';
   import { goto, invalidate } from '$app/navigation';
-  import { updateLocalStorage } from '$lib/utils/event-dispatchers/local-storage-changed';
-  import { FAVOURITES_STORAGE_KEY, getStoredFavourites, resolveInitialFavourites } from '$lib/utils/favourites-storage';
-  import Accordion from '$lib/components/accordion/accordion.svelte';
-  import Card from '$lib/components/card/card.svelte';
-  import ResultListSkeleton from '$lib/components/loading-mask/result-list-skeleton.svelte';
-  import Map from '$lib/components/map/map.svelte';
-  import Pagination from '$lib/components/pagination/pagination.svelte';
-  import SelectCustomized from '$lib/components/select-customized/select-customized.svelte';
-  import NotVisible from '$lib/components/icons/not-visible.svelte';
-  import Heart from '$lib/components/icons/heart.svelte';
-  import HeartFilled from '$lib/components/icons/heart-filled.svelte';
-  import type { SelectOption } from '$lib/components/select-customized/selected-types';
-  import type { DistributionOption, GeospatialRecord } from '$lib/db/db-types';
-  import type { MapTypes } from '$lib/components/map/map-types';
+  import { updateLocalStorage } from '#lib/utils/event-dispatchers/local-storage-changed.js';
+  import { FAVOURITES_STORAGE_KEY, getStoredFavourites, resolveInitialFavourites } from '#lib/utils/favourites-storage.js';
+  import Accordion from '#lib/components/accordion/accordion.svelte';
+  import Card from '#lib/components/card/card.svelte';
+  import ResultListSkeleton from '#lib/components/loading-mask/result-list-skeleton.svelte';
+  import Map from '#lib/components/map/map.svelte';
+  import Pagination from '#lib/components/pagination/pagination.svelte';
+  import SelectCustomized from '#lib/components/select-customized/select-customized.svelte';
+  import NotVisible from '#lib/components/icons/not-visible.svelte';
+  import Heart from '#lib/components/icons/heart.svelte';
+  import HeartFilled from '#lib/components/icons/heart-filled.svelte';
+  import type { SelectOption } from '#lib/components/select-customized/selected-types.d.ts';
+  import type { DistributionOption, GeospatialRecord } from '#lib/db/db-types.js';
+  import type { MapTypes } from '#lib/components/map/map-types.js';
 
   type SearchResult = GeospatialRecord & {
     description_en: string;
@@ -91,7 +91,6 @@
       query.set('sort', selected.value);
       query.set('page-number', '0');
       // Sorting must keep the user on the current localized search-results route.
-      // eslint-disable-next-line svelte/no-navigation-without-resolve
       goto(`${page.url.pathname}?${query.toString()}`, { invalidateAll: true });
     }
   }
@@ -122,7 +121,6 @@
     query.set('results-per-page', `${itemsPerPage}`);
 
     // Pagination must keep the user on the current localized search-results route.
-    // eslint-disable-next-line svelte/no-navigation-without-resolve
     goto(`${page.url.pathname}?${query.toString()}`, { invalidateAll: true });
   }
 

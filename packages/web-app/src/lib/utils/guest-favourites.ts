@@ -1,4 +1,4 @@
-import { normalizeFavourites } from '$lib/utils/favourites-storage';
+import { normalizeFavourites } from '#lib/utils/favourites-storage.js';
 
 /**
  * Cookie name used to carry guest favourites from the client into the sign-in callback for merging.

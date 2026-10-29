@@ -1,8 +1,7 @@
 import type { RequestHandler } from './$types';
-import { json } from '@sveltejs/kit';
-import { getUserData, putUserData } from '$lib/db/user';
-import type { MapConfigFavourite } from '$lib/db/db-types';
-import { sanitizeMapConfigForStorage } from '$lib/utils/map-config-sanitizer';
+import { getUserData, putUserData } from '#lib/db/user.js';
+import type { MapConfigFavourite } from '#lib/db/db-types.js';
+import { sanitizeMapConfigForStorage } from '#lib/utils/map-config-sanitizer.js';
 
 const MAX_SAVED_MAPS = 25;
 const MAX_ITEM_SIZE_BYTES = 300000; // 300KB (conservative safety margin below 400KB DynamoDB limit)
@@ -139,19 +138,19 @@ function createUniqueMapName(baseName: string, existingMaps: MapConfigFavourite[
 export const POST: RequestHandler = async ({ cookies, request }): Promise<Response> => {
   const userData = await getUserData(cookies);
   if (!userData.Item.uuid) {
-    return json({ ok: false, favourites: [] }, { status: 401 });
+    return Response.json({ ok: false, favourites: [] }, { status: 401 });
   }
 
   const payload = (await request.json()) as { id?: string };
   const id = sanitizeId(payload.id);
   if (!id) {
-    return json({ ok: false, favourites: userData.Item.favourites }, { status: 400 });
+    return Response.json({ ok: false, favourites: userData.Item.favourites }, { status: 400 });
   }
 
   userData.Item.favourites = Array.from(new Set([...(userData.Item.favourites ?? []), id]));
   userData.Item.mapConfigs = userData.Item.mapConfigs ?? [];
   const result = await putUserData(userData.Item, cookies);
-  return json({ ok: result.ok, favourites: userData.Item.favourites });
+  return Response.json({ ok: result.ok, favourites: userData.Item.favourites });
 };
 
 /**
@@ -164,19 +163,19 @@ export const POST: RequestHandler = async ({ cookies, request }): Promise<Respon
 export const DELETE: RequestHandler = async ({ cookies, request }): Promise<Response> => {
   const userData = await getUserData(cookies);
   if (!userData.Item.uuid) {
-    return json({ ok: false, favourites: [] }, { status: 401 });
+    return Response.json({ ok: false, favourites: [] }, { status: 401 });
   }
 
   const payload = (await request.json()) as { id?: string };
   const id = sanitizeId(payload.id);
   if (!id) {
-    return json({ ok: false, favourites: userData.Item.favourites }, { status: 400 });
+    return Response.json({ ok: false, favourites: userData.Item.favourites }, { status: 400 });
   }
 
   userData.Item.favourites = (userData.Item.favourites ?? []).filter((favourite: string) => favourite !== id);
   userData.Item.mapConfigs = userData.Item.mapConfigs ?? [];
   const result = await putUserData(userData.Item, cookies);
-  return json({ ok: result.ok, favourites: userData.Item.favourites });
+  return Response.json({ ok: result.ok, favourites: userData.Item.favourites });
 };
 
 /**
@@ -188,13 +187,13 @@ export const DELETE: RequestHandler = async ({ cookies, request }): Promise<Resp
 export const PUT: RequestHandler = async ({ cookies }): Promise<Response> => {
   const userData = await getUserData(cookies);
   if (!userData.Item.uuid) {
-    return json({ ok: false, favourites: [] }, { status: 401 });
+    return Response.json({ ok: false, favourites: [] }, { status: 401 });
   }
 
   userData.Item.favourites = [];
   userData.Item.mapConfigs = userData.Item.mapConfigs ?? [];
   const result = await putUserData(userData.Item, cookies);
-  return json({ ok: result.ok, favourites: [] });
+  return Response.json({ ok: result.ok, favourites: [] });
 };
 
 /**
@@ -209,11 +208,11 @@ export const PUT: RequestHandler = async ({ cookies }): Promise<Response> => {
 export const PATCH: RequestHandler = async ({ cookies, request }): Promise<Response> => {
   const userData = await getUserData(cookies);
   if (!userData.Item.uuid) {
-    return json({ ok: false, mapConfigs: [] }, { status: 401 });
+    return Response.json({ ok: false, mapConfigs: [] }, { status: 401 });
   }
 
   if (userData.status === 'unavailable') {
-    return json({ ok: false, reason: 'unavailable' }, { status: 503 });
+    return Response.json({ ok: false, reason: 'unavailable' }, { status: 503 });
   }
 
   const payload = (await request.json()) as {
@@ -229,18 +228,18 @@ export const PATCH: RequestHandler = async ({ cookies, request }): Promise<Respo
     const updating = payload.action === 'updateMapConfig';
     const id = sanitizeId(payload.id);
     if (updating && !id) {
-      return json({ ok: false, mapConfigs, reason: 'invalid-id' }, { status: 400 });
+      return Response.json({ ok: false, mapConfigs, reason: 'invalid-id' }, { status: 400 });
     }
     if (updating && !mapConfigs.some((mapItem) => mapItem.id === id)) {
-      return json({ ok: false, mapConfigs, reason: 'not-found' }, { status: 404 });
+      return Response.json({ ok: false, mapConfigs, reason: 'not-found' }, { status: 404 });
     }
     if (!updating && mapConfigs.length >= MAX_SAVED_MAPS) {
-      return json({ ok: false, mapConfigs, reason: 'limit' }, { status: 400 });
+      return Response.json({ ok: false, mapConfigs, reason: 'limit' }, { status: 400 });
     }
 
     const sanitizedConfig = sanitizeUploadedMapConfig(payload.config);
     if (!sanitizedConfig) {
-      return json({ ok: false, mapConfigs, reason: 'invalid-config' }, { status: 400 });
+      return Response.json({ ok: false, mapConfigs, reason: 'invalid-config' }, { status: 400 });
     }
 
     const nextMapConfigs: MapConfigFavourite[] = updating
@@ -258,22 +257,22 @@ export const PATCH: RequestHandler = async ({ cookies, request }): Promise<Respo
     const estimatedSize = new TextEncoder().encode(JSON.stringify(nextUserData)).byteLength;
 
     if (estimatedSize > MAX_ITEM_SIZE_BYTES) {
-      return json({ ok: false, mapConfigs, reason: 'item-too-large' }, { status: 400 });
+      return Response.json({ ok: false, mapConfigs, reason: 'item-too-large' }, { status: 400 });
     }
 
     const result = await putUserData(nextUserData, cookies);
     if (!result.ok) {
       console.error('Failed to persist map config.', { action: payload.action, mapCount: nextMapConfigs.length });
-      return json({ ok: false, mapConfigs, reason: 'persist-failed' }, { status: 500 });
+      return Response.json({ ok: false, mapConfigs, reason: 'persist-failed' }, { status: 500 });
     }
 
-    return json({ ok: true, mapConfigs: nextMapConfigs, mapConfigId: updating ? id : nextMapConfigs[mapConfigs.length].id });
+    return Response.json({ ok: true, mapConfigs: nextMapConfigs, mapConfigId: updating ? id : nextMapConfigs[mapConfigs.length].id });
   }
 
   if (payload.action === 'deleteMapConfig') {
     const id = sanitizeId(payload.id);
     if (!id) {
-      return json({ ok: false, mapConfigs, reason: 'invalid-id' }, { status: 400 });
+      return Response.json({ ok: false, mapConfigs, reason: 'invalid-id' }, { status: 400 });
     }
 
     userData.Item.mapConfigs = mapConfigs.filter((mapItem) => mapItem.id !== id);
@@ -282,11 +281,11 @@ export const PATCH: RequestHandler = async ({ cookies, request }): Promise<Respo
 
     const result = await putUserData(userData.Item, cookies);
     if (!result.ok) {
-      return json({ ok: false, mapConfigs, reason: 'persist-failed' }, { status: 500 });
+      return Response.json({ ok: false, mapConfigs, reason: 'persist-failed' }, { status: 500 });
     }
 
-    return json({ ok: result.ok, mapConfigs: userData.Item.mapConfigs });
+    return Response.json({ ok: result.ok, mapConfigs: userData.Item.mapConfigs });
   }
 
-  return json({ ok: false, mapConfigs, reason: 'invalid-action' }, { status: 400 });
+  return Response.json({ ok: false, mapConfigs, reason: 'invalid-action' }, { status: 400 });
 };

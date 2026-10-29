@@ -13,24 +13,24 @@ const { exchangeRefreshTokenMock, getPrivateKeyMaterialMock, getTokenMock, setAu
     verifyIdTokenMock: vi.fn(),
   }));
 
-vi.mock('$lib/utils/auth/parse-jwt', () => ({
+vi.mock('#lib/utils/auth/parse-jwt.js', () => ({
   getToken: getTokenMock,
 }));
 
-vi.mock('$lib/utils/auth/oidc.server', () => ({
+vi.mock('#lib/utils/auth/oidc.server.js', () => ({
   getPrivateKeyMaterial: getPrivateKeyMaterialMock,
 }));
 
-vi.mock('$lib/utils/auth/sign-in-core.server', () => ({
+vi.mock('#lib/utils/auth/sign-in-core.server.js', () => ({
   exchangeRefreshToken: exchangeRefreshTokenMock,
   setAuthCookies: setAuthCookiesMock,
 }));
 
-vi.mock('$lib/utils/auth/id-token.server', () => ({
+vi.mock('#lib/utils/auth/id-token.server.js', () => ({
   verifyIdToken: verifyIdTokenMock,
 }));
 
-vi.mock('$lib/utils/auth/session-cookie.server', () => ({
+vi.mock('#lib/utils/auth/session-cookie.server.js', () => ({
   touchSessionCookie: touchSessionCookieMock,
 }));
 

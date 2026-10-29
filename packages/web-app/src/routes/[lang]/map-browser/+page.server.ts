@@ -1,14 +1,12 @@
 import type { Actions, PageServerLoad } from './$types';
-import { addToFavourites, removeFromFavourites } from '$lib/actions';
-import { getUserData } from '$lib/db/user';
-import { sanitize } from '$lib/utils/data-sanitization/geocore-result';
-import { sanitizeSemantic } from '$lib/utils/data-sanitization/semantic-results';
-import { formatNumber } from '$lib/utils/format-number';
-import type { GeospatialRecord, UserInfo } from '$lib/db/db-types';
-import { getAppLanguage } from '$lib/utils/language';
-import { buildSeoMetadata } from '$lib/utils/metadata';
-
-import { SEMANTIC_SEARCH_URL, GEOCORE_API_DOMAIN } from '$env/static/private';
+import { addToFavourites, removeFromFavourites } from '#lib/actions.js';
+import { getUserData } from '#lib/db/user.js';
+import { sanitize } from '#lib/utils/data-sanitization/geocore-result.js';
+import { sanitizeSemantic } from '#lib/utils/data-sanitization/semantic-results.js';
+import { formatNumber } from '#lib/utils/format-number.js';
+import type { GeospatialRecord, UserInfo } from '#lib/db/db-types.js';
+import { getAppLanguage } from '#lib/utils/language.js';
+import { buildSeoMetadata } from '#lib/utils/metadata.js';
 
 interface ParsedResponse {
   Items?: GeospatialRecord[];
@@ -77,7 +75,8 @@ type SearchMode = 'classic' | 'semantic';
  */
 export const load: PageServerLoad = async ({ request, fetch, params, url, cookies }) => {
   const lang = getAppLanguage(params.lang);
-  const searchMode: SearchMode = url.searchParams.get('searchMethod') === 'classic' || !SEMANTIC_SEARCH_URL ? 'classic' : 'semantic';
+  const searchMode: SearchMode =
+    url.searchParams.get('searchMethod') === 'classic' || !process.env.SEMANTIC_SEARCH_URL ? 'classic' : 'semantic';
   let parsedResponse: ParsedResponse = {};
   let userData: UserInfo = { Item: { uuid: '', favourites: [] }, status: 'anonymous' };
   let sanitizedResults: ReturnType<typeof sanitize> | ReturnType<typeof sanitizeSemantic> = [];
@@ -158,7 +157,9 @@ function generateSearchUrl(
   mode: SearchMode
 ): Promise<Response> {
   const isSemantic = mode === 'semantic';
-  const url = isSemantic ? new URL(`${SEMANTIC_SEARCH_URL}/search-opensearch`) : new URL(`${GEOCORE_API_DOMAIN}/geo`);
+  const url = isSemantic
+    ? new URL(`${process.env.SEMANTIC_SEARCH_URL}/search-opensearch`)
+    : new URL(`${process.env.GEOCORE_API_DOMAIN}/geo`);
   const params = isSemantic ? mapSemanticSearchResults(searchParams, lang) : mapSearchParams(searchParams, lang);
 
   // URLSearchParams automatically encodes special characters to the html counterpart.
@@ -190,7 +191,7 @@ async function getAnalytics(fetch: (url: string | URL, options?: RequestInit) =>
   let parsedAnalytics: { Items: AnalyticsItem[] } = { Items: [] };
 
   try {
-    const analytics = await fetch(`${GEOCORE_API_DOMAIN}/analytics/11`);
+    const analytics = await fetch(`${process.env.GEOCORE_API_DOMAIN}/analytics/11`);
     const payload = (await analytics.json()) as { Items?: AnalyticsItem[] };
     parsedAnalytics = { Items: payload.Items ?? [] };
   } catch (e) {
